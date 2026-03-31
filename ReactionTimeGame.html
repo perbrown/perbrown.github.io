@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Reaction Time Game</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 50px;
+  }
+  #gameButton {
+    width: 200px;
+    height: 200px;
+    font-size: 20px;
+    border: none;
+    color: white;
+    cursor: pointer;
+  }
+  #info {
+    margin-top: 20px;
+    font-size: 18px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Reaction Time Game</h1>
+
+<label>
+  <input type="checkbox" id="rainbowToggle">
+  Use Random Rainbow Colors
+</label>
+
+<br><br>
+
+<button id="gameButton">Wait...</button>
+
+<div id="info"></div>
+<div id="best"></div>
+
+<script>
+const rainbow = ["red","orange","yellow","green","blue","indigo","violet"];
+
+let startTime = 0;
+let waiting = true;
+let ready = false;
+let fastest = null;
+
+const btn = document.getElementById("gameButton");
+const info = document.getElementById("info");
+const best = document.getElementById("best");
+const toggle = document.getElementById("rainbowToggle");
+
+function getColors() {
+  if (toggle.checked) {
+    let start = rainbow[Math.floor(Math.random() * rainbow.length)];
+    let stop;
+    do {
+      stop = rainbow[Math.floor(Math.random() * rainbow.length)];
+    } while (stop === start);
+    return { start, stop };
+  } else {
+    return { start: "red", stop: "green" };
+  }
+}
+
+let currentColors = getColors();
+
+function resetGame() {
+  waiting = true;
+  ready = false;
+  currentColors = getColors();
+
+  btn.style.backgroundColor = currentColors.start;
+  btn.textContent = "Wait...";
+
+  info.textContent = "";
+
+  const delay = Math.random() * 3000 + 2000; // 2–5 seconds
+
+  setTimeout(() => {
+    ready = true;
+    waiting = false;
+    btn.style.backgroundColor = currentColors.stop;
+    btn.textContent = "CLICK!";
+    startTime = Date.now();
+  }, delay);
+}
+
+btn.onclick = () => {
+  if (waiting) {
+    info.textContent = "Too soon! Wait for the color change.";
+    resetGame();
+    return;
+  }
+
+  if (ready) {
+    const reactionTime = Date.now() - startTime;
+    info.textContent = `Your time: ${reactionTime} ms`;
+
+    if (fastest === null || reactionTime < fastest) {
+      fastest = reactionTime;
+      best.textContent = `Fastest: ${fastest} ms`;
+    }
+
+    ready = false;
+    waiting = false;
+
+    setTimeout(resetGame, 2000);
+  }
+};
+
+// Start first round
+resetGame();
+</script>
+
+</body>
+</html>
