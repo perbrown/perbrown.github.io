@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brightness Ordering Game</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 30px;
+  }
+
+  .row {
+    margin: 25px 0;
+  }
+
+  .container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 10px 0;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .block {
+    width: 35px;
+    height: 35px;
+    cursor: grab;
+    border: 1px solid #333;
+  }
+
+  button {
+    margin: 5px;
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+
+  .rowResult {
+    font-size: 14px;
+    margin-top: 5px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Brightness Ordering Game</h1>
+<p>Drag each row from <b>lightest → darkest</b></p>
+
+<div id="game"></div>
+
+<script>
+const colorBases = {
+  blue: 220,
+  red: 0,
+  orange: 30,
+  yellow: 55,
+  green: 120
+};
+
+const gameDiv = document.getElementById("game");
+let correctMap = {};
+
+function playClick() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  oscillator.type = "square";
+  oscillator.frequency.value = 800; // click pitch
+
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
+
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+
+  oscillator.start();
+  oscillator.stop(ctx.currentTime + 0.05);
+}
+
+function createRow(name, baseHue) {
+  const rowDiv = document.createElement("div");
+  rowDiv.className = "row";
+
+  const label = document.createElement("div");
+  label.innerText = name.toUpperCase();
+
+  const container = document.createElement("div");
+  container.className = "container";
+  container.id = name;
+
+  const result = document.createElement("div");
+  result.className = "rowResult";
+  result.id = name + "-result";
+
+  const checkBtn = document.createElement("button");
+  checkBtn.innerText = "Check";
+  checkBtn.onclick = () => checkRow(name);
+
+  const shuffleBtn = document.createElement("button");
+  shuffleBtn.innerText = "Shuffle";
+  shuffleBtn.onclick = () => shuffleRow(name);
+
+  let brightnesses = [];
+  for (let i = 0; i < 16; i++) {
+    brightnesses.push(90 - i * 4);
+  }
+
+  correctMap[name] = [...brightnesses];
+
+  renderRow(container, name, baseHue, brightnesses);
+
+  rowDiv.appendChild(label);
+  rowDiv.appendChild(container);
+  rowDiv.appendChild(checkBtn);
+  rowDiv.appendChild(shuffleBtn);
+  rowDiv.appendChild(result);
+
+  gameDiv.appendChild(rowDiv);
+}
+
+function renderRow(container, name, hue, brightnesses) {
+  container.innerHTML = "";
+
+  let shuffled = [...brightnesses].sort(() => Math.random() - 0.5);
+
+  shuffled.forEach(bright => {
+    const block = document.createElement("div");
+    block.className = "block";
+    block.draggable = true;
+
+    block.dataset.brightness = bright;
+
+    block.style.backgroundColor = `hsl(${colorBases[name]}, 80%, ${bright}%)`;
+
+    addDragHandlers(block, container);
+    container.appendChild(block);
+  });
+}
+
+let dragged = null;
+
+function addDragHandlers(el, container) {
+  el.addEventListener("dragstart", () => {
+    dragged = el;
+  });
+
+  el.addEventListener("dragover", e => {
+    e.preventDefault();
+  });
+
+  el.addEventListener("drop", e => {
+    e.preventDefault();
+    if (dragged === el) return;
+
+    const nodes = Array.from(container.children);
+    const draggedIndex = nodes.indexOf(dragged);
+    const targetIndex = nodes.indexOf(el);
+
+    if (draggedIndex < targetIndex) {
+      container.insertBefore(dragged, el.nextSibling);
+    } else {
+      container.insertBefore(dragged, el);
+    }
+
+    playClick(); // 🔊 sound on move
+  });
+}
+
+function checkRow(name) {
+  const container = document.getElementById(name);
+  const blocks = Array.from(container.children);
+
+  let correct = correctMap[name];
+  let score = 0;
+
+  blocks.forEach((block, i) => {
+    if (parseFloat(block.dataset.brightness) === correct[i]) {
+      score++;
+    }
+  });
+
+  document.getElementById(name + "-result").innerText =
+    `Score: ${score}/${blocks.length}`;
+}
+
+function shuffleRow(name) {
+  const hue = colorBases[name];
+  const brightnesses = correctMap[name];
+  renderRow(document.getElementById(name), name, hue, brightnesses);
+  document.getElementById(name + "-result").innerText = "";
+}
+
+function setup() {
+  gameDiv.innerHTML = "";
+  correctMap = {};
+
+  for (let name in colorBases) {
+    createRow(name, colorBases[name]);
+  }
+}
+
+setup();
+</script>
+
+</body>
+</html>
