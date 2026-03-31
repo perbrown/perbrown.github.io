@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Color Flash Game</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 40px;
+  }
+  #flashBox {
+    width: 200px;
+    height: 200px;
+    margin: 20px auto;
+    border: 2px solid #000;
+    background-color: white;
+  }
+  button {
+    margin: 5px;
+    padding: 10px 15px;
+    font-size: 16px;
+  }
+  #result {
+    font-size: 20px;
+    margin-top: 15px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Color Flash Game</h1>
+
+<button id="startBtn">Start</button>
+
+<div id="flashBox"></div>
+
+<div id="buttons"></div>
+
+<div id="result"></div>
+<div id="score"></div>
+
+<script>
+const colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+
+let currentColor = "";
+let flashTime = 100;
+let correct = 0;
+let wrong = 0;
+let gameActive = false;
+
+const flashBox = document.getElementById("flashBox");
+const resultDiv = document.getElementById("result");
+const scoreDiv = document.getElementById("score");
+const buttonsDiv = document.getElementById("buttons");
+
+// Create guess buttons
+colors.forEach(color => {
+  const btn = document.createElement("button");
+  btn.innerText = color;
+  btn.onclick = () => handleGuess(color);
+  buttonsDiv.appendChild(btn);
+});
+
+document.getElementById("startBtn").onclick = startGame;
+
+function startGame() {
+  correct = 0;
+  wrong = 0;
+  flashTime = 100;
+  gameActive = true;
+  resultDiv.innerText = "";
+  scoreDiv.innerText = "";
+  nextRound();
+}
+
+function nextRound() {
+  if (flashTime < 30) {
+    endGame();
+    return;
+  }
+
+  currentColor = colors[Math.floor(Math.random() * colors.length)];
+
+  // Flash color
+  flashBox.style.backgroundColor = currentColor;
+
+  setTimeout(() => {
+    flashBox.style.backgroundColor = "white";
+  }, flashTime);
+}
+
+function handleGuess(guess) {
+  if (!gameActive) return;
+
+  if (guess === currentColor) {
+    resultDiv.innerText = "Correct!";
+    correct++;
+  } else {
+    resultDiv.innerText = `Wrong! It was ${currentColor}`;
+    wrong++;
+  }
+
+  scoreDiv.innerText = `Correct: ${correct} | Wrong: ${wrong}`;
+
+  // Prepare next round
+  gameActive = false;
+
+  setTimeout(() => {
+    flashTime -= 5;
+    gameActive = true;
+    resultDiv.innerText = "";
+    nextRound();
+  }, 2000);
+}
+
+function endGame() {
+  gameActive = false;
+  resultDiv.innerText = "Game Over!";
+  scoreDiv.innerText = `Final Score → Correct: ${correct}, Wrong: ${wrong}`;
+}
+</script>
+
+</body>
+</html>
