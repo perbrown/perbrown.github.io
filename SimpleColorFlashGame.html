@@ -39,19 +39,24 @@
 
 <div id="result"></div>
 <div id="score"></div>
+<div id="info"></div>
 
 <script>
 const colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
 
 let currentColor = "";
 let flashTime = 100;
+let brightness = 100;
 let correct = 0;
 let wrong = 0;
 let gameActive = false;
+let flashCount = 0;
+const maxFlashes = 20;
 
 const flashBox = document.getElementById("flashBox");
 const resultDiv = document.getElementById("result");
 const scoreDiv = document.getElementById("score");
+const infoDiv = document.getElementById("info");
 const buttonsDiv = document.getElementById("buttons");
 
 // Create guess buttons
@@ -68,25 +73,40 @@ function startGame() {
   correct = 0;
   wrong = 0;
   flashTime = 100;
+  brightness = 100;
+  flashCount = 0;
   gameActive = true;
+
   resultDiv.innerText = "";
   scoreDiv.innerText = "";
+  infoDiv.innerText = "";
+
+  resetBox();
   nextRound();
 }
 
+function resetBox() {
+  flashBox.style.backgroundColor = "white";
+  flashBox.style.filter = "brightness(100%)";
+}
+
 function nextRound() {
-  if (flashTime < 30) {
+  if (flashCount >= maxFlashes) {
     endGame();
     return;
   }
 
+  flashCount++;
+
   currentColor = colors[Math.floor(Math.random() * colors.length)];
 
-  // Flash color
+  flashBox.style.filter = `brightness(${brightness}%)`;
   flashBox.style.backgroundColor = currentColor;
 
+  infoDiv.innerText = `Flash: ${flashTime} ms | Brightness: ${brightness}% | Round: ${flashCount}/${maxFlashes}`;
+
   setTimeout(() => {
-    flashBox.style.backgroundColor = "white";
+    resetBox();
   }, flashTime);
 }
 
@@ -103,21 +123,31 @@ function handleGuess(guess) {
 
   scoreDiv.innerText = `Correct: ${correct} | Wrong: ${wrong}`;
 
-  // Prepare next round
   gameActive = false;
 
   setTimeout(() => {
-    flashTime -= 5;
-    gameActive = true;
+    // Stop decreasing at 50 ms
+    if (flashTime > 50) {
+      flashTime -= 5;
+    }
+
+    // Stop brightness at 40%
+    if (brightness > 40) {
+      brightness -= 5;
+    }
+
     resultDiv.innerText = "";
+    gameActive = true;
     nextRound();
   }, 2000);
 }
 
 function endGame() {
   gameActive = false;
+  resetBox();
   resultDiv.innerText = "Game Over!";
   scoreDiv.innerText = `Final Score → Correct: ${correct}, Wrong: ${wrong}`;
+  infoDiv.innerText = "";
 }
 </script>
 
