@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kidney Control Center</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f8fb;
+        text-align: center;
+        padding: 30px;
+    }
+    .card {
+        background: white;
+        max-width: 650px;
+        margin: auto;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        text-align: left;
+    }
+    h1 { text-align: center; }
+
+    .question {
+        margin: 15px 0;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    button {
+        margin: 10px 5px;
+        padding: 10px 18px;
+        font-size: 15px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    #check { background: #3498db; color: white; }
+    #next { display: none; background: #2ecc71; color: white; }
+    #restart { display: none; background: #9b59b6; color: white; }
+
+    .feedback {
+        margin-top: 5px;
+        font-weight: bold;
+        white-space: pre-line;
+    }
+
+    .scenario-sub {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 10px;
+    }
+</style>
+</head>
+<body>
+
+<h1>Kidney Control Center</h1>
+
+<div class="card">
+    <h2 id="scenario"></h2>
+    <div id="scenarioSub" class="scenario-sub"></div>
+
+    <div id="questions"></div>
+
+    <button id="check" onclick="checkAnswers()">Check Answers</button>
+    <button id="next" onclick="nextScenario()">Next Scenario</button>
+    <button id="restart" onclick="restart()">Start Again</button>
+</div>
+
+<script>
+const scenarios = [
+{
+title: "You ate a very salty meal.",
+sub: "",
+questions: [
+{q:"Salt level in blood?", choices:["Low","Normal","High"], correct:"High",
+exp:"Salt from food enters the blood, raising salt levels."},
+
+{q:"Water level?", choices:["Low","Normal","High"], correct:"High",
+exp:"The body holds water to dilute the salt. Water follows salt."},
+
+{q:"Blood pressure?", choices:["Low","Normal","High"], correct:"High",
+exp:"More water increases blood volume, raising pressure."},
+
+{q:"Kidneys: salt?", choices:["Keep more","Remove more"], correct:"Remove more",
+exp:"Kidneys remove extra salt."},
+
+{q:"Kidneys: water?", choices:["Keep more","Remove more"], correct:"Remove more",
+exp:"Kidneys remove extra water to restore balance."}
+]
+},
+
+{
+title: "You just ran a long race and are sweating.",
+sub: "",
+questions: [
+{q:"Water level?", choices:["Low","Normal","High"], correct:"Low",
+exp:"Sweating removes water."},
+
+{q:"Salt level?", choices:["Low","Normal","High"], correct:"Low",
+exp:"Sweat removes salts."},
+
+{q:"Kidneys: water?", choices:["Keep more","Remove more"], correct:"Keep more",
+exp:"Body needs to conserve water."},
+
+{q:"Kidneys: salts?", choices:["Keep more","Remove more"], correct:"Keep more",
+exp:"Salts are also low, so they are conserved."}
+]
+},
+
+{
+title: "You drank a lot of water.",
+sub: "",
+questions: [
+{q:"Water level?", choices:["Low","Normal","High"], correct:"High",
+exp:"Drinking increases body water."},
+
+{q:"Blood pressure?", choices:["Low","Normal","High"], correct:"High",
+exp:"More fluid increases pressure."},
+
+{q:"Kidneys: water?", choices:["Keep more","Remove more"], correct:"Remove more",
+exp:"Kidneys remove excess water."}
+]
+},
+
+{
+title: "Your blood has too much waste (urea).",
+sub: "Example: You ate a lot of protein (like meat), which creates more waste.",
+questions: [
+{q:"Waste level?", choices:["Low","Normal","High"], correct:"High",
+exp:"Breaking down protein produces urea waste."},
+
+{q:"Kidneys: waste?", choices:["Remove more","Keep more"], correct:"Remove more",
+exp:"Kidneys filter out urea to clean the blood."}
+]
+},
+
+{
+title: "Your blood is too acidic.",
+sub: "Example: After intense exercise, your muscles produce acids.",
+questions: [
+{q:"pH condition?", choices:["Too acidic","Normal"], correct:"Too acidic",
+exp:"Extra acids lower the pH of the blood."},
+
+{q:"Kidneys action?", choices:["Remove acid","Keep acid"], correct:"Remove acid",
+exp:"Kidneys remove hydrogen ions to balance pH."}
+]
+},
+
+{
+title: "Your body doesn’t have enough oxygen.",
+sub: "Example: You are at high altitude or your body isn’t getting enough oxygen.",
+questions: [
+{q:"Oxygen level?", choices:["Low","Normal","High"], correct:"Low",
+exp:"Less oxygen is available in the body."},
+
+{q:"Kidneys action?", choices:["Make more red blood cells","Do nothing"], correct:"Make more red blood cells",
+exp:"Kidneys signal the body to produce more red blood cells to carry oxygen."}
+]
+}
+];
+
+let current = 0;
+
+function loadScenario() {
+    const s = scenarios[current];
+    document.getElementById("scenario").innerText = s.title;
+    document.getElementById("scenarioSub").innerText = s.sub;
+
+    const container = document.getElementById("questions");
+    container.innerHTML = "";
+
+    s.questions.forEach((q, i) => {
+        const div = document.createElement("div");
+        div.className = "question";
+
+        let html = `<strong>${q.q}</strong><br>`;
+        q.choices.forEach(c => {
+            html += `<label>
+                <input type="radio" name="q${i}" value="${c}">
+                ${c}
+            </label><br>`;
+        });
+
+        html += `<div class="feedback" id="f${i}"></div>`;
+        div.innerHTML = html;
+        container.appendChild(div);
+    });
+
+    document.getElementById("check").style.display = "inline-block";
+    document.getElementById("next").style.display = "none";
+}
+
+function checkAnswers() {
+    const s = scenarios[current];
+
+    s.questions.forEach((q, i) => {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        let text = "";
+
+        if (!selected) {
+            text = "⚠️ No answer selected";
+        } else if (selected.value === q.correct) {
+            text = "✅ Correct\n" + q.exp;
+        } else {
+            text = "❌ Correct: " + q.correct + "\n" + q.exp;
+        }
+
+        document.getElementById("f"+i).innerText = text;
+    });
+
+    document.getElementById("check").style.display = "none";
+    document.getElementById("next").style.display = "inline-block";
+}
+
+function nextScenario() {
+    current++;
+
+    if (current >= scenarios.length) {
+        document.getElementById("scenario").innerText = "All Scenarios Complete!";
+        document.getElementById("scenarioSub").innerText = "";
+        document.getElementById("questions").innerHTML = "";
+        document.getElementById("next").style.display = "none";
+        document.getElementById("restart").style.display = "inline-block";
+        return;
+    }
+
+    loadScenario();
+}
+
+function restart() {
+    current = 0;
+    document.getElementById("restart").style.display = "none";
+    loadScenario();
+}
+
+loadScenario();
+</script>
+
+</body>
+</html>
