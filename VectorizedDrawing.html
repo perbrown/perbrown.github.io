@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Draw → Normalized Vector Lines</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: #f0f0f0;
+  }
+
+  canvas {
+    border: 2px solid #333;
+    background: white;
+    cursor: crosshair;
+    margin-top: 10px;
+  }
+
+  button {
+    margin: 10px;
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  #output {
+    margin-top: 15px;
+    width: 600px;
+    height: 220px;
+  }
+</style>
+</head>
+<body>
+
+<h2>Draw → Simplify → Normalized Vectors (0–10)</h2>
+
+<button onclick="simplifyAll()">Simplify</button>
+<button onclick="clearCanvas()">Clear</button>
+
+<br>
+<canvas id="canvas" width="600" height="400"></canvas>
+
+<br>
+<textarea id="output" placeholder="Line data will appear here..."></textarea>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const output = document.getElementById("output");
+
+let drawing = false;
+let currentStroke = [];
+let strokes = [];
+
+canvas.addEventListener("mousedown", (e) => {
+  drawing = true;
+  currentStroke = [];
+
+  const p = getMousePos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+
+  currentStroke.push(p);
+});
+
+canvas.addEventListener("mousemove", (e) => {
+  if (!drawing) return;
+
+  const p = getMousePos(e);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+
+  currentStroke.push(p);
+});
+
+canvas.addEventListener("mouseup", () => {
+  if (currentStroke.length > 0) strokes.push(currentStroke);
+  drawing = false;
+});
+
+canvas.addEventListener("mouseleave", () => drawing = false);
+
+function getMousePos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+}
+
+function simplifyStroke(points, maxLines) {
+  if (points.length < 2) return points;
+
+  const step = Math.floor(points.length / maxLines);
+  let simplified = [];
+
+  if (step < 1) {
+    simplified = points;
+  } else {
+    for (let i = 0; i < points.length; i += step) {
+      simplified.push(points[i]);
+    }
+    simplified.push(points[points.length - 1]);
+  }
+
+  return simplified;
+}
+
+function simplifyAll() {
+  if (strokes.length === 0) return;
+
+  const TOTAL_LINES = 20;
+
+  let totalSegments = strokes.reduce((sum, s) => sum + (s.length - 1), 0);
+
+  let simplifiedStrokes = strokes.map(stroke => {
+    let strokeSegments = stroke.length - 1;
+    let allocated = Math.max(
+      1,
+      Math.round((strokeSegments / totalSegments) * TOTAL_LINES)
+    );
+    return simplifyStroke(stroke, allocated);
+  });
+
+  let currentTotal = simplifiedStrokes.reduce((sum, s) => sum + (s.length - 1), 0);
+
+  while (currentTotal > TOTAL_LINES) {
+    for (let s of simplifiedStrokes) {
+      if (s.length > 2 && currentTotal > TOTAL_LINES) {
+        s.splice(Math.floor(s.length / 2), 1);
+        currentTotal--;
+      }
+    }
+  }
+
+  // REDRAW
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // FIND BOUNDS (for normalization)
+  let allPoints = simplifiedStrokes.flat();
+
+  let minX = Math.min(...allPoints.map(p => p.x));
+  let maxX = Math.max(...allPoints.map(p => p.x));
+  let minY = Math.min(...allPoints.map(p => p.y));
+  let maxY = Math.max(...allPoints.map(p => p.y));
+
+  let width = maxX - minX || 1;
+  let height = maxY - minY || 1;
+
+  let linesOutput = [];
+
+  simplifiedStrokes.forEach((stroke, si) => {
+    if (stroke.length < 2) return;
+
+    if (si > 0) linesOutput.push("new line");
+
+    ctx.beginPath();
+    ctx.moveTo(stroke[0].x, stroke[0].y);
+
+    for (let i = 1; i < stroke.length; i++) {
+      const p1 = stroke[i - 1];
+      const p2 = stroke[i];
+
+      ctx.lineTo(p2.x, p2.y);
+
+      // Normalize to 0–10, flip Y to bottom-left origin
+      let normX = ((p1.x - minX) / width) * 10;
+      let normY = ((maxY - p1.y) / height) * 10;
+
+      const dx = p2.x - p1.x;
+      const dy = -(p2.y - p1.y);
+
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      if (angle < 0) angle += 360;
+
+      linesOutput.push(
+        `(${normX.toFixed(1)}, ${normY.toFixed(1)}) | ${Math.round(angle)}° | ${distance.toFixed(1)}`
+      );
+    }
+
+    ctx.stroke();
+  });
+
+  output.value = linesOutput.join("\n");
+
+  strokes = simplifiedStrokes;
+}
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  strokes = [];
+  output.value = "";
+}
+</script>
+
+</body>
+</html>
