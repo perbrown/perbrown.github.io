@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kidney Function Quiz</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background: #f4f8fb;
+        padding: 30px;
+    }
+    h1 { color: #2c3e50; }
+
+    .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 520px;
+        margin: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .recycle { background: #2ecc71; color: white; }
+    .remove { background: #e74c3c; color: white; }
+    .both { background: #f1c40f; }
+
+    #feedback {
+        margin-top: 15px;
+        font-size: 17px;
+        font-weight: bold;
+        white-space: pre-line;
+    }
+
+    #definition {
+        margin-top: 10px;
+        font-size: 15px;
+        color: #555;
+    }
+
+    #score {
+        margin-top: 10px;
+    }
+
+    #next, #restart {
+        display: none;
+        background: #3498db;
+        color: white;
+    }
+</style>
+</head>
+<body>
+
+<h1>Kidney Function Quiz</h1>
+
+<div class="card">
+    <h2 id="item"></h2>
+    <div id="definition"></div>
+
+    <div id="buttons">
+        <button class="recycle" onclick="answer('recycle')">Recycle</button>
+        <button class="remove" onclick="answer('remove')">Remove</button>
+        <button class="both" onclick="answer('both')">Both</button>
+    </div>
+
+    <div id="feedback"></div>
+    <div id="score"></div>
+
+    <button id="next" onclick="nextQuestion()">Next</button>
+    <button id="restart" onclick="restartQuiz()">Start Again</button>
+</div>
+
+<script>
+const questions = [
+{
+item:"Water",
+definition:"Water is the main liquid in your body and helps transport nutrients and waste.",
+correct:"both",
+explanation:"Kidneys keep most water but remove extra to maintain balance."
+},
+{
+item:"Glucose",
+definition:"Glucose is a type of sugar your body uses for energy.",
+correct:"recycle",
+explanation:"Your body needs glucose for energy, so kidneys reabsorb it."
+},
+{
+item:"Amino Acids",
+definition:"Amino acids are building blocks used to make proteins in your body.",
+correct:"recycle",
+explanation:"They are valuable nutrients, so the body keeps them."
+},
+{
+item:"Vitamins",
+definition:"Vitamins are nutrients that help your body function properly.",
+correct:"recycle",
+explanation:"Most vitamins are reabsorbed because the body needs them."
+},
+{
+item:"Salts (some)",
+definition:"Salts (electrolytes) help control muscles, nerves, and fluid balance.",
+correct:"both",
+explanation:"Kidneys remove extra salts but keep what the body still needs."
+},
+{
+item:"Urea",
+definition:"Urea is a waste made when your body breaks down protein.",
+correct:"remove",
+explanation:"It is a waste product and must be removed."
+},
+{
+item:"Excess Salts",
+definition:"Too much salt in the body can be harmful.",
+correct:"remove",
+explanation:"Extra salt is removed to keep the body balanced."
+},
+{
+item:"Extra Water",
+definition:"Water beyond what your body needs.",
+correct:"remove",
+explanation:"Extra water is removed as urine."
+},
+{
+item:"Creatinine",
+definition:"Creatinine is a waste made by muscles when they work.",
+correct:"remove",
+explanation:"It builds up if not removed, so kidneys filter it out."
+},
+{
+item:"Toxins / Drugs",
+definition:"These are harmful chemicals or substances from medicines.",
+correct:"remove",
+explanation:"Kidneys remove them to protect the body."
+},
+{
+item:"Calcium",
+definition:"Calcium is a mineral that helps build strong bones and teeth.",
+correct:"both",
+explanation:"The body keeps some calcium but removes extra."
+},
+{
+item:"Hydrogen Ions (pH)",
+definition:"These control how acidic or basic your blood is.",
+correct:"both",
+explanation:"Kidneys adjust these to keep blood at a safe pH level."
+}
+];
+
+let current = 0;
+let score = 0;
+let answered = false;
+
+function loadQuestion() {
+    const q = questions[current];
+
+    document.getElementById("item").innerText = q.item;
+    document.getElementById("definition").innerText = q.definition;
+    document.getElementById("feedback").innerText = "";
+    document.getElementById("score").innerText = "Score: " + score + " / " + questions.length;
+
+    document.getElementById("buttons").style.display = "block";
+    document.getElementById("next").style.display = "none";
+
+    answered = false;
+}
+
+function answer(choice) {
+    if (answered) return;
+
+    const q = questions[current];
+    let text = "";
+
+    if (choice === q.correct) {
+        score++;
+        text = "✅ Correct!";
+    } else {
+        text = "❌ Incorrect. Correct answer: " + q.correct.toUpperCase();
+    }
+
+    text += "\n" + q.explanation;
+
+    document.getElementById("feedback").innerText = text;
+
+    document.getElementById("buttons").style.display = "none";
+    document.getElementById("next").style.display = "inline-block";
+
+    answered = true;
+}
+
+function nextQuestion() {
+    current++;
+
+    if (current >= questions.length) {
+        document.getElementById("item").innerText = "Quiz Complete!";
+        document.getElementById("definition").innerText = "";
+        document.getElementById("feedback").innerText = "";
+        document.getElementById("score").innerText = "Final Score: " + score + " / " + questions.length;
+
+        document.getElementById("next").style.display = "none";
+        document.getElementById("restart").style.display = "inline-block";
+        return;
+    }
+
+    loadQuestion();
+}
+
+function restartQuiz() {
+    current = 0;
+    score = 0;
+
+    document.getElementById("restart").style.display = "none";
+
+    loadQuestion();
+}
+
+loadQuestion();
+</script>
+
+</body>
+</html>
