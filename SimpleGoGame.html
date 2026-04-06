@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kid-Friendly Go (Neighbour Highlight Fixed Order)</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  background: #f4f4f4;
+}
+
+.sidebar {
+  width: 260px;
+  background: white;
+  padding: 15px;
+  border-right: 2px solid #ddd;
+}
+
+.game {
+  flex: 1;
+  text-align: center;
+  padding: 20px;
+}
+
+canvas {
+  background: #d8b36a;
+  border: 2px solid #333;
+  margin-top: 10px;
+}
+
+button {
+  margin: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.score {
+  margin-top: 15px;
+  font-size: 18px;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <h2>Rules</h2>
+  <div>Black goes first</div>
+  <div>Capture removes surrounded groups</div>
+
+  <button onclick="resetGame()">Restart</button>
+
+  <div class="score" id="scoreDisplay">
+    Black: 0 | White: 0
+  </div>
+</div>
+
+<div class="game">
+  <h1>Go (Fixed Draw Order)</h1>
+  <canvas id="board" width="450" height="450"></canvas>
+</div>
+
+<script>
+
+const size = 9;
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+const cell = canvas.width / (size + 1);
+
+let board;
+let currentPlayer;
+let removedStones = [];
+
+let blackScore = 0;
+let whiteScore = 0;
+
+function updateScore() {
+  document.getElementById("scoreDisplay").innerText =
+    `Black: ${blackScore} | White: ${whiteScore}`;
+}
+
+function resetGame() {
+  board = Array(size).fill(null).map(() => Array(size).fill(0));
+  currentPlayer = 1;
+  removedStones = [];
+
+  blackScore = 0;
+  whiteScore = 0;
+
+  updateScore();
+  drawBoard();
+}
+
+canvas.addEventListener("click", (e) => {
+
+  removedStones = [];
+
+  let rect = canvas.getBoundingClientRect();
+  let x = Math.round((e.clientX - rect.left) / cell - 1);
+  let y = Math.round((e.clientY - rect.top) / cell - 1);
+
+  if (x < 0 || y < 0 || x >= size || y >= size) return;
+  if (board[y][x] !== 0) return;
+
+  board[y][x] = currentPlayer;
+
+  simpleCapture(3 - currentPlayer);
+
+  currentPlayer = 3 - currentPlayer;
+
+  updateScore();
+  drawBoard();
+});
+
+function simpleCapture(opponent) {
+
+  let visited = new Set();
+  let captured = 0;
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+
+      if (board[y][x] !== opponent) continue;
+
+      let key = x + "," + y;
+      if (visited.has(key)) continue;
+
+      let stack = [[x, y]];
+      let group = [];
+      let hasLiberty = false;
+
+      while (stack.length) {
+
+        let [cx, cy] = stack.pop();
+        let k = cx + "," + cy;
+
+        if (visited.has(k)) continue;
+        visited.add(k);
+
+        group.push([cx, cy]);
+
+        for (let [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+
+          let nx = cx + dx;
+          let ny = cy + dy;
+
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+
+          if (board[ny][nx] === 0) {
+            hasLiberty = true;
+          } else if (board[ny][nx] === opponent) {
+            stack.push([nx, ny]);
+          }
+        }
+      }
+
+      if (!hasLiberty) {
+        for (let [gx, gy] of group) {
+          board[gy][gx] = 0;
+          removedStones.push([gx, gy]);
+          captured++;
+        }
+      }
+    }
+  }
+
+  // ⭐ scoring update ONLY here (correct Go behavior)
+  if (opponent === 1) {
+    whiteScore += captured;
+  } else {
+    blackScore += captured;
+  }
+}
+
+function drawBoard() {
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 1. GRID
+  for (let i = 1; i <= size; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cell, i * cell);
+    ctx.lineTo(size * cell, i * cell);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(i * cell, cell);
+    ctx.lineTo(i * cell, size * cell);
+    ctx.stroke();
+  }
+
+  // 2. STONES
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (board[y][x] !== 0) {
+        ctx.beginPath();
+        ctx.arc((x + 1) * cell, (y + 1) * cell, cell / 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = board[y][x] === 1 ? "black" : "white";
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+  }
+
+  // 3. HIGHLIGHTS (on top)
+  for (let i = 0; i < removedStones.length; i++) {
+    let [rx, ry] = removedStones[i];
+
+    for (let [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+
+      let nx = rx + dx;
+      let ny = ry + dy;
+
+      if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+      if (board[ny][nx] === 0) continue;
+
+      ctx.beginPath();
+      ctx.arc((nx + 1) * cell, (ny + 1) * cell, cell / 3, 0, Math.PI * 2);
+      ctx.fillStyle = "orange";
+      ctx.fill();
+    }
+  }
+}
+
+resetGame();
+
+</script>
+
+</body>
+</html>
