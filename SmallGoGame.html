@@ -20,7 +20,7 @@ body{
 }
 
 .sidebar{
-  width: 320px;
+  width: 340px;
   background: #fff;
   border-radius: 12px;
   padding: 20px;
@@ -117,9 +117,11 @@ button{
   margin-bottom:6px;
   font-size:16px;
 }
+
 .quiz-help{ font-size:13px; color:#555; line-height:1.35; }
 
 .quiz-row{ margin-top:10px; }
+
 .quiz-row input[type="number"]{
   width:100%;
   padding:12px;
@@ -130,7 +132,7 @@ button{
 
 .quiz-actions{
   display:grid;
-  grid-template-columns: 1fr; /* buttons on next line */
+  grid-template-columns: 1fr;
   gap:10px;
   margin-top:12px;
 }
@@ -147,16 +149,27 @@ button{
 .btn-skip{ background:#999; color:#fff; }
 .btn-skip:hover{ background:#777; }
 
-.game-area{ text-align:center; }
+.game-area{
+  text-align:center;
+  position: relative;
+}
+
 .game-area h1{ margin-top:0; color:#333; font-size:24px; }
 
-canvas{
+canvas#board{
   background:#dcb462;
   border:3px solid #8a6000;
   border-radius:4px;
   display:block;
   box-shadow:4px 4px 14px rgba(0,0,0,.28);
   cursor:crosshair;
+}
+
+canvas#confetti{
+  position:absolute;
+  left:0;
+  top:0;
+  pointer-events:none;
 }
 
 .capture-msg{
@@ -208,14 +221,17 @@ canvas{
   <button class="btn-end" onclick="endGame()">End Game</button>
   <button class="btn-restart" onclick="resetGame()">Restart</button>
 
+  <!-- End-game total-area quiz (only used at end game) -->
   <div class="quiz-panel" id="quizPanel">
     <div class="quiz-title" id="quizTitle">End Game: total area?</div>
     <div class="quiz-help" id="quizHelp">
       The enclosed areas are highlighted. Enter the TOTAL AREA (number of highlighted intersections).
     </div>
+
     <div class="quiz-row">
       <input id="areaInput" type="number" min="0" step="1" placeholder="Enter total area…" />
     </div>
+
     <div class="quiz-actions">
       <button class="btn-submit" onclick="submitArea()">Submit</button>
       <button class="btn-skip" onclick="skipArea()">Skip</button>
@@ -228,7 +244,7 @@ canvas{
     • Click a point to place a stone<br>
     • A group with no liberties is captured<br>
     • Two passes in a row ends the game<br>
-    • End Game: shows ALL enclosed areas and asks for TOTAL area
+    • End Game: highlights ALL enclosed areas and asks for TOTAL area
   </div>
 
   <a class="back-link" href="index.html">← Back to games</a>
@@ -237,6 +253,7 @@ canvas{
 <div class="game-area">
   <h1>Small Go Game</h1>
   <canvas id="board"></canvas>
+  <canvas id="confetti"></canvas>
   <div class="capture-msg" id="captureMsg"></div>
 </div>
 
@@ -247,14 +264,19 @@ const CELL = CANVAS_SIZE / (SIZE + 1);
 const STONE_R = CELL / 2.4;
 const OUTLINE_R = CELL / 2;
 
-const canvas = document.getElementById('board');
-if (!canvas) throw new Error('canvas#board not found');
-canvas.width = CANVAS_SIZE;
-canvas.height = CANVAS_SIZE;
-const ctx = canvas.getContext('2d');
+const boardCanvas = document.getElementById('board');
+if (!boardCanvas) throw new Error('canvas#board not found');
+boardCanvas.width = CANVAS_SIZE;
+boardCanvas.height = CANVAS_SIZE;
+const ctx = boardCanvas.getContext('2d');
+
+const confettiCanvas = document.getElementById('confetti');
+confettiCanvas.width = CANVAS_SIZE;
+confettiCanvas.height = CANVAS_SIZE;
+const cctx = confettiCanvas.getContext('2d');
 
 let board;
-let currentPlayer; // 1 = black, 2 = white
+let currentPlayer; // 1 black, 2 white
 let blackCaptures = 0;
 let whiteCaptures = 0;
 let blackTerritory = 0;
@@ -263,14 +285,24 @@ let whiteTerritory = 0;
 let lastCaptured = [];
 let consecutivePasses = 0;
 
-let awaitingEndArea = false;
-let endGameData = null; // { unionCells:Set<string>, totalArea:number, winner:number }
-
 let gameEnded = false;
+let awaitingEndArea = false;
+
+// endGameState = {
+//   winner: 1|2,
+//   unionCells: Set<string>,
+//   totalArea: number
+// }
+let endGameState = null;
+
+// Confetti state
+let confettiParticles = [];
+let confettiUntil = 0;
 
 function resetGame() {
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
   currentPlayer = 1;
+
   blackCaptures = 0;
   whiteCaptures = 0;
   blackTerritory = 0;
@@ -279,11 +311,13 @@ function resetGame() {
   lastCaptured = [];
   consecutivePasses = 0;
 
-  awaitingEndArea = false;
-  endGameData = null;
   gameEnded = false;
+  awaitingEndArea = false;
+  endGameState = null;
 
+  stopConfetti();
   hideQuiz();
+
   document.getElementById('captureMsg').textContent = '';
   updateUI();
   drawBoard();
@@ -327,7 +361,7 @@ function endQuiz() {
 }
 
 function submitArea() {
-  if (!awaitingEndArea || !endGameData) return;
+  if (!awaitingEndArea || !endGameState) return;
 
   const answer = parseInt(document.getElementById('areaInput').value, 10);
   if (!Number.isFinite(answer)) {
@@ -336,19 +370,23 @@ function submitArea() {
     return;
   }
 
-  const correct = (answer === endGameData.totalArea);
-  const label = endGameData.winner === 1 ? 'Black' : 'White';
+  const correct = (answer === endGameState.totalArea);
+  const label = endGameState.winner === 1 ? 'Black' : 'White';
 
-  document.getElementById('captureMsg').textContent = correct
-    ? `Correct total area! ${label} wins!`
-    : `Wrong total area (correct was ${endGameData.totalArea}). ${label} does NOT win.`;
+  if (correct) {
+    document.getElementById('captureMsg').textContent = `Correct total area! ${label} wins!`;
+    startConfetti(2200);
+  } else {
+    document.getElementById('captureMsg').textContent =
+      `Wrong total area (correct was ${endGameState.totalArea}). ${label} does NOT win.`;
+  }
 
   endQuiz();
 }
 
 function skipArea() {
-  if (!awaitingEndArea || !endGameData) return;
-  const label = endGameData.winner === 1 ? 'Black' : 'White';
+  if (!awaitingEndArea || !endGameState) return;
+  const label = endGameState.winner === 1 ? 'Black' : 'White';
   document.getElementById('captureMsg').textContent = `Skipped. ${label} does NOT win.`;
   endQuiz();
 }
@@ -357,8 +395,8 @@ function pass() {
   if (awaitingEndArea || gameEnded) return;
 
   lastCaptured = [];
-
   consecutivePasses++;
+
   if (consecutivePasses >= 2) {
     document.getElementById('captureMsg').textContent =
       'Game over! Both players passed. Press End Game.';
@@ -368,6 +406,7 @@ function pass() {
 
   document.getElementById('captureMsg').textContent =
     (currentPlayer === 1 ? 'Black' : 'White') + ' passed.';
+
   currentPlayer = 3 - currentPlayer;
   updateUI();
   drawBoard();
@@ -379,57 +418,67 @@ function endGame() {
   gameEnded = true;
   lastCaptured = [];
 
-  // winner by (territory + captures) – simple
+  // Decide winner by (territory + captures) as before.
   const blackTotal = blackTerritory + blackCaptures;
   const whiteTotal = whiteTerritory + whiteCaptures;
-
   let winner = 0;
   if (blackTotal > whiteTotal) winner = 1;
   else if (whiteTotal > blackTotal) winner = 2;
 
   if (winner === 0) {
-    endGameData = null;
+    endGameState = null;
     document.getElementById('captureMsg').textContent = 'Tie game — no winner to evaluate.';
     drawBoard();
     return;
   }
 
-  // Find ALL enclosed regions for winner, union their cells, compute total area
-  const regions = findAllEnclosuresForPlayer(winner);
-  if (regions.length === 0) {
-    endGameData = null;
+  // Show ALL enclosed areas for BOTH players (visual), but quiz only TOTAL AREA for winner.
+  const blackRegions = findAllEnclosuresForPlayer(1);
+  const whiteRegions = findAllEnclosuresForPlayer(2);
+
+  const blackUnion = unionRegions(blackRegions);
+  const whiteUnion = unionRegions(whiteRegions);
+
+  const winnerUnion = winner === 1 ? blackUnion : whiteUnion;
+
+  if (winnerUnion.size === 0) {
+    endGameState = null;
     document.getElementById('captureMsg').textContent =
       `${winner === 1 ? 'Black' : 'White'} is ahead, but has no enclosed areas.`;
     drawBoard();
     return;
   }
 
-  const unionCells = new Set();
-  for (const r of regions) for (const [x,y] of r.region) unionCells.add(`${x},${y}`);
-
-  endGameData = { unionCells, totalArea: unionCells.size, winner };
+  endGameState = {
+    winner,
+    unionCells: winnerUnion,
+    totalArea: winnerUnion.size,
+    // for drawing both colors
+    blackUnion,
+    whiteUnion
+  };
 
   const label = winner === 1 ? 'Black' : 'White';
   awaitingEndArea = true;
 
   showQuiz(
     `End Game: ${label} total area?`,
-    `All enclosed areas for ${label} are highlighted. Enter TOTAL AREA (number of highlighted intersections).`
+    `All enclosed areas are highlighted (Black = blue, White = green). Enter TOTAL area for ${label}'s highlighted intersections.`
   );
 
   document.getElementById('captureMsg').textContent =
-    `End Game: ${label} is ahead. Enter total highlighted area.`;
+    `End Game: ${label} is ahead. Enter total area for ${label}'s highlighted region.`;
 
   drawBoard();
 }
 
-canvas.addEventListener('click', (e) => {
+boardCanvas.addEventListener('click', (e) => {
   if (awaitingEndArea || gameEnded) return;
   if (consecutivePasses >= 2) return;
 
-  const rect = canvas.getBoundingClientRect();
-  const px = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const rect = boardCanvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * (boardCanvas.width / rect.width);
+  const py = (e.clientY - rect.top) * (boardCanvas.height / rect.height);
 
   const x = Math.round(px / CELL - 1);
   const y = Math.round(py / CELL - 1);
@@ -586,8 +635,14 @@ function findAllEnclosuresForPlayer(player) {
   return results;
 }
 
+function unionRegions(regions) {
+  const set = new Set();
+  for (const r of regions) for (const [x,y] of r.region) set.add(`${x},${y}`);
+  return set;
+}
+
 function drawBoard() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
 
   // grid
   ctx.strokeStyle = '#5a3a00';
@@ -604,7 +659,7 @@ function drawBoard() {
     ctx.stroke();
   }
 
-  // star points (hoshi) for 9×9
+  // star points (hoshi)
   ctx.fillStyle = '#5a3a00';
   for (const [hx, hy] of [[2,2],[2,6],[6,2],[6,6],[4,4]]) {
     ctx.beginPath();
@@ -612,15 +667,23 @@ function drawBoard() {
     ctx.fill();
   }
 
-  // highlight end-game enclosed union
-  if (endGameData && endGameData.unionCells && endGameData.unionCells.size > 0) {
-    const pts = Array.from(endGameData.unionCells)
-      .map(k => k.split(',').map(n => parseInt(n, 10)));
-    drawCellsFill(pts, 'rgba(80, 160, 255, 0.24)');
-    drawCellsOutline(pts, '#ff0000', 4);
+  // End game: show all enclosed areas (both players)
+  if (endGameState) {
+    if (endGameState.blackUnion && endGameState.blackUnion.size > 0) {
+      const pts = Array.from(endGameState.blackUnion)
+        .map(k => k.split(',').map(n => parseInt(n, 10)));
+      drawCellsFill(pts, 'rgba(80, 160, 255, 0.25)'); // blue-ish
+      drawCellsOutline(pts, '#2b6cff', 3);
+    }
+    if (endGameState.whiteUnion && endGameState.whiteUnion.size > 0) {
+      const pts = Array.from(endGameState.whiteUnion)
+        .map(k => k.split(',').map(n => parseInt(n, 10)));
+      drawCellsFill(pts, 'rgba(60, 200, 120, 0.22)'); // green-ish
+      drawCellsOutline(pts, '#1f9a57', 3);
+    }
   }
 
-  // stones
+  // Stones
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       if (board[y][x] === 0) continue;
@@ -667,30 +730,79 @@ function drawCellsOutline(cellsArr, strokeStyle, width) {
     const cx = (gx + 1) * CELL;
     const cy = (gy + 1) * CELL;
 
-    if (!inSet.has(`${gx},${gy-1}`)) {
-      ctx.beginPath();
-      ctx.moveTo(cx - r, cy - r);
-      ctx.lineTo(cx + r, cy - r);
-      ctx.stroke();
+    if (!inSet.has(`${gx},${gy-1}`)) { ctx.beginPath(); ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy - r); ctx.stroke(); }
+    if (!inSet.has(`${gx},${gy+1}`)) { ctx.beginPath(); ctx.moveTo(cx - r, cy + r); ctx.lineTo(cx + r, cy + r); ctx.stroke(); }
+    if (!inSet.has(`${gx-1},${gy}`)) { ctx.beginPath(); ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx - r, cy + r); ctx.stroke(); }
+    if (!inSet.has(`${gx+1},${gy}`)) { ctx.beginPath(); ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx + r, cy + r); ctx.stroke(); }
+  }
+}
+
+/* ── Confetti ───────────────────────────────────────────────────────────── */
+
+function startConfetti(durationMs) {
+  confettiParticles = [];
+  confettiUntil = performance.now() + durationMs;
+
+  const colors = ['#ff3b3b', '#ffd93b', '#3b82ff', '#22c55e', '#a855f7', '#ff7ab6'];
+
+  for (let i = 0; i < 180; i++) {
+    confettiParticles.push({
+      x: Math.random() * confettiCanvas.width,
+      y: -Math.random() * confettiCanvas.height,
+      vx: (Math.random() - 0.5) * 2.2,
+      vy: 2 + Math.random() * 3.0,
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.25,
+      size: 4 + Math.random() * 4,
+      color: colors[(Math.random() * colors.length) | 0],
+      shape: Math.random() < 0.5 ? 'rect' : 'circle'
+    });
+  }
+
+  requestAnimationFrame(confettiTick);
+}
+
+function stopConfetti() {
+  confettiParticles = [];
+  confettiUntil = 0;
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+}
+
+function confettiTick(now) {
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+  const alive = now < confettiUntil;
+  for (const p of confettiParticles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vr;
+
+    // wrap
+    if (p.x < -20) p.x = confettiCanvas.width + 20;
+    if (p.x > confettiCanvas.width + 20) p.x = -20;
+
+    cctx.save();
+    cctx.translate(p.x, p.y);
+    cctx.rotate(p.rot);
+    cctx.fillStyle = p.color;
+
+    if (p.shape === 'rect') {
+      cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.65);
+    } else {
+      cctx.beginPath();
+      cctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
+      cctx.fill();
     }
-    if (!inSet.has(`${gx},${gy+1}`)) {
-      ctx.beginPath();
-      ctx.moveTo(cx - r, cy + r);
-      ctx.lineTo(cx + r, cy + r);
-      ctx.stroke();
-    }
-    if (!inSet.has(`${gx-1},${gy}`)) {
-      ctx.beginPath();
-      ctx.moveTo(cx - r, cy - r);
-      ctx.lineTo(cx - r, cy + r);
-      ctx.stroke();
-    }
-    if (!inSet.has(`${gx+1},${gy}`)) {
-      ctx.beginPath();
-      ctx.moveTo(cx + r, cy - r);
-      ctx.lineTo(cx + r, cy + r);
-      ctx.stroke();
-    }
+    cctx.restore();
+  }
+
+  // drop particles that are off-screen for a long time
+  confettiParticles = confettiParticles.filter(p => p.y < confettiCanvas.height + 60);
+
+  if (alive && confettiParticles.length > 0) {
+    requestAnimationFrame(confettiTick);
+  } else {
+    stopConfetti();
   }
 }
 
