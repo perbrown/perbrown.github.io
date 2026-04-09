@@ -19,16 +19,12 @@ body {
 }
 
 .sidebar {
-  width: 300px;
+  width: 280px;
   background: white;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   flex-shrink: 0;
-
-  /* keep buttons visible even on small screens */
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
 }
 
 .sidebar h2 { margin-top: 0; }
@@ -48,8 +44,16 @@ body {
   font-weight: bold;
 }
 
-.score-player.black-score { background: #222; color: white; }
-.score-player.white-score { background: #f5f5f5; color: #222; border: 2px solid #bbb; }
+.score-player.black-score {
+  background: #222;
+  color: white;
+}
+
+.score-player.white-score {
+  background: #f5f5f5;
+  color: #222;
+  border: 2px solid #bbb;
+}
 
 .score-label { font-size: 12px; opacity: 0.8; }
 .score-value { font-size: 28px; }
@@ -73,6 +77,7 @@ body {
   border: 2px solid #555;
   box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
 }
+
 .turn-stone.black { background: radial-gradient(circle at 35% 35%, #666, #000); }
 .turn-stone.white { background: radial-gradient(circle at 35% 35%, #fff, #ccc); }
 
@@ -90,10 +95,6 @@ button {
 
 .btn-pass { background: #4a9af0; color: white; }
 .btn-pass:hover { background: #3080d0; }
-
-.btn-end { background: #6b4cf0; color: white; }
-.btn-end:hover { background: #5536d9; }
-
 .btn-restart { background: #e05050; color: white; }
 .btn-restart:hover { background: #c03030; }
 
@@ -119,9 +120,16 @@ button {
   margin-bottom: 6px;
   font-size: 16px;
 }
-.quiz-help { font-size: 13px; color: #555; line-height: 1.35; }
 
-.quiz-row { margin-top: 10px; }
+.quiz-help {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.35;
+}
+
+.quiz-row {
+  margin-top: 10px;
+}
 
 .quiz-row input[type="number"]{
   width: 100%;
@@ -132,7 +140,6 @@ button {
 }
 
 .quiz-actions {
-  /* Submit/Skip on next line */
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
@@ -154,7 +161,11 @@ button {
 
 .game-area { text-align: center; }
 
-.game-area h1 { margin-top: 0; color: #333; font-size: 24px; }
+.game-area h1 {
+  margin-top: 0;
+  color: #333;
+  font-size: 24px;
+}
 
 canvas {
   background: #dcb462;
@@ -180,6 +191,7 @@ canvas {
   color: #4a9af0;
   text-decoration: none;
 }
+
 .back-link:hover { text-decoration: underline; }
 </style>
 </head>
@@ -211,13 +223,13 @@ canvas {
   </div>
 
   <button class="btn-pass" onclick="pass()">Pass</button>
-  <button class="btn-end" onclick="endGame()">End Game</button>
   <button class="btn-restart" onclick="resetGame()">Restart</button>
 
+  <!-- On-screen perimeter input (no popups) -->
   <div class="quiz-panel" id="quizPanel">
     <div class="quiz-title" id="quizTitle">Perimeter challenge</div>
-    <div class="quiz-help" id="quizHelp">
-      Count the red boundary edges. Each boundary edge has a small red dot (“tick”).
+    <div class="quiz-help">
+      Count the red boundary edges. Each boundary edge has a small red dot (“tick”) so you can count the perimeter in grid-edges.
     </div>
 
     <div class="quiz-row">
@@ -235,9 +247,9 @@ canvas {
     • Black goes first<br>
     • Click a point to place a stone<br>
     • A group with no liberties is captured<br>
+    • Captured region is outlined in red<br>
     • Two passes in a row ends the game<br>
-    • End Game: highlight winner’s enclosed open intersections and ask for perimeter<br>
-    • If correct, winner wins; else winner does not win
+    • When a fully enclosed empty region is detected, answer its perimeter (grid-edges) to score territory
   </div>
 
   <a class="back-link" href="index.html">← Back to games</a>
@@ -269,21 +281,13 @@ let blackTerritory = 0;
 let whiteTerritory = 0;
 
 let lastCaptured = [];
-let lastEnclosure = null; // { region, perimeter, owner }
+let lastEnclosure = null;  // { region, perimeter, owner }
 let consecutivePasses = 0;
 
 let awaitingPerimeter = false;
 let pendingEnclosure = null;
 
-let gameEnded = false;
-let endGameWinner = 0;
-let endGameEnclosure = null;
-
-/**
- * Prevents the same enclosure from being detected/asked over and over.
- * Keyed by owner + sorted list of region points.
- */
-let seenEnclosures = new Set();
+// ── Initialise ─────────────────────────────────────────────────────────────
 
 function resetGame() {
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
@@ -292,25 +296,20 @@ function resetGame() {
   whiteCaptures = 0;
   blackTerritory = 0;
   whiteTerritory = 0;
-
   lastCaptured = [];
   lastEnclosure = null;
   consecutivePasses = 0;
 
   awaitingPerimeter = false;
   pendingEnclosure = null;
-
-  gameEnded = false;
-  endGameWinner = 0;
-  endGameEnclosure = null;
-
-  seenEnclosures = new Set();
-
   hideQuiz();
+
   document.getElementById('captureMsg').textContent = '';
   updateUI();
   drawBoard();
 }
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
 
 function updateUI() {
   document.getElementById('blackScore').textContent = blackCaptures;
@@ -329,12 +328,15 @@ function updateUI() {
   }
 }
 
-function showQuiz(titleText, helpText) {
+function showQuizFor(enclosure) {
   const panel = document.getElementById('quizPanel');
-  document.getElementById('quizTitle').textContent = titleText;
-  document.getElementById('quizHelp').textContent = helpText;
+  const title = document.getElementById('quizTitle');
+  const who = enclosure.owner === 1 ? 'Black' : 'White';
+  title.textContent = `${who}: perimeter?`;
   document.getElementById('perimeterInput').value = '';
   panel.style.display = 'block';
+
+  // Focus so it’s obvious where to type
   setTimeout(() => document.getElementById('perimeterInput').focus(), 0);
 }
 
@@ -351,55 +353,28 @@ function endPerimeterQuiz() {
   drawBoard();
 }
 
-function enclosureKey(enclosure) {
-  const pts = enclosure.region
-    .map(([x, y]) => `${x},${y}`)
-    .sort()
-    .join(';');
-  return `${enclosure.owner}|${pts}`;
-}
-
-function isEnclosureSeen(enclosure) {
-  return seenEnclosures.has(enclosureKey(enclosure));
-}
-
-function markEnclosureSeen(enclosure) {
-  seenEnclosures.add(enclosureKey(enclosure));
-}
-
 function submitPerimeter() {
   if (!awaitingPerimeter || !pendingEnclosure) return;
 
   const raw = document.getElementById('perimeterInput').value;
   const answer = parseInt(raw, 10);
+
   if (!Number.isFinite(answer)) {
-    document.getElementById('captureMsg').textContent = 'Not a valid number.';
+    document.getElementById('captureMsg').textContent = 'Not a number — no points awarded.';
     endPerimeterQuiz();
     return;
   }
 
-  const correct = (answer === pendingEnclosure.perimeter);
-  const who = pendingEnclosure.owner === 1 ? 'Black' : 'White';
+  if (answer === pendingEnclosure.perimeter) {
+    const points = pendingEnclosure.region.length; // score area
+    if (pendingEnclosure.owner === 1) blackTerritory += points;
+    else whiteTerritory += points;
 
-  if (gameEnded) {
-    if (correct) {
-      document.getElementById('captureMsg').textContent = `Correct perimeter! ${who} wins!`;
-    } else {
-      document.getElementById('captureMsg').textContent =
-        `Wrong perimeter (correct was ${pendingEnclosure.perimeter}). ${who} does NOT win.`;
-    }
+    document.getElementById('captureMsg').textContent =
+      `Correct! +${points} territory point${points !== 1 ? 's' : ''}.`;
   } else {
-    if (correct) {
-      const points = pendingEnclosure.region.length; // territory = area
-      if (pendingEnclosure.owner === 1) blackTerritory += points;
-      else whiteTerritory += points;
-
-      document.getElementById('captureMsg').textContent =
-        `Correct! +${points} territory point${points !== 1 ? 's' : ''}.`;
-    } else {
-      document.getElementById('captureMsg').textContent =
-        `Incorrect (correct perimeter was ${pendingEnclosure.perimeter}). No points awarded.`;
-    }
+    document.getElementById('captureMsg').textContent =
+      `Incorrect (correct perimeter was ${pendingEnclosure.perimeter}). No points awarded.`;
   }
 
   endPerimeterQuiz();
@@ -407,17 +382,14 @@ function submitPerimeter() {
 
 function skipPerimeter() {
   if (!awaitingPerimeter) return;
-  if (gameEnded) {
-    const who = pendingEnclosure ? (pendingEnclosure.owner === 1 ? 'Black' : 'White') : 'Winner';
-    document.getElementById('captureMsg').textContent = `Skipped. ${who} does NOT win.`;
-  } else {
-    document.getElementById('captureMsg').textContent = 'Skipped perimeter challenge.';
-  }
+  document.getElementById('captureMsg').textContent = 'Skipped perimeter challenge.';
   endPerimeterQuiz();
 }
 
+// ── Pass ───────────────────────────────────────────────────────────────────
+
 function pass() {
-  if (awaitingPerimeter || gameEnded) return;
+  if (awaitingPerimeter) return;
 
   lastCaptured = [];
   lastEnclosure = null;
@@ -425,80 +397,24 @@ function pass() {
   consecutivePasses++;
   if (consecutivePasses >= 2) {
     document.getElementById('captureMsg').textContent =
-      'Game over! Both players passed. Press End Game to decide a winner.';
+      'Game over! Both players passed. Count territory to find the winner.';
     drawBoard();
     return;
   }
 
   document.getElementById('captureMsg').textContent =
     (currentPlayer === 1 ? 'Black' : 'White') + ' passed.';
+
   currentPlayer = 3 - currentPlayer;
   updateUI();
   drawBoard();
 }
 
-function endGame() {
-  if (awaitingPerimeter) return;
-  if (gameEnded) return;
-
-  gameEnded = true;
-
-  const blackTotal = blackTerritory + blackCaptures;
-  const whiteTotal = whiteTerritory + whiteCaptures;
-
-  if (blackTotal > whiteTotal) endGameWinner = 1;
-  else if (whiteTotal > blackTotal) endGameWinner = 2;
-  else endGameWinner = 0;
-
-  lastCaptured = [];
-  lastEnclosure = null;
-
-  if (endGameWinner === 0) {
-    document.getElementById('captureMsg').textContent = 'Tie game — no winner to evaluate.';
-    drawBoard();
-    return;
-  }
-
-  endGameEnclosure = findBestEnclosureForPlayer(endGameWinner);
-  if (!endGameEnclosure) {
-    const who = endGameWinner === 1 ? 'Black' : 'White';
-    document.getElementById('captureMsg').textContent =
-      `${who} is ahead, but has no enclosed open intersections to test.`;
-    drawBoard();
-    return;
-  }
-
-  lastEnclosure = endGameEnclosure;
-
-  // If we already quizzed this exact enclosure earlier, don't keep quizzing it.
-  if (isEnclosureSeen(endGameEnclosure)) {
-    const who = endGameWinner === 1 ? 'Black' : 'White';
-    document.getElementById('captureMsg').textContent =
-      `End Game: ${who} is ahead. (That enclosed region was already quizzed earlier.)`;
-    drawBoard();
-    return;
-  }
-
-  // Mark as seen and prompt once.
-  markEnclosureSeen(endGameEnclosure);
-  awaitingPerimeter = true;
-  pendingEnclosure = endGameEnclosure;
-
-  const who = endGameWinner === 1 ? 'Black' : 'White';
-  showQuiz(
-    `End Game: ${who} perimeter?`,
-    `Highlighted region shows ${who}'s enclosed open intersections. Enter the perimeter (grid-edges). If correct, ${who} wins.`
-  );
-
-  document.getElementById('captureMsg').textContent =
-    `End Game: ${who} is ahead. Region highlighted — enter its perimeter.`;
-
-  drawBoard();
-}
+// ── Click handler ──────────────────────────────────────────────────────────
 
 canvas.addEventListener('click', (e) => {
-  if (awaitingPerimeter || gameEnded) return;
   if (consecutivePasses >= 2) return;
+  if (awaitingPerimeter) return;
 
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -512,6 +428,7 @@ canvas.addEventListener('click', (e) => {
   if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
   if (board[y][x] !== 0) return;
 
+  // Save state for potential undo (illegal self-capture)
   const savedBoard = board.map(row => [...row]);
   const savedBlack = blackCaptures;
   const savedWhite = whiteCaptures;
@@ -524,6 +441,7 @@ canvas.addEventListener('click', (e) => {
 
   capture(3 - currentPlayer);
 
+  // Legality check: own group must have at least one liberty after capture
   if (!hasLiberty(x, y, currentPlayer)) {
     board = savedBoard;
     blackCaptures = savedBlack;
@@ -537,10 +455,8 @@ canvas.addEventListener('click', (e) => {
 
   consecutivePasses = 0;
 
-  // Enclosure detection for player who just played.
-  const enclosure = findBestEnclosureForPlayer(currentPlayer);
+  lastEnclosure = findBestEnclosureForPlayer(currentPlayer);
 
-  // capture message
   if (lastCaptured.length > 0) {
     const n = lastCaptured.length;
     const who = currentPlayer === 1 ? 'Black' : 'White';
@@ -550,30 +466,20 @@ canvas.addEventListener('click', (e) => {
     document.getElementById('captureMsg').textContent = '';
   }
 
-  // next player
+  // switch player for next turn
   currentPlayer = 3 - currentPlayer;
   updateUI();
 
-  // Only quiz if it's a NEW enclosure we haven't seen before.
-  if (enclosure && !isEnclosureSeen(enclosure)) {
-    lastEnclosure = enclosure;
-    markEnclosureSeen(enclosure);
-
+  if (lastEnclosure) {
     awaitingPerimeter = true;
-    pendingEnclosure = enclosure;
-
-    const who = enclosure.owner === 1 ? 'Black' : 'White';
-    showQuiz(
-      `${who}: perimeter?`,
-      'Count the red boundary edges. Each boundary edge has a small red dot (“tick”).'
-    );
-  } else {
-    // Don't keep highlighting the same region forever.
-    lastEnclosure = null;
+    pendingEnclosure = lastEnclosure;
+    showQuizFor(pendingEnclosure);
   }
 
   drawBoard();
 });
+
+// ── Go logic ───────────────────────────────────────────────────────────────
 
 function hasLiberty(startX, startY, player) {
   const visited = new Set();
@@ -583,11 +489,9 @@ function hasLiberty(startX, startY, player) {
     const k = `${cx},${cy}`;
     if (visited.has(k)) continue;
     visited.add(k);
-
     for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
       const nx = cx + dx, ny = cy + dy;
       if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
-
       if (board[ny][nx] === 0) return true;
       if (board[ny][nx] === player) stack.push([nx, ny]);
     }
@@ -613,11 +517,9 @@ function capture(opponent) {
         if (visited.has(ck)) continue;
         visited.add(ck);
         group.push([cx, cy]);
-
         for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
           const nx = cx + dx, ny = cy + dy;
           if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
-
           if (board[ny][nx] === 0) hasLib = true;
           else if (board[ny][nx] === opponent) stack.push([nx, ny]);
         }
@@ -635,8 +537,6 @@ function capture(opponent) {
   }
 }
 
-// Largest empty region enclosed exclusively by `player`.
-// Perimeter = number of boundary grid-edges between region and (stone OR board edge).
 function findBestEnclosureForPlayer(player) {
   const visited = new Set();
   let best = null;
@@ -690,10 +590,12 @@ function findBestEnclosureForPlayer(player) {
   return best;
 }
 
+// ── Drawing ───────────────────────────────────────────────────────────────
+
 function drawBoard() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // grid
+  // Grid lines
   ctx.strokeStyle = '#5a3a00';
   ctx.lineWidth = 1;
   for (let i = 1; i <= SIZE; i++) {
@@ -708,7 +610,7 @@ function drawBoard() {
     ctx.stroke();
   }
 
-  // star points
+  // Star points (hoshi) for 9×9
   ctx.fillStyle = '#5a3a00';
   for (const [hx, hy] of [[2,2],[2,6],[6,2],[6,6],[4,4]]) {
     ctx.beginPath();
@@ -716,18 +618,17 @@ function drawBoard() {
     ctx.fill();
   }
 
-  // capture highlight
+  // Capture outline (under stones)
   if (lastCaptured.length > 0) {
-    drawRegionOutline(lastCaptured, { withTicks: false, fill: 'rgba(220, 60, 60, 0.18)' });
+    drawCaptureOutline(lastCaptured, { withTicks: false });
   }
 
-  // enclosure highlight (end-game uses blue tint)
+  // Enclosure outline (under stones) + ticks for counting perimeter
   if (lastEnclosure && lastEnclosure.region && lastEnclosure.region.length > 0) {
-    const fill = gameEnded ? 'rgba(80, 160, 255, 0.20)' : 'rgba(220, 60, 60, 0.18)';
-    drawRegionOutline(lastEnclosure.region, { withTicks: true, fill });
+    drawCaptureOutline(lastEnclosure.region, { withTicks: true });
   }
 
-  // stones
+  // Stones
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       if (board[y][x] === 0) continue;
@@ -757,23 +658,24 @@ function drawBoard() {
   }
 }
 
-// Outline a region of grid-points (x,y).
-// If withTicks=true, draw one red dot per boundary grid-edge.
-function drawRegionOutline(group, opts) {
+function drawCaptureOutline(group, opts = { withTicks: false }) {
   const inGroup = new Set(group.map(([x, y]) => `${x},${y}`));
   const r = OUTLINE_R;
 
-  ctx.fillStyle = opts.fill || 'rgba(220, 60, 60, 0.18)';
+  // fill
+  ctx.fillStyle = 'rgba(220, 60, 60, 0.18)';
   for (const [gx, gy] of group) {
     const cx = (gx + 1) * CELL;
     const cy = (gy + 1) * CELL;
     ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
   }
 
+  // outline
   ctx.strokeStyle = '#ff0000';
   ctx.lineWidth = opts.withTicks ? 5 : 3;
   ctx.lineCap = 'square';
 
+  // ticks
   const tickR = 3;
   if (opts.withTicks) ctx.fillStyle = '#ff0000';
 
@@ -781,7 +683,6 @@ function drawRegionOutline(group, opts) {
     const cx = (gx + 1) * CELL;
     const cy = (gy + 1) * CELL;
 
-    // top
     if (!inGroup.has(`${gx},${gy - 1}`)) {
       ctx.beginPath();
       ctx.moveTo(cx - r, cy - r);
@@ -789,7 +690,6 @@ function drawRegionOutline(group, opts) {
       ctx.stroke();
       if (opts.withTicks) drawTick(cx, cy - r, tickR);
     }
-    // bottom
     if (!inGroup.has(`${gx},${gy + 1}`)) {
       ctx.beginPath();
       ctx.moveTo(cx - r, cy + r);
@@ -797,7 +697,6 @@ function drawRegionOutline(group, opts) {
       ctx.stroke();
       if (opts.withTicks) drawTick(cx, cy + r, tickR);
     }
-    // left
     if (!inGroup.has(`${gx - 1},${gy}`)) {
       ctx.beginPath();
       ctx.moveTo(cx - r, cy - r);
@@ -805,7 +704,24 @@ function drawRegionOutline(group, opts) {
       ctx.stroke();
       if (opts.withTicks) drawTick(cx - r, cy, tickR);
     }
-    // right
     if (!inGroup.has(`${gx + 1},${gy}`)) {
       ctx.beginPath();
-      ctx.moveTo(cx +*
+      ctx.moveTo(cx + r, cy - r);
+      ctx.lineTo(cx + r, cy + r);
+      ctx.stroke();
+      if (opts.withTicks) drawTick(cx + r, cy, tickR);
+    }
+  }
+}
+
+function drawTick(x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+resetGame();
+</script>
+
+</body>
+</html>
