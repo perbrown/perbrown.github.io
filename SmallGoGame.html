@@ -19,7 +19,7 @@ body {
 }
 
 .sidebar {
-  width: 260px;
+  width: 280px;
   background: white;
   border-radius: 12px;
   padding: 20px;
@@ -107,40 +107,51 @@ button {
 
 .quiz-panel {
   margin-top: 14px;
-  padding: 12px;
-  border-radius: 10px;
-  border: 2px dashed #dd2222;
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid #dd2222;
   background: #fff7f7;
-  display: none; /* shown when there is a pending question */
+  display: none;
 }
 
 .quiz-title {
-  font-weight: bold;
+  font-weight: 900;
   color: #aa1111;
   margin-bottom: 6px;
+  font-size: 16px;
+}
+
+.quiz-help {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.35;
 }
 
 .quiz-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .quiz-row input[type="number"]{
-  flex: 1;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #bbb;
-  font-size: 14px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid #bbb;
+  font-size: 18px;
 }
 
-.quiz-row .btn-small {
-  width: auto;
-  padding: 8px 10px;
+.quiz-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.quiz-actions button {
+  width: 100%;
+  padding: 14px;
+  font-size: 18px;
   margin-top: 0;
-  font-size: 14px;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .btn-submit { background:#2ea44f; color:#fff; }
@@ -214,16 +225,20 @@ canvas {
   <button class="btn-pass" onclick="pass()">Pass</button>
   <button class="btn-restart" onclick="resetGame()">Restart</button>
 
-  <!-- Perimeter quiz UI (no popups) -->
+  <!-- On-screen perimeter input (no popups) -->
   <div class="quiz-panel" id="quizPanel">
     <div class="quiz-title" id="quizTitle">Perimeter challenge</div>
-    <div style="font-size:13px; color:#555; line-height:1.4;">
-      Count the red boundary edges (ticks mark each boundary edge).
+    <div class="quiz-help">
+      Count the red boundary edges. Each boundary edge has a small red dot (“tick”) so you can count the perimeter in grid-edges.
     </div>
+
     <div class="quiz-row">
-      <input id="perimeterInput" type="number" min="0" step="1" placeholder="Perimeter…" />
-      <button class="btn-small btn-submit" onclick="submitPerimeter()">Submit</button>
-      <button class="btn-small btn-skip" onclick="skipPerimeter()">Skip</button>
+      <input id="perimeterInput" type="number" min="0" step="1" placeholder="Enter perimeter…" />
+    </div>
+
+    <div class="quiz-actions">
+      <button class="btn-submit" onclick="submitPerimeter()">Submit</button>
+      <button class="btn-skip" onclick="skipPerimeter()">Skip</button>
     </div>
   </div>
 
@@ -265,11 +280,10 @@ let whiteCaptures = 0;
 let blackTerritory = 0;
 let whiteTerritory = 0;
 
-let lastCaptured = [];     // positions of stones captured on the most recent move
-let lastEnclosure = null;  // { region: [[x,y],...], perimeter: number, owner: 1|2 }
+let lastCaptured = [];
+let lastEnclosure = null;  // { region, perimeter, owner }
 let consecutivePasses = 0;
 
-// While a perimeter question is active, players can't place stones.
 let awaitingPerimeter = false;
 let pendingEnclosure = null;
 
@@ -295,7 +309,7 @@ function resetGame() {
   drawBoard();
 }
 
-// ���─ UI helpers ─────────────────────────────────────────────────────────────
+// ── UI helpers ─────────────────────────────────────────────────────────────
 
 function updateUI() {
   document.getElementById('blackScore').textContent = blackCaptures;
@@ -321,11 +335,22 @@ function showQuizFor(enclosure) {
   title.textContent = `${who}: perimeter?`;
   document.getElementById('perimeterInput').value = '';
   panel.style.display = 'block';
+
+  // Focus so it’s obvious where to type
+  setTimeout(() => document.getElementById('perimeterInput').focus(), 0);
 }
 
 function hideQuiz() {
   document.getElementById('quizPanel').style.display = 'none';
   document.getElementById('perimeterInput').value = '';
+}
+
+function endPerimeterQuiz() {
+  awaitingPerimeter = false;
+  pendingEnclosure = null;
+  hideQuiz();
+  updateUI();
+  drawBoard();
 }
 
 function submitPerimeter() {
@@ -336,14 +361,12 @@ function submitPerimeter() {
 
   if (!Number.isFinite(answer)) {
     document.getElementById('captureMsg').textContent = 'Not a number — no points awarded.';
-    // still end the quiz
     endPerimeterQuiz();
     return;
   }
 
   if (answer === pendingEnclosure.perimeter) {
-    // award territory = area (empty points)
-    const points = pendingEnclosure.region.length;
+    const points = pendingEnclosure.region.length; // score area
     if (pendingEnclosure.owner === 1) blackTerritory += points;
     else whiteTerritory += points;
 
@@ -363,18 +386,10 @@ function skipPerimeter() {
   endPerimeterQuiz();
 }
 
-function endPerimeterQuiz() {
-  awaitingPerimeter = false;
-  pendingEnclosure = null;
-  hideQuiz();
-  updateUI();
-  drawBoard();
-}
-
-// ── Pass ────────��──────────────────────────────────────────────────────────
+// ── Pass ───────────────────────────────────────────────────────────────────
 
 function pass() {
-  if (awaitingPerimeter) return; // must answer/skip first
+  if (awaitingPerimeter) return;
 
   lastCaptured = [];
   lastEnclosure = null;
@@ -399,7 +414,7 @@ function pass() {
 
 canvas.addEventListener('click', (e) => {
   if (consecutivePasses >= 2) return;
-  if (awaitingPerimeter) return; // pause gameplay while question is on screen
+  if (awaitingPerimeter) return;
 
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -424,7 +439,7 @@ canvas.addEventListener('click', (e) => {
   lastCaptured = [];
   lastEnclosure = null;
 
-  capture(3 - currentPlayer); // capture any opponent groups with no liberties
+  capture(3 - currentPlayer);
 
   // Legality check: own group must have at least one liberty after capture
   if (!hasLiberty(x, y, currentPlayer)) {
@@ -440,7 +455,6 @@ canvas.addEventListener('click', (e) => {
 
   consecutivePasses = 0;
 
-  // Auto-enclosure: compute outlined region for the player who just played
   lastEnclosure = findBestEnclosureForPlayer(currentPlayer);
 
   if (lastCaptured.length > 0) {
@@ -452,12 +466,10 @@ canvas.addEventListener('click', (e) => {
     document.getElementById('captureMsg').textContent = '';
   }
 
-  // Switch player NOW (still standard play), but if we have a quiz,
-  // we will pause further clicks until it’s answered.
+  // switch player for next turn
   currentPlayer = 3 - currentPlayer;
   updateUI();
 
-  // If an enclosure exists, ask perimeter on-screen
   if (lastEnclosure) {
     awaitingPerimeter = true;
     pendingEnclosure = lastEnclosure;
@@ -487,7 +499,6 @@ function hasLiberty(startX, startY, player) {
   return false;
 }
 
-// Remove all opponent groups that have no liberties; accumulate captured positions.
 function capture(opponent) {
   const visited = new Set();
   for (let y = 0; y < SIZE; y++) {
@@ -526,8 +537,6 @@ function capture(opponent) {
   }
 }
 
-// Find the largest empty region that is enclosed exclusively by `player`
-// and return { region, perimeter, owner }.
 function findBestEnclosureForPlayer(player) {
   const visited = new Set();
   let best = null;
@@ -554,7 +563,6 @@ function findBestEnclosureForPlayer(player) {
         for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
           const nx = cx + dx, ny = cy + dy;
 
-          // board edge counts as boundary edge and disqualifies enclosure
           if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) {
             touchesEdge = true;
             perimeter += 1;
@@ -566,7 +574,6 @@ function findBestEnclosureForPlayer(player) {
             const nk = `${nx},${ny}`;
             if (!visited.has(nk)) stack.push([nx, ny]);
           } else {
-            // boundary edge against a stone
             perimeter += 1;
             borderColors.add(v);
           }
@@ -616,7 +623,7 @@ function drawBoard() {
     drawCaptureOutline(lastCaptured, { withTicks: false });
   }
 
-  // Enclosure outline (under stones) — draw with ticks so the perimeter is visible
+  // Enclosure outline (under stones) + ticks for counting perimeter
   if (lastEnclosure && lastEnclosure.region && lastEnclosure.region.length > 0) {
     drawCaptureOutline(lastEnclosure.region, { withTicks: true });
   }
@@ -628,7 +635,6 @@ function drawBoard() {
       const cx = (x + 1) * CELL;
       const cy = (y + 1) * CELL;
 
-      // Radial gradient for a 3-D appearance
       const grad = ctx.createRadialGradient(
         cx - STONE_R * 0.35, cy - STONE_R * 0.35, STONE_R * 0.05,
         cx, cy, STONE_R
@@ -652,13 +658,11 @@ function drawBoard() {
   }
 }
 
-// Draw a red outline around the region.
-// If withTicks=true, draw a small tick marker for EACH boundary edge so the user can count perimeter edges.
 function drawCaptureOutline(group, opts = { withTicks: false }) {
   const inGroup = new Set(group.map(([x, y]) => `${x},${y}`));
-  const r = OUTLINE_R; // half-cell
+  const r = OUTLINE_R;
 
-  // Slight red fill
+  // fill
   ctx.fillStyle = 'rgba(220, 60, 60, 0.18)';
   for (const [gx, gy] of group) {
     const cx = (gx + 1) * CELL;
@@ -666,55 +670,45 @@ function drawCaptureOutline(group, opts = { withTicks: false }) {
     ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
   }
 
-  // Outline segments
+  // outline
   ctx.strokeStyle = '#ff0000';
-  ctx.lineWidth = opts.withTicks ? 4 : 3;
+  ctx.lineWidth = opts.withTicks ? 5 : 3;
   ctx.lineCap = 'square';
 
-  // Tick markers
+  // ticks
   const tickR = 3;
-  if (opts.withTicks) {
-    ctx.fillStyle = '#ff0000';
-  }
+  if (opts.withTicks) ctx.fillStyle = '#ff0000';
 
   for (const [gx, gy] of group) {
     const cx = (gx + 1) * CELL;
     const cy = (gy + 1) * CELL;
 
-    // Top edge
     if (!inGroup.has(`${gx},${gy - 1}`)) {
       ctx.beginPath();
       ctx.moveTo(cx - r, cy - r);
       ctx.lineTo(cx + r, cy - r);
       ctx.stroke();
-
       if (opts.withTicks) drawTick(cx, cy - r, tickR);
     }
-    // Bottom edge
     if (!inGroup.has(`${gx},${gy + 1}`)) {
       ctx.beginPath();
       ctx.moveTo(cx - r, cy + r);
       ctx.lineTo(cx + r, cy + r);
       ctx.stroke();
-
       if (opts.withTicks) drawTick(cx, cy + r, tickR);
     }
-    // Left edge
     if (!inGroup.has(`${gx - 1},${gy}`)) {
       ctx.beginPath();
       ctx.moveTo(cx - r, cy - r);
       ctx.lineTo(cx - r, cy + r);
       ctx.stroke();
-
       if (opts.withTicks) drawTick(cx - r, cy, tickR);
     }
-    // Right edge
     if (!inGroup.has(`${gx + 1},${gy}`)) {
       ctx.beginPath();
       ctx.moveTo(cx + r, cy - r);
       ctx.lineTo(cx + r, cy + r);
       ctx.stroke();
-
       if (opts.withTicks) drawTick(cx + r, cy, tickR);
     }
   }
