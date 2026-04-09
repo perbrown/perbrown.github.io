@@ -20,7 +20,7 @@ body{
 }
 
 .sidebar{
-  width: 340px;
+  width: 360px;
   background: #fff;
   border-radius: 12px;
   padding: 20px;
@@ -221,11 +221,28 @@ canvas#confetti{
   <button class="btn-end" onclick="endGame()">End Game</button>
   <button class="btn-restart" onclick="resetGame()">Restart</button>
 
-  <!-- End-game total-area quiz (only used at end game) -->
-  <div class="quiz-panel" id="quizPanel">
-    <div class="quiz-title" id="quizTitle">End Game: total area?</div>
-    <div class="quiz-help" id="quizHelp">
-      The enclosed areas are highlighted. Enter the TOTAL AREA (number of highlighted intersections).
+  <!-- Capture perimeter quiz (shown after every capture) -->
+  <div class="quiz-panel" id="captureQuizPanel">
+    <div class="quiz-title" id="captureQuizTitle">Capture: perimeter?</div>
+    <div class="quiz-help" id="captureQuizHelp">
+      Red dots mark each boundary edge. Enter the PERIMETER (grid-edges) of the red highlighted capture area.
+    </div>
+
+    <div class="quiz-row">
+      <input id="perimeterInput" type="number" min="0" step="1" placeholder="Enter perimeter…" />
+    </div>
+
+    <div class="quiz-actions">
+      <button class="btn-submit" onclick="submitCapturePerimeter()">Submit</button>
+      <button class="btn-skip" onclick="skipCapturePerimeter()">Skip</button>
+    </div>
+  </div>
+
+  <!-- End-game total-area quiz -->
+  <div class="quiz-panel" id="endQuizPanel">
+    <div class="quiz-title" id="endQuizTitle">End Game: total area?</div>
+    <div class="quiz-help" id="endQuizHelp">
+      Enclosed areas are highlighted (Black = blue, White = green). Enter TOTAL AREA for the winner’s color.
     </div>
 
     <div class="quiz-row">
@@ -243,8 +260,9 @@ canvas#confetti{
     • Black goes first<br>
     • Click a point to place a stone<br>
     • A group with no liberties is captured<br>
+    • After every capture: answer the capture perimeter<br>
     • Two passes in a row ends the game<br>
-    • End Game: highlights ALL enclosed areas and asks for TOTAL area
+    • End Game: highlights ALL enclosed areas and asks for winner’s TOTAL area
   </div>
 
   <a class="back-link" href="index.html">← Back to games</a>
@@ -282,18 +300,18 @@ let whiteCaptures = 0;
 let blackTerritory = 0;
 let whiteTerritory = 0;
 
-let lastCaptured = [];
+let lastCaptured = []; // captured stones coords (emptied points)
 let consecutivePasses = 0;
 
 let gameEnded = false;
-let awaitingEndArea = false;
 
-// endGameState = {
-//   winner: 1|2,
-//   unionCells: Set<string>,
-//   totalArea: number
-// }
-let endGameState = null;
+// Capture quiz state
+let awaitingCapturePerimeter = false;
+let captureQuiz = null; // { cells: Array<[x,y]>, perimeter: number, capturer: 1|2 }
+
+// End game state
+let awaitingEndArea = false;
+let endGameState = null; // { winner, blackUnion, whiteUnion, winnerUnion, totalArea }
 
 // Confetti state
 let confettiParticles = [];
@@ -312,11 +330,15 @@ function resetGame() {
   consecutivePasses = 0;
 
   gameEnded = false;
+
+  awaitingCapturePerimeter = false;
+  captureQuiz = null;
+
   awaitingEndArea = false;
   endGameState = null;
 
   stopConfetti();
-  hideQuiz();
+  hideAllQuizzes();
 
   document.getElementById('captureMsg').textContent = '';
   updateUI();
@@ -340,24 +362,68 @@ function updateUI() {
   }
 }
 
-function showQuiz(titleText, helpText) {
-  document.getElementById('quizTitle').textContent = titleText;
-  document.getElementById('quizHelp').textContent = helpText;
+function hideAllQuizzes() {
+  document.getElementById('captureQuizPanel').style.display = 'none';
+  document.getElementById('endQuizPanel').style.display = 'none';
+  document.getElementById('perimeterInput').value = '';
   document.getElementById('areaInput').value = '';
-  document.getElementById('quizPanel').style.display = 'block';
+}
+
+function showCaptureQuiz(perimeter) {
+  document.getElementById('perimeterInput').value = '';
+  document.getElementById('captureQuizTitle').textContent =
+    `Capture: perimeter?`;
+  document.getElementById('captureQuizHelp').textContent =
+    `Red dots mark each boundary edge. Enter the PERIMETER (grid-edges) of the red highlighted capture area.`;
+  document.getElementById('captureQuizPanel').style.display = 'block';
+  setTimeout(() => document.getElementById('perimeterInput').focus(), 0);
+}
+
+function showEndQuiz(titleText, helpText) {
+  document.getElementById('areaInput').value = '';
+  document.getElementById('endQuizTitle').textContent = titleText;
+  document.getElementById('endQuizHelp').textContent = helpText;
+  document.getElementById('endQuizPanel').style.display = 'block';
   setTimeout(() => document.getElementById('areaInput').focus(), 0);
 }
 
-function hideQuiz() {
-  document.getElementById('quizPanel').style.display = 'none';
-  document.getElementById('areaInput').value = '';
+function endCaptureQuiz() {
+  awaitingCapturePerimeter = false;
+  captureQuiz = null;
+  document.getElementById('captureQuizPanel').style.display = 'none';
+  document.getElementById('perimeterInput').value = '';
+  drawBoard();
 }
 
-function endQuiz() {
+function endEndQuiz() {
   awaitingEndArea = false;
-  hideQuiz();
-  updateUI();
+  document.getElementById('endQuizPanel').style.display = 'none';
+  document.getElementById('areaInput').value = '';
   drawBoard();
+}
+
+function submitCapturePerimeter() {
+  if (!awaitingCapturePerimeter || !captureQuiz) return;
+  const answer = parseInt(document.getElementById('perimeterInput').value, 10);
+  if (!Number.isFinite(answer)) {
+    document.getElementById('captureMsg').textContent = 'Not a valid number.';
+    endCaptureQuiz();
+    return;
+  }
+
+  const correct = (answer === captureQuiz.perimeter);
+  const who = captureQuiz.capturer === 1 ? 'Black' : 'White';
+  document.getElementById('captureMsg').textContent = correct
+    ? `Correct! (${who} capture perimeter = ${captureQuiz.perimeter})`
+    : `Wrong (correct perimeter was ${captureQuiz.perimeter}).`;
+
+  endCaptureQuiz();
+}
+
+function skipCapturePerimeter() {
+  if (!awaitingCapturePerimeter) return;
+  document.getElementById('captureMsg').textContent = 'Skipped capture perimeter.';
+  endCaptureQuiz();
 }
 
 function submitArea() {
@@ -366,7 +432,7 @@ function submitArea() {
   const answer = parseInt(document.getElementById('areaInput').value, 10);
   if (!Number.isFinite(answer)) {
     document.getElementById('captureMsg').textContent = 'Not a valid number.';
-    endQuiz();
+    endEndQuiz();
     return;
   }
 
@@ -381,18 +447,18 @@ function submitArea() {
       `Wrong total area (correct was ${endGameState.totalArea}). ${label} does NOT win.`;
   }
 
-  endQuiz();
+  endEndQuiz();
 }
 
 function skipArea() {
   if (!awaitingEndArea || !endGameState) return;
   const label = endGameState.winner === 1 ? 'Black' : 'White';
   document.getElementById('captureMsg').textContent = `Skipped. ${label} does NOT win.`;
-  endQuiz();
+  endEndQuiz();
 }
 
 function pass() {
-  if (awaitingEndArea || gameEnded) return;
+  if (awaitingCapturePerimeter || awaitingEndArea || gameEnded) return;
 
   lastCaptured = [];
   consecutivePasses++;
@@ -413,12 +479,12 @@ function pass() {
 }
 
 function endGame() {
-  if (awaitingEndArea || gameEnded) return;
+  if (awaitingCapturePerimeter || awaitingEndArea || gameEnded) return;
 
   gameEnded = true;
   lastCaptured = [];
 
-  // Decide winner by (territory + captures) as before.
+  // Winner by (territory + captures)
   const blackTotal = blackTerritory + blackCaptures;
   const whiteTotal = whiteTerritory + whiteCaptures;
   let winner = 0;
@@ -432,7 +498,6 @@ function endGame() {
     return;
   }
 
-  // Show ALL enclosed areas for BOTH players (visual), but quiz only TOTAL AREA for winner.
   const blackRegions = findAllEnclosuresForPlayer(1);
   const whiteRegions = findAllEnclosuresForPlayer(2);
 
@@ -451,17 +516,16 @@ function endGame() {
 
   endGameState = {
     winner,
-    unionCells: winnerUnion,
-    totalArea: winnerUnion.size,
-    // for drawing both colors
     blackUnion,
-    whiteUnion
+    whiteUnion,
+    winnerUnion,
+    totalArea: winnerUnion.size
   };
 
   const label = winner === 1 ? 'Black' : 'White';
   awaitingEndArea = true;
 
-  showQuiz(
+  showEndQuiz(
     `End Game: ${label} total area?`,
     `All enclosed areas are highlighted (Black = blue, White = green). Enter TOTAL area for ${label}'s highlighted intersections.`
   );
@@ -473,7 +537,7 @@ function endGame() {
 }
 
 boardCanvas.addEventListener('click', (e) => {
-  if (awaitingEndArea || gameEnded) return;
+  if (awaitingCapturePerimeter || awaitingEndArea || gameEnded) return;
   if (consecutivePasses >= 2) return;
 
   const rect = boardCanvas.getBoundingClientRect();
@@ -512,15 +576,24 @@ boardCanvas.addEventListener('click', (e) => {
 
   consecutivePasses = 0;
 
+  // If capture happened: prompt for perimeter of captured region (the emptied points)
   if (lastCaptured.length > 0) {
-    const n = lastCaptured.length;
+    const cells = lastCaptured.slice();
+    const perimeter = perimeterOfCellSet(cells);
+
+    captureQuiz = { cells, perimeter, capturer: player };
+    awaitingCapturePerimeter = true;
+
     const who = player === 1 ? 'Black' : 'White';
     document.getElementById('captureMsg').textContent =
-      `${who} captured ${n} stone${n > 1 ? 's' : ''}!`;
+      `${who} captured ${cells.length} stone${cells.length !== 1 ? 's' : ''}! Enter perimeter.`;
+
+    showCaptureQuiz(perimeter);
   } else {
     document.getElementById('captureMsg').textContent = '';
   }
 
+  // Next player regardless (but clicks are blocked while quiz is open)
   currentPlayer = 3 - player;
   updateUI();
   drawBoard();
@@ -583,6 +656,34 @@ function capture(opponent) {
       }
     }
   }
+}
+
+/**
+ * Perimeter of a set of cells on the 9x9 point grid,
+ * counting boundary edges between a cell and a non-cell neighbor OR board edge.
+ */
+function perimeterOfCellSet(cellsArr) {
+  const set = new Set(cellsArr.map(([x,y]) => `${x},${y}`));
+  let perim = 0;
+
+  for (const key of set) {
+    const [xs, ys] = key.split(',');
+    const x = parseInt(xs, 10);
+    const y = parseInt(ys, 10);
+
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x + dx, ny = y + dy;
+
+      if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) {
+        perim += 1;
+        continue;
+      }
+
+      if (!set.has(`${nx},${ny}`)) perim += 1;
+    }
+  }
+
+  return perim;
 }
 
 // Find ALL enclosed empty regions for `player`.
@@ -659,7 +760,7 @@ function drawBoard() {
     ctx.stroke();
   }
 
-  // star points (hoshi)
+  // star points
   ctx.fillStyle = '#5a3a00';
   for (const [hx, hy] of [[2,2],[2,6],[6,2],[6,6],[4,4]]) {
     ctx.beginPath();
@@ -667,23 +768,27 @@ function drawBoard() {
     ctx.fill();
   }
 
-  // End game: show all enclosed areas (both players)
+  // End game: show all enclosed areas
   if (endGameState) {
     if (endGameState.blackUnion && endGameState.blackUnion.size > 0) {
-      const pts = Array.from(endGameState.blackUnion)
-        .map(k => k.split(',').map(n => parseInt(n, 10)));
-      drawCellsFill(pts, 'rgba(80, 160, 255, 0.25)'); // blue-ish
+      const pts = Array.from(endGameState.blackUnion).map(k => k.split(',').map(n => parseInt(n, 10)));
+      drawCellsFill(pts, 'rgba(80, 160, 255, 0.25)');
       drawCellsOutline(pts, '#2b6cff', 3);
     }
     if (endGameState.whiteUnion && endGameState.whiteUnion.size > 0) {
-      const pts = Array.from(endGameState.whiteUnion)
-        .map(k => k.split(',').map(n => parseInt(n, 10)));
-      drawCellsFill(pts, 'rgba(60, 200, 120, 0.22)'); // green-ish
+      const pts = Array.from(endGameState.whiteUnion).map(k => k.split(',').map(n => parseInt(n, 10)));
+      drawCellsFill(pts, 'rgba(60, 200, 120, 0.22)');
       drawCellsOutline(pts, '#1f9a57', 3);
     }
   }
 
-  // Stones
+  // Capture perimeter quiz highlight (red + ticks)
+  if (captureQuiz && captureQuiz.cells && captureQuiz.cells.length > 0) {
+    drawCellsFill(captureQuiz.cells, 'rgba(220, 60, 60, 0.16)');
+    drawCellsOutlineWithTicks(captureQuiz.cells, '#ff0000', 4);
+  }
+
+  // stones
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       if (board[y][x] === 0) continue;
@@ -737,6 +842,34 @@ function drawCellsOutline(cellsArr, strokeStyle, width) {
   }
 }
 
+// Outline + tick per boundary edge
+function drawCellsOutlineWithTicks(cellsArr, strokeStyle, width) {
+  const inSet = new Set(cellsArr.map(([x,y]) => `${x},${y}`));
+  const r = OUTLINE_R;
+  const tickR = 3;
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'square';
+  ctx.fillStyle = strokeStyle;
+
+  for (const [gx, gy] of cellsArr) {
+    const cx = (gx + 1) * CELL;
+    const cy = (gy + 1) * CELL;
+
+    if (!inSet.has(`${gx},${gy-1}`)) { ctx.beginPath(); ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy - r); ctx.stroke(); drawTick(cx, cy - r, tickR); }
+    if (!inSet.has(`${gx},${gy+1}`)) { ctx.beginPath(); ctx.moveTo(cx - r, cy + r); ctx.lineTo(cx + r, cy + r); ctx.stroke(); drawTick(cx, cy + r, tickR); }
+    if (!inSet.has(`${gx-1},${gy}`)) { ctx.beginPath(); ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx - r, cy + r); ctx.stroke(); drawTick(cx - r, cy, tickR); }
+    if (!inSet.has(`${gx+1},${gy}`)) { ctx.beginPath(); ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx + r, cy + r); ctx.stroke(); drawTick(cx + r, cy, tickR); }
+  }
+}
+
+function drawTick(x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 /* ── Confetti ───────────────────────────────────────────────────────────── */
 
 function startConfetti(durationMs) {
@@ -744,7 +877,6 @@ function startConfetti(durationMs) {
   confettiUntil = performance.now() + durationMs;
 
   const colors = ['#ff3b3b', '#ffd93b', '#3b82ff', '#22c55e', '#a855f7', '#ff7ab6'];
-
   for (let i = 0; i < 180; i++) {
     confettiParticles.push({
       x: Math.random() * confettiCanvas.width,
@@ -777,7 +909,6 @@ function confettiTick(now) {
     p.y += p.vy;
     p.rot += p.vr;
 
-    // wrap
     if (p.x < -20) p.x = confettiCanvas.width + 20;
     if (p.x > confettiCanvas.width + 20) p.x = -20;
 
@@ -796,14 +927,10 @@ function confettiTick(now) {
     cctx.restore();
   }
 
-  // drop particles that are off-screen for a long time
   confettiParticles = confettiParticles.filter(p => p.y < confettiCanvas.height + 60);
 
-  if (alive && confettiParticles.length > 0) {
-    requestAnimationFrame(confettiTick);
-  } else {
-    stopConfetti();
-  }
+  if (alive && confettiParticles.length > 0) requestAnimationFrame(confettiTick);
+  else stopConfetti();
 }
 
 resetGame();
