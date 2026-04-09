@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Small Go Game (9×9)</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f0ebe0;
+  display: flex;
+  min-height: 100vh;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px;
+}
+
+.sidebar {
+  width: 220px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
+
+.sidebar h2 { margin-top: 0; }
+
+.score-box {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0;
+  gap: 10px;
+}
+
+.score-player {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.score-player.black-score {
+  background: #222;
+  color: white;
+}
+
+.score-player.white-score {
+  background: #f5f5f5;
+  color: #222;
+  border: 2px solid #bbb;
+}
+
+.score-label { font-size: 12px; opacity: 0.8; }
+.score-value { font-size: 28px; }
+
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin: 12px 0;
+  font-weight: bold;
+}
+
+.turn-stone {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid #555;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.turn-stone.black { background: radial-gradient(circle at 35% 35%, #666, #000); }
+.turn-stone.white { background: radial-gradient(circle at 35% 35%, #fff, #ccc); }
+
+button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+
+.btn-pass { background: #4a9af0; color: white; }
+.btn-pass:hover { background: #3080d0; }
+.btn-restart { background: #e05050; color: white; }
+.btn-restart:hover { background: #c03030; }
+
+.rules {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.game-area { text-align: center; }
+
+.game-area h1 {
+  margin-top: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+canvas {
+  background: #dcb462;
+  border: 3px solid #8a6000;
+  border-radius: 4px;
+  display: block;
+  box-shadow: 4px 4px 14px rgba(0,0,0,0.28);
+  cursor: crosshair;
+}
+
+.capture-msg {
+  margin-top: 12px;
+  min-height: 28px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #c44;
+}
+
+.back-link {
+  display: block;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #4a9af0;
+  text-decoration: none;
+}
+
+.back-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>Go (9×9)</h2>
+
+  <div class="turn-indicator">
+    <div class="turn-stone black" id="turnStone"></div>
+    <span id="turnLabel">Black's turn</span>
+  </div>
+
+  <div class="score-box">
+    <div class="score-player black-score">
+      <div class="score-label">Black</div>
+      <div class="score-value" id="blackScore">0</div>
+      <div class="score-label">captures</div>
+      <div class="score-label" style="margin-top:8px;">territory</div>
+      <div class="score-value" style="font-size:22px;" id="blackTerritory">0</div>
+    </div>
+    <div class="score-player white-score">
+      <div class="score-label">White</div>
+      <div class="score-value" id="whiteScore">0</div>
+      <div class="score-label">captures</div>
+      <div class="score-label" style="margin-top:8px;">territory</div>
+      <div class="score-value" style="font-size:22px;" id="whiteTerritory">0</div>
+    </div>
+  </div>
+
+  <button class="btn-pass" onclick="pass()">Pass</button>
+  <button class="btn-restart" onclick="resetGame()">Restart</button>
+
+  <div class="rules">
+    <strong>Rules:</strong><br>
+    • Black goes first<br>
+    • Click a point to place a stone<br>
+    • A group with no liberties is captured<br>
+    • Captured region is outlined in red<br>
+    • Two passes in a row ends the game<br>
+    • If an enclosed empty region is detected, you'll be asked for its perimeter (grid-edges)
+  </div>
+
+  <a class="back-link" href="index.html">← Back to games</a>
+</div>
+
+<div class="game-area">
+  <h1>Small Go Game</h1>
+  <canvas id="board"></canvas>
+  <div class="capture-msg" id="captureMsg"></div>
+</div>
+
+<script>
+const SIZE = 9;
+const CANVAS_SIZE = 450;
+const CELL = CANVAS_SIZE / (SIZE + 1);
+const STONE_R = CELL / 2.4;
+const OUTLINE_R = CELL / 2;
+
+const canvas = document.getElementById('board');
+canvas.width = CANVAS_SIZE;
+canvas.height = CANVAS_SIZE;
+const ctx = canvas.getContext('2d');
+
+let board;
+let currentPlayer; // 1 = black, 2 = white
+let blackCaptures = 0;
+let whiteCaptures = 0;
+let blackTerritory = 0;
+let whiteTerritory = 0;
+
+let lastCaptured = []; // positions of stones captured on the most recent move
+let lastEnclosure = null; // { region: [[x,y],...], perimeter: number, owner: 1|2 }
+let consecutivePasses = 0;
+
+function resetGame() {
+  board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  currentPlayer = 1;
+  blackCaptures = 0;
+  whiteCaptures = 0;
+  blackTerritory = 0;
+  whiteTerritory = 0;
+  lastCaptured = [];
+  lastEnclosure = null;
+  consecutivePasses = 0;
+  document.getElementById('captureMsg').textContent = '';
+  updateUI();
+  drawBoard();
+}
+
+function updateUI() {
+  document.getElementById('blackScore').textContent = blackCaptures;
+  document.getElementById('whiteScore').textContent = whiteCaptures;
+  document.getElementById('blackTerritory').textContent = blackTerritory;
+  document.getElementById('whiteTerritory').textContent = whiteTerritory;
+
+  const stone = document.getElementById('turnStone');
+  const label = document.getElementById('turnLabel');
+  if (currentPlayer === 1) {
+    stone.className = 'turn-stone black';
+    label.textContent = "Black's turn";
+  } else {
+    stone.className = 'turn-stone white';
+    label.textContent = "White's turn";
+  }
+}
+
+function pass() {
+  lastCaptured = [];
+  lastEnclosure = null;
+  consecutivePasses++;
+  if (consecutivePasses >= 2) {
+    document.getElementById('captureMsg').textContent =
+      'Game over! Both players passed. Count territory to find the winner.';
+    drawBoard();
+    return;
+  }
+  document.getElementById('captureMsg').textContent =
+    (currentPlayer === 1 ? 'Black' : 'White') + ' passed.';
+  currentPlayer = 3 - currentPlayer;
+  updateUI();
+  drawBoard();
+}
+
+canvas.addEventListener('click', (e) => {
+  if (consecutivePasses >= 2) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const px = (e.clientX - rect.left) * scaleX;
+  const py = (e.clientY - rect.top) * scaleY;
+
+  const x = Math.round(px / CELL - 1);
+  const y = Math.round(py / CELL - 1);
+
+  if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
+  if (board[y][x] !== 0) return;
+
+  // Save state for potential undo (illegal self-capture)
+  const savedBoard = board.map(row => [...row]);
+  const savedBlack = blackCaptures;
+  const savedWhite = whiteCaptures;
+  const savedBlackTerr = blackTerritory;
+  const savedWhiteTerr = whiteTerritory;
+
+  board[y][x] = currentPlayer;
+  lastCaptured = [];
+  lastEnclosure = null;
+
+  capture(3 - currentPlayer); // capture any opponent groups with no liberties
+
+  // Legality check: own group must have at least one liberty after capture
+  if (!hasLiberty(x, y, currentPlayer)) {
+    board = savedBoard;
+    blackCaptures = savedBlack;
+    whiteCaptures = savedWhite;
+    blackTerritory = savedBlackTerr;
+    whiteTerritory = savedWhiteTerr;
+    lastCaptured = [];
+    lastEnclosure = null;
+    return;
+  }
+
+  consecutivePasses = 0;
+
+  // Auto-enclosure: compute outlined region for the player who just played
+  lastEnclosure = findBestEnclosureForPlayer(currentPlayer);
+
+  if (lastCaptured.length > 0) {
+    const n = lastCaptured.length;
+    const who = currentPlayer === 1 ? 'Black' : 'White';
+    document.getElementById('captureMsg').textContent =
+      `${who} captured ${n} stone${n > 1 ? 's' : ''}!`;
+  } else {
+    document.getElementById('captureMsg').textContent = '';
+  }
+
+  // Draw with outline visible before prompting (prompt blocks rendering otherwise)
+  drawBoard();
+
+  // Prompt for perimeter; award points only if correct
+  quizPerimeterAndScore(lastEnclosure);
+
+  currentPlayer = 3 - currentPlayer;
+  updateUI();
+  drawBoard();
+});
+
+function hasLiberty(startX, startY, player) {
+  const visited = new Set();
+  const stack = [[startX, startY]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    const k = `${cx},${cy}`;
+    if (visited.has(k)) continue;
+    visited.add(k);
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
+      if (board[ny][nx] === 0) return true;
+      if (board[ny][nx] === player) stack.push([nx, ny]);
+    }
+  }
+  return false;
+}
+
+function capture(opponent) {
+  const visited = new Set();
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      if (board[y][x] !== opponent) continue;
+      const k = `${x},${y}`;
+      if (visited.has(k)) continue;
+
+      const stack = [[x, y]];
+      const group = [];
+      let hasLib = false;
+
+      while (stack.length) {
+        const [cx, cy] = stack.pop();
+        const ck = `${cx},${cy}`;
+        if (visited.has(ck)) continue;
+        visited.add(ck);
+        group.push([cx, cy]);
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nx = cx + dx, ny = cy + dy;
+          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
+          if (board[ny][nx] === 0) hasLib = true;
+          else if (board[ny][nx] === opponent) stack.push([nx, ny]);
+        }
+      }
+
+      if (!hasLib) {
+        for (const [gx, gy] of group) {
+          board[gy][gx] = 0;
+          lastCaptured.push([gx, gy]);
+        }
+        if (opponent === 1) whiteCaptures += group.length;
+        else blackCaptures += group.length;
+      }
+    }
+  }
+}
+
+function findBestEnclosureForPlayer(player) {
+  const visited = new Set();
+  let best = null;
+
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      if (board[y][x] !== 0) continue;
+      const key = `${x},${y}`;
+      if (visited.has(key)) continue;
+
+      const stack = [[x, y]];
+      const region = [];
+      let touchesEdge = false;
+      let borderColors = new Set();
+      let perimeter = 0;
+
+      while (stack.length) {
+        const [cx, cy] = stack.pop();
+        const ck = `${cx},${cy}`;
+        if (visited.has(ck)) continue;
+        visited.add(ck);
+        region.push([cx, cy]);
+
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nx = cx + dx, ny = cy + dy;
+
+          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) {
+            touchesEdge = true;
+            perimeter += 1;
+            continue;
+          }
+
+          const v = board[ny][nx];
+          if (v === 0) {
+            const nk = `${nx},${ny}`;
+            if (!visited.has(nk)) stack.push([nx, ny]);
+          } else {
+            perimeter += 1;
+            borderColors.add(v);
+          }
+        }
+      }
+
+      if (!touchesEdge && borderColors.size === 1 && borderColors.has(player)) {
+        const cand = { region, perimeter, owner: player };
+        if (!best || cand.region.length > best.region.length) best = cand;
+      }
+    }
+  }
+
+  return best;
+}
+
+function quizPerimeterAndScore(enclosure) {
+  if (!enclosure) return;
+
+  const answerRaw = prompt('Perimeter (in grid-edges) of the outlined region?');
+  if (answerRaw === null) return;
+
+  const answer = parseInt(answerRaw, 10);
+  if (!Number.isFinite(answer)) {
+    document.getElementById('captureMsg').textContent = 'Not a number — no points awarded.';
+    return;
+  }
+
+  if (answer === enclosure.perimeter) {
+    const points = enclosure.region.length; // score area
+    if (enclosure.owner === 1) blackTerritory += points;
+    else whiteTerritory += points;
+
+    document.getElementById('captureMsg').textContent =
+      `Correct! +${points} territory point${points !== 1 ? 's' : ''}.`;
+    updateUI();
+  } else {
+    document.getElementById('captureMsg').textContent =
+      `Incorrect (correct perimeter was ${enclosure.perimeter}). No points awarded.`;
+  }
+}
+
+function drawBoard() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = '#5a3a00';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= SIZE; i++) {
+    ctx.beginPath();
+    ctx.moveTo(CELL, i * CELL);
+    ctx.lineTo(SIZE * CELL, i * CELL);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(i * CELL, CELL);
+    ctx.lineTo(i * CELL, SIZE * CELL);
+    ctx.stroke();
+  }
+
+  // Star points (hoshi) for 9×9
+  ctx.fillStyle = '#5a3a00';
+  for (const [hx, hy] of [[2,2],[2,6],[6,2],[6,6],[4,4]]) {
+    ctx.beginPath();
+    ctx.arc((hx + 1) * CELL, (hy + 1) * CELL, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Capture outline — drawn before stones so it appears underneath live stones
+  if (lastCaptured.length > 0) {
+    drawCaptureOutline(lastCaptured);
+  }
+
+  // Auto-enclosure outline (under stones)
+  if (lastEnclosure && lastEnclosure.region && lastEnclosure.region.length > 0) {
+    drawCaptureOutline(lastEnclosure.region);
+  }
+
+  // Stones
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      if (board[y][x] === 0) continue;
+      const cx = (x + 1) * CELL;
+      const cy = (y + 1) * CELL;
+
+      const grad = ctx.createRadialGradient(
+        cx - STONE_R * 0.35, cy - STONE_R * 0.35, STONE_R * 0.05,
+        cx, cy, STONE_R
+      );
+      if (board[y][x] === 1) {
+        grad.addColorStop(0, '#777');
+        grad.addColorStop(1, '#000');
+      } else {
+        grad.addColorStop(0, '#fff');
+        grad.addColorStop(1, '#ccc');
+      }
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, STONE_R, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+}
+
+function drawCaptureOutline(group) {
+  const inGroup = new Set(group.map(([x, y]) => `${x},${y}`));
+  const r = OUTLINE_R;
+
+  ctx.fillStyle = 'rgba(220, 60, 60, 0.22)';
+  for (const [gx, gy] of group) {
+    const cx = (gx + 1) * CELL;
+    const cy = (gy + 1) * CELL;
+    ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+  }
+
+  ctx.strokeStyle = '#dd2222';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'square';
+
+  for (const [gx, gy] of group) {
+    const cx = (gx + 1) * CELL;
+    const cy = (gy + 1) * CELL;
+
+    if (!inGroup.has(`${gx},${gy - 1}`)) {
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy - r);
+      ctx.lineTo(cx + r, cy - r);
+      ctx.stroke();
+    }
+    if (!inGroup.has(`${gx},${gy + 1}`)) {
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy + r);
+      ctx.lineTo(cx + r, cy + r);
+      ctx.stroke();
+    }
+    if (!inGroup.has(`${gx - 1},${gy}`)) {
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy - r);
+      ctx.lineTo(cx - r, cy + r);
+      ctx.stroke();
+    }
+    if (!inGroup.has(`${gx + 1},${gy}`)) {
+      ctx.beginPath();
+      ctx.moveTo(cx + r, cy - r);
+      ctx.lineTo(cx + r, cy + r);
+      ctx.stroke();
+    }
+  }
+}
+
+resetGame();
+</script>
+
+</body>
+</html>
