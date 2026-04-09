@@ -229,8 +229,8 @@ canvas#confetti{
 
   <!-- Capture perimeter quiz -->
   <div class="quiz-panel" id="captureQuizPanel">
-    <div class="quiz-title" id="captureQuizTitle">Capture: perimeter?</div>
-    <div class="quiz-help" id="captureQuizHelp">
+    <div class="quiz-title">Capture: perimeter?</div>
+    <div class="quiz-help">
       Red dots mark each boundary edge. Enter the PERIMETER (grid-edges) of the red highlighted capture area.
       <div class="small-note">
         If correct, you earn <strong>territory points equal to the number of captured stones</strong>.
@@ -253,6 +253,7 @@ canvas#confetti{
     <div class="quiz-title" id="endQuizTitle">End Game: total area?</div>
     <div class="quiz-help" id="endQuizHelp">
       Enclosed areas are highlighted (Black = blue, White = green). Enter TOTAL AREA for the winner’s color.
+      <div class="small-note">Edge territory counts.</div>
     </div>
 
     <div class="quiz-row">
@@ -272,7 +273,7 @@ canvas#confetti{
     • A group with no liberties is captured<br>
     • After every capture: answer the capture perimeter to earn territory points<br>
     • Winner uses TERRITORY score (tie-breaker: captures)<br>
-    • End Game still shows enclosed areas as a puzzle (now edge territory counts)
+    • End Game still shows enclosed areas as a puzzle (edge territory counts)
   </div>
 
   <a class="back-link" href="index.html">← Back to games</a>
@@ -293,6 +294,7 @@ const STONE_R = CELL / 2.4;
 const OUTLINE_R = CELL / 2;
 
 const boardCanvas = document.getElementById('board');
+if (!boardCanvas) throw new Error('canvas#board not found');
 boardCanvas.width = CANVAS_SIZE;
 boardCanvas.height = CANVAS_SIZE;
 const ctx = boardCanvas.getContext('2d');
@@ -316,12 +318,12 @@ let gameEnded = false;
 
 // Capture quiz state
 let awaitingCapturePerimeter = false;
-let captureQuiz = null;
-let awardedCaptureKeys = new Set(); // ensures a capture can only be awarded once
+let captureQuiz = null; // { cells, perimeter, capturer, points, key }
+let awardedCaptureKeys = new Set();
 
 // End game state
 let awaitingEndArea = false;
-let endGameState = null;
+let endGameState = null; // { winner, blackUnion, whiteUnion, winnerUnion, totalArea }
 
 // Confetti state
 let confettiParticles = [];
@@ -419,6 +421,7 @@ function captureKeyFromCells(cells, capturer) {
 
 function submitCapturePerimeter() {
   if (!awaitingCapturePerimeter || !captureQuiz) return;
+
   const answer = parseInt(document.getElementById('perimeterInput').value, 10);
   if (!Number.isFinite(answer)) {
     document.getElementById('captureMsg').textContent = 'Not a valid number.';
@@ -432,7 +435,6 @@ function submitCapturePerimeter() {
 
   if (correct && !alreadyAwarded) {
     awardedCaptureKeys.add(captureQuiz.key);
-
     if (captureQuiz.capturer === 1) blackTerritory += captureQuiz.points;
     else whiteTerritory += captureQuiz.points;
 
@@ -530,7 +532,7 @@ function endGame() {
     return;
   }
 
-  // Enclosed-area "puzzle" (NOW COUNTS EDGE-TOUCHING REGIONS)
+  // Enclosed-area puzzle: edge-touching regions allowed
   const blackRegions = findAllEnclosuresForPlayer(1);
   const whiteRegions = findAllEnclosuresForPlayer(2);
   const blackUnion = unionRegions(blackRegions);
@@ -558,7 +560,7 @@ function endGame() {
 
   showEndQuiz(
     `End Game: ${label} total area?`,
-    `All enclosed areas are highlighted (Black = blue, White = green). Enter TOTAL area for ${label}'s highlighted intersections (edge territory counts).`
+    `All enclosed areas are highlighted (Black = blue, White = green). Enter TOTAL area for ${label}'s highlighted intersections.`
   );
 
   document.getElementById('captureMsg').textContent =
@@ -583,6 +585,7 @@ boardCanvas.addEventListener('click', (e) => {
 
   const player = currentPlayer;
 
+  // Save for illegal self-capture rollback
   const savedBoard = board.map(row => [...row]);
   const savedBlack = blackCaptures;
   const savedWhite = whiteCaptures;
@@ -707,8 +710,7 @@ function perimeterOfCellSet(cellsArr) {
   return perim;
 }
 
-// Enclosed-area display only (for end game visualization)
-// CHANGE: regions touching the edge ARE allowed, edge counts as a boundary.
+// Edge-aware enclosed regions
 function findAllEnclosuresForPlayer(player) {
   const visited = new Set();
   const results = [];
@@ -732,12 +734,7 @@ function findAllEnclosuresForPlayer(player) {
 
         for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
           const nx = cx + dx, ny = cy + dy;
-
-          // Edge is a wall; do NOT disqualify
-          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) {
-            continue;
-          }
-
+          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue; // edge is wall
           const v = board[ny][nx];
           if (v === 0) {
             const nk = `${nx},${ny}`;
@@ -789,21 +786,21 @@ function drawBoard() {
     ctx.fill();
   }
 
-  // End game: show all enclosed areas
+  // endgame enclosed areas
   if (endGameState) {
     if (endGameState.blackUnion && endGameState.blackUnion.size > 0) {
-      const pts = Array.from(endGameState.blackUnion).map(k => k.split(',').map(n => parseInt(n, 10)));
+      const pts = Array.from(endGameState.blackUnion).map(k => k.split(',').map(n => parseInt(n,10)));
       drawCellsFill(pts, 'rgba(80, 160, 255, 0.25)');
       drawCellsOutline(pts, '#2b6cff', 3);
     }
     if (endGameState.whiteUnion && endGameState.whiteUnion.size > 0) {
-      const pts = Array.from(endGameState.whiteUnion).map(k => k.split(',').map(n => parseInt(n, 10)));
+      const pts = Array.from(endGameState.whiteUnion).map(k => k.split(',').map(n => parseInt(n,10)));
       drawCellsFill(pts, 'rgba(60, 200, 120, 0.22)');
       drawCellsOutline(pts, '#1f9a57', 3);
     }
   }
 
-  // Capture quiz highlight
+  // capture quiz highlight
   if (captureQuiz && captureQuiz.cells && captureQuiz.cells.length > 0) {
     drawCellsFill(captureQuiz.cells, 'rgba(220, 60, 60, 0.16)');
     drawCellsOutlineWithTicks(captureQuiz.cells, '#ff0000', 4);
@@ -890,8 +887,7 @@ function drawTick(x, y, r) {
   ctx.fill();
 }
 
-/* ── Confetti ───────────────────────────────────────────────────────────── */
-
+/* Confetti */
 function startConfetti(durationMs) {
   confettiParticles = [];
   confettiUntil = performance.now() + durationMs;
@@ -910,7 +906,6 @@ function startConfetti(durationMs) {
       shape: Math.random() < 0.5 ? 'rect' : 'circle'
     });
   }
-
   requestAnimationFrame(confettiTick);
 }
 
@@ -949,8 +944,11 @@ function confettiTick(now) {
 
   confettiParticles = confettiParticles.filter(p => p.y < confettiCanvas.height + 60);
 
-  if (alive && confettiParticles.length > 0) requestAnimationFrame(confettiTick);
-  else stopConfetti();
+  if (alive && confettiParticles.length > 0) {
+    requestAnimationFrame(confettiTick);
+  } else {
+    stopConfetti();
+  }
 }
 
 resetGame();
