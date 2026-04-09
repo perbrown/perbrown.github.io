@@ -25,6 +25,10 @@ body {
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   flex-shrink: 0;
+
+  /* keep buttons visible even on small screens */
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 .sidebar h2 { margin-top: 0; }
@@ -128,7 +132,7 @@ button {
 }
 
 .quiz-actions {
-  /* buttons on their own next line, easy to see */
+  /* Submit/Skip on next line */
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
@@ -275,6 +279,12 @@ let gameEnded = false;
 let endGameWinner = 0;
 let endGameEnclosure = null;
 
+/**
+ * Prevents the same enclosure from being detected/asked over and over.
+ * Keyed by owner + sorted list of region points.
+ */
+let seenEnclosures = new Set();
+
 function resetGame() {
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
   currentPlayer = 1;
@@ -293,6 +303,8 @@ function resetGame() {
   gameEnded = false;
   endGameWinner = 0;
   endGameEnclosure = null;
+
+  seenEnclosures = new Set();
 
   hideQuiz();
   document.getElementById('captureMsg').textContent = '';
@@ -337,6 +349,22 @@ function endPerimeterQuiz() {
   hideQuiz();
   updateUI();
   drawBoard();
+}
+
+function enclosureKey(enclosure) {
+  const pts = enclosure.region
+    .map(([x, y]) => `${x},${y}`)
+    .sort()
+    .join(';');
+  return `${enclosure.owner}|${pts}`;
+}
+
+function isEnclosureSeen(enclosure) {
+  return seenEnclosures.has(enclosureKey(enclosure));
+}
+
+function markEnclosureSeen(enclosure) {
+  seenEnclosures.add(enclosureKey(enclosure));
 }
 
 function submitPerimeter() {
@@ -415,7 +443,6 @@ function endGame() {
 
   gameEnded = true;
 
-  // Winner = higher (territory + captures). Tie => no winner.
   const blackTotal = blackTerritory + blackCaptures;
   const whiteTotal = whiteTerritory + whiteCaptures;
 
@@ -441,10 +468,19 @@ function endGame() {
     return;
   }
 
-  // Highlight winner’s enclosed open intersections (empty region).
   lastEnclosure = endGameEnclosure;
 
-  // Ask perimeter on screen; if correct, winner wins.
+  // If we already quizzed this exact enclosure earlier, don't keep quizzing it.
+  if (isEnclosureSeen(endGameEnclosure)) {
+    const who = endGameWinner === 1 ? 'Black' : 'White';
+    document.getElementById('captureMsg').textContent =
+      `End Game: ${who} is ahead. (That enclosed region was already quizzed earlier.)`;
+    drawBoard();
+    return;
+  }
+
+  // Mark as seen and prompt once.
+  markEnclosureSeen(endGameEnclosure);
   awaitingPerimeter = true;
   pendingEnclosure = endGameEnclosure;
 
@@ -476,7 +512,6 @@ canvas.addEventListener('click', (e) => {
   if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
   if (board[y][x] !== 0) return;
 
-  // Save state for potential undo (illegal self-capture)
   const savedBoard = board.map(row => [...row]);
   const savedBlack = blackCaptures;
   const savedWhite = whiteCaptures;
@@ -489,7 +524,6 @@ canvas.addEventListener('click', (e) => {
 
   capture(3 - currentPlayer);
 
-  // Legality: own group must have a liberty after capture
   if (!hasLiberty(x, y, currentPlayer)) {
     board = savedBoard;
     blackCaptures = savedBlack;
@@ -503,9 +537,10 @@ canvas.addEventListener('click', (e) => {
 
   consecutivePasses = 0;
 
-  // Optional mid-game enclosure quiz (can remove if you only want End Game quiz)
-  lastEnclosure = findBestEnclosureForPlayer(currentPlayer);
+  // Enclosure detection for player who just played.
+  const enclosure = findBestEnclosureForPlayer(currentPlayer);
 
+  // capture message
   if (lastCaptured.length > 0) {
     const n = lastCaptured.length;
     const who = currentPlayer === 1 ? 'Black' : 'White';
@@ -519,15 +554,22 @@ canvas.addEventListener('click', (e) => {
   currentPlayer = 3 - currentPlayer;
   updateUI();
 
-  // mid-game quiz prompt (on-screen)
-  if (lastEnclosure) {
+  // Only quiz if it's a NEW enclosure we haven't seen before.
+  if (enclosure && !isEnclosureSeen(enclosure)) {
+    lastEnclosure = enclosure;
+    markEnclosureSeen(enclosure);
+
     awaitingPerimeter = true;
-    pendingEnclosure = lastEnclosure;
-    const who = pendingEnclosure.owner === 1 ? 'Black' : 'White';
+    pendingEnclosure = enclosure;
+
+    const who = enclosure.owner === 1 ? 'Black' : 'White';
     showQuiz(
       `${who}: perimeter?`,
       'Count the red boundary edges. Each boundary edge has a small red dot (“tick”).'
     );
+  } else {
+    // Don't keep highlighting the same region forever.
+    lastEnclosure = null;
   }
 
   drawBoard();
@@ -674,12 +716,12 @@ function drawBoard() {
     ctx.fill();
   }
 
-  // capture region (optional highlight)
+  // capture highlight
   if (lastCaptured.length > 0) {
     drawRegionOutline(lastCaptured, { withTicks: false, fill: 'rgba(220, 60, 60, 0.18)' });
   }
 
-  // enclosure highlight (end game uses blue tint, still red outline + ticks)
+  // enclosure highlight (end-game uses blue tint)
   if (lastEnclosure && lastEnclosure.region && lastEnclosure.region.length > 0) {
     const fill = gameEnded ? 'rgba(80, 160, 255, 0.20)' : 'rgba(220, 60, 60, 0.18)';
     drawRegionOutline(lastEnclosure.region, { withTicks: true, fill });
@@ -766,22 +808,4 @@ function drawRegionOutline(group, opts) {
     // right
     if (!inGroup.has(`${gx + 1},${gy}`)) {
       ctx.beginPath();
-      ctx.moveTo(cx + r, cy - r);
-      ctx.lineTo(cx + r, cy + r);
-      ctx.stroke();
-      if (opts.withTicks) drawTick(cx + r, cy, tickR);
-    }
-  }
-}
-
-function drawTick(x, y, r) {
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-resetGame();
-</script>
-
-</body>
-</html>
+      ctx.moveTo(cx +*
