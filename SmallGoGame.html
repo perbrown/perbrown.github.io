@@ -188,6 +188,12 @@ canvas#confetti{
   text-decoration:none;
 }
 .back-link:hover{ text-decoration:underline; }
+
+.small-note{
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+}
 </style>
 </head>
 <body>
@@ -221,14 +227,15 @@ canvas#confetti{
   <button class="btn-end" onclick="endGame()">End Game</button>
   <button class="btn-restart" onclick="resetGame()">Restart</button>
 
-  <!-- Capture perimeter quiz (shown after every capture) -->
+  <!-- Capture perimeter quiz -->
   <div class="quiz-panel" id="captureQuizPanel">
     <div class="quiz-title" id="captureQuizTitle">Capture: perimeter?</div>
     <div class="quiz-help" id="captureQuizHelp">
       Red dots mark each boundary edge. Enter the PERIMETER (grid-edges) of the red highlighted capture area.
-      <div style="margin-top:6px; font-weight:bold;">
-        Correct = earn territory points equal to the number of captured stones.
+      <div class="small-note">
+        If correct, you earn <strong>territory points equal to the number of captured stones</strong>.
       </div>
+      <div class="small-note" id="captureQuizMeta"></div>
     </div>
 
     <div class="quiz-row">
@@ -241,7 +248,7 @@ canvas#confetti{
     </div>
   </div>
 
-  <!-- End-game total-area quiz (confetti if correct) -->
+  <!-- End game area quiz -->
   <div class="quiz-panel" id="endQuizPanel">
     <div class="quiz-title" id="endQuizTitle">End Game: total area?</div>
     <div class="quiz-help" id="endQuizHelp">
@@ -263,10 +270,9 @@ canvas#confetti{
     • Black goes first<br>
     • Click a point to place a stone<br>
     • A group with no liberties is captured<br>
-    • After every capture: answer the capture perimeter to earn territory points (equal to captured stones)<br>
-    • Two passes in a row ends the game<br>
-    • End Game: highlights ALL enclosed areas and asks for winner’s TOTAL area<br>
-    • Winner is based on TERRITORY score (tie-breaker: captures)
+    • After every capture: answer the capture perimeter to earn territory points<br>
+    • Winner uses TERRITORY score (tie-breaker: captures)<br>
+    • End Game still shows enclosed areas as a puzzle
   </div>
 
   <a class="back-link" href="index.html">← Back to games</a>
@@ -287,7 +293,6 @@ const STONE_R = CELL / 2.4;
 const OUTLINE_R = CELL / 2;
 
 const boardCanvas = document.getElementById('board');
-if (!boardCanvas) throw new Error('canvas#board not found');
 boardCanvas.width = CANVAS_SIZE;
 boardCanvas.height = CANVAS_SIZE;
 const ctx = boardCanvas.getContext('2d');
@@ -311,11 +316,22 @@ let gameEnded = false;
 
 // Capture quiz state
 let awaitingCapturePerimeter = false;
-let captureQuiz = null; // { cells, perimeter, capturer, points }
+let captureQuiz = null;
+/*
+captureQuiz = {
+  cells: Array<[x,y]>,
+  perimeter: number,
+  capturer: 1|2,
+  points: number,
+  awarded: boolean,
+  key: string
+}
+*/
+let awardedCaptureKeys = new Set(); // ensures a capture can only be awarded once
 
 // End game state
 let awaitingEndArea = false;
-let endGameState = null; // { winner, blackUnion, whiteUnion, winnerUnion, totalArea }
+let endGameState = null;
 
 // Confetti state
 let confettiParticles = [];
@@ -337,6 +353,7 @@ function resetGame() {
 
   awaitingCapturePerimeter = false;
   captureQuiz = null;
+  awardedCaptureKeys = new Set();
 
   awaitingEndArea = false;
   endGameState = null;
@@ -371,6 +388,7 @@ function hideAllQuizzes() {
   document.getElementById('endQuizPanel').style.display = 'none';
   document.getElementById('perimeterInput').value = '';
   document.getElementById('areaInput').value = '';
+  document.getElementById('captureQuizMeta').textContent = '';
 }
 
 function showCaptureQuiz() {
@@ -392,6 +410,7 @@ function endCaptureQuiz() {
   captureQuiz = null;
   document.getElementById('captureQuizPanel').style.display = 'none';
   document.getElementById('perimeterInput').value = '';
+  document.getElementById('captureQuizMeta').textContent = '';
   updateUI();
   drawBoard();
 }
@@ -401,6 +420,12 @@ function endEndQuiz() {
   document.getElementById('endQuizPanel').style.display = 'none';
   document.getElementById('areaInput').value = '';
   drawBoard();
+}
+
+function captureKeyFromCells(cells, capturer) {
+  // A stable key for "this capture region"
+  const pts = cells.map(([x,y]) => `${x},${y}`).sort().join(';');
+  return `${capturer}|${pts}`;
 }
 
 function submitCapturePerimeter() {
@@ -415,13 +440,21 @@ function submitCapturePerimeter() {
   const correct = (answer === captureQuiz.perimeter);
   const who = captureQuiz.capturer === 1 ? 'Black' : 'White';
 
-  if (correct) {
-    // Territory points are AWARDED ONLY on correct perimeter answers.
+  // Guard: award at most once per capture region.
+  const alreadyAwarded = awardedCaptureKeys.has(captureQuiz.key);
+
+  if (correct && !alreadyAwarded) {
+    awardedCaptureKeys.add(captureQuiz.key);
+
     if (captureQuiz.capturer === 1) blackTerritory += captureQuiz.points;
     else whiteTerritory += captureQuiz.points;
 
     document.getElementById('captureMsg').textContent =
       `Correct! ${who} earns +${captureQuiz.points} territory.`;
+  } else if (correct && alreadyAwarded) {
+    // This shouldn't usually happen, but if it does, explain it.
+    document.getElementById('captureMsg').textContent =
+      `Correct, but territory for this capture was already awarded.`;
   } else {
     document.getElementById('captureMsg').textContent =
       `Wrong (correct perimeter was ${captureQuiz.perimeter}). No territory awarded.`;
@@ -494,8 +527,7 @@ function endGame() {
   gameEnded = true;
   lastCaptured = [];
 
-  // WINNER uses TERRITORY score.
-  // Tie-breaker: captures.
+  // WINNER uses TERRITORY score (tie-breaker: captures)
   let winner = 0;
   if (blackTerritory > whiteTerritory) winner = 1;
   else if (whiteTerritory > blackTerritory) winner = 2;
@@ -512,7 +544,6 @@ function endGame() {
     return;
   }
 
-  // Still show enclosed areas as a puzzle, but it does NOT affect winner.
   const blackRegions = findAllEnclosuresForPlayer(1);
   const whiteRegions = findAllEnclosuresForPlayer(2);
 
@@ -594,11 +625,21 @@ boardCanvas.addEventListener('click', (e) => {
   if (lastCaptured.length > 0) {
     const cells = lastCaptured.slice();
     const perimeter = perimeterOfCellSet(cells);
+    const key = captureKeyFromCells(cells, player);
 
-    // Territory points to award on correct answer:
-    // equal to number of captured stones (as requested).
-    captureQuiz = { cells, perimeter, capturer: player, points: cells.length };
+    captureQuiz = {
+      cells,
+      perimeter,
+      capturer: player,
+      points: cells.length,
+      key
+    };
+
     awaitingCapturePerimeter = true;
+
+    // show some debugging meta to verify the numbers
+    document.getElementById('captureQuizMeta').textContent =
+      `Captured stones: ${cells.length} • Perimeter: ${perimeter}`;
 
     const who = player === 1 ? 'Black' : 'White';
     document.getElementById('captureMsg').textContent =
@@ -924,19 +965,4 @@ function confettiTick(now) {
       cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.65);
     } else {
       cctx.beginPath();
-      cctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
-      cctx.fill();
-    }
-    cctx.restore();
-  }
-
-  confettiParticles = confettiParticles.filter(p => p.y < confettiCanvas.height + 60);
-
-  if (alive && confettiParticles.length > 0) requestAnimationFrame(confettiTick);
-  else stopConfetti();
-}
-
-resetGame();
-</script>
-</body>
-</html>
+      cctx.arc(0, 0, p*
