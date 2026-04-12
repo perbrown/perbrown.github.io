@@ -81,31 +81,65 @@ exp:"Salt from food enters the blood, raising salt levels."},
 exp:"The body holds water to dilute the salt. Water follows salt."},
 
 {q:"Blood pressure?", choices:["Low","Normal","High"], correct:"High",
-exp:"More water increases blood volume, raising pressure."},
+exp:"More water increases blood volume, which can raise pressure."},
 
 {q:"Kidneys: salt?", choices:["Keep more","Remove more"], correct:"Remove more",
 exp:"Kidneys remove extra salt."},
 
-{q:"Kidneys: water?", choices:["Keep more","Remove more"], correct:"Remove more",
-exp:"Kidneys remove extra water to restore balance."}
+{q:"What do the kidneys do about water over time?",
+ choices:[
+   "Remove water right away",
+   "Hold water first, then remove excess salt and water later",
+   "Keep all the extra water"
+ ],
+ correct:"Hold water first, then remove excess salt and water later",
+ exp:"The body first holds water to dilute the salt, then the kidneys remove the extra salt and water to restore balance."}
 ]
 },
 
 {
-title: "You just ran a long race and are sweating.",
-sub: "",
+title: "You ran a long race and are sweating (you did NOT drink enough water).",
+sub: "You lost a lot of sweat but didn’t replace enough fluids.",
 questions: [
-{q:"Water level?", choices:["Low","Normal","High"], correct:"Low",
-exp:"Sweating removes water."},
+{q:"Water level?",
+choices:["Low","Normal","High"],
+correct:"Low",
+exp:"Sweating removes a lot of water, and not enough was replaced."},
+
+{q:"Salt level? You lost more water than salt",
+choices:["Low","Normal","High"],
+correct:"High",
+exp:"You lost more water than salt, so the blood becomes more concentrated (higher salt level). You lost more water than salt."},
+
+{q:"Kidneys: water?",
+choices:["Keep more","Remove more"],
+correct:"Keep more",
+exp:"The body is dehydrated, so the kidneys strongly conserve water to prevent further loss."},
+
+{q:"Kidneys: salts?",
+choices:["Keep more","Remove more"],
+correct:"Keep more",
+exp:"Even though salt is relatively high, the body prioritizes saving water. The kidneys hold onto salts temporarily because removing them would also cause more water loss."}
+]
+},
+
+{
+title: "You ran a long race and are sweating (you drank plenty of water).",
+sub: "You stayed well hydrated during the race.",
+questions: [
+{q:"Water level?", choices:["Low","Normal","High"], correct:"Normal",
+exp:"You replaced most of the water you lost."},
 
 {q:"Salt level?", choices:["Low","Normal","High"], correct:"Low",
-exp:"Sweat removes salts."},
+exp:"Sweat removes salt, and drinking water dilutes the blood."},
 
-{q:"Kidneys: water?", choices:["Keep more","Remove more"], correct:"Keep more",
-exp:"Body needs to conserve water."},
+{q:"Kidneys: water?",
+choices:["Keep more","Remove more","Do neither (maintain balance)"],
+correct:"Do neither (maintain balance)",
+exp:"When water levels are normal, the kidneys mainly maintain balance rather than strongly conserving or removing water."},
 
 {q:"Kidneys: salts?", choices:["Keep more","Remove more"], correct:"Keep more",
-exp:"Salts are also low, so they are conserved."}
+exp:"Salt levels are low, so the body conserves them."}
 ]
 },
 
@@ -116,8 +150,8 @@ questions: [
 {q:"Water level?", choices:["Low","Normal","High"], correct:"High",
 exp:"Drinking increases body water."},
 
-{q:"Blood pressure?", choices:["Low","Normal","High"], correct:"High",
-exp:"More fluid increases pressure."},
+{q:"Blood pressure (temporary change only)?", choices:["Low","Normal","High"], correct:"High",
+exp:"Extra fluid may briefly increase pressure before the body corrects it."},
 
 {q:"Kidneys: water?", choices:["Keep more","Remove more"], correct:"Remove more",
 exp:"Kidneys remove excess water."}
@@ -144,7 +178,7 @@ questions: [
 exp:"Extra acids lower the pH of the blood."},
 
 {q:"Kidneys action?", choices:["Remove acid","Keep acid"], correct:"Remove acid",
-exp:"Kidneys remove hydrogen ions to balance pH."}
+exp:"Kidneys remove acids to help balance pH."}
 ]
 },
 
@@ -155,8 +189,8 @@ questions: [
 {q:"Oxygen level?", choices:["Low","Normal","High"], correct:"Low",
 exp:"Less oxygen is available in the body."},
 
-{q:"Kidneys action?", choices:["Make more red blood cells","Do nothing"], correct:"Make more red blood cells",
-exp:"Kidneys signal the body to produce more red blood cells to carry oxygen."}
+{q:"Kidneys action?", choices:["Signal the body to make more red blood cells","Do nothing"], correct:"Signal the body to make more red blood cells",
+exp:"Kidneys release a signal that tells the body to produce more red blood cells."}
 ]
 }
 ];
