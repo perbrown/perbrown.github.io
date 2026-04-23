@@ -1,13 +1,13 @@
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Morse Riddles (Grade 6)</title>
+  <title>Morse Riddles (Grade 6) — 40</title>
   <style>
     :root {
       --bg: #0b1020;
-      --card: #121a33;
       --text: #e9ecff;
       --muted: #a9b2df;
       --good: #2fe38b;
@@ -33,7 +33,6 @@
       gap: 16px;
       align-items: start;
     }
-
     @media (max-width: 980px) {
       .layout { grid-template-columns: 1fr; }
       .side { position: static !important; }
@@ -182,44 +181,21 @@
       box-shadow: 0 0 0 4px rgba(122,162,255,0.14);
     }
 
-    .toggles {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      justify-content: flex-end;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .toggle {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      padding: 6px 10px;
+    /* Signal light */
+    #signalLight{
+      width: 34px;
+      height: 34px;
       border-radius: 999px;
       border: 1px solid var(--border);
-      background: rgba(255,255,255,0.05);
-      user-select: none;
+      background: rgba(255,255,255,0.06);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25);
     }
-    .toggle input { transform: translateY(1px); }
-
-    .visualMorse {
-      display: none;
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.15);
-    }
-    .visualMorse.show { display: block; }
-    .visualLine { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
-    .big { font-size: 18px; }
-    .codeChip {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.05);
+    #signalLight.on{
+      background: rgba(122,162,255,0.95);
+      box-shadow:
+        0 0 20px rgba(122,162,255,0.85),
+        0 0 60px rgba(122,162,255,0.35);
+      border-color: rgba(122,162,255,0.9);
     }
 
     /* Side reference panel */
@@ -265,21 +241,15 @@
           <div class="label">Riddle <span class="mono" id="riddleCount"></span></div>
           <div class="q" id="riddleText"></div>
 
-          <div class="toggles" aria-label="Toggles">
-            <label class="toggle">
+          <div class="typeRow small" style="justify-content: space-between;">
+            <label style="display:inline-flex;align-items:center;gap:8px;user-select:none;">
               <input type="checkbox" id="showVisual" />
-              Show Morse visually
+              Show signal light
             </label>
-          </div>
 
-          <div class="visualMorse" id="visualMorse" aria-live="polite">
-            <div class="visualLine">
-              <span class="pill">Now playing</span>
-              <span class="big">Letter:</span> <span class="codeChip" id="visualLetter">—</span>
-              <span class="big">Code:</span> <span class="codeChip" id="visualCode">—</span>
-            </div>
-            <div class="small" style="margin-top:8px;">
-              Dots are short beeps. Dashes are long beeps.
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="pill">Signal</span>
+              <div id="signalLight" aria-label="Morse signal light"></div>
             </div>
           </div>
 
@@ -345,7 +315,6 @@
   </div>
 
   <script>
-    // Morse map
     const MORSE = {
       A: ".-",    B: "-...",  C: "-.-.",  D: "-..",   E: ".",
       F: "..-.",  G: "--.",   H: "....",  I: "..",    J: ".---",
@@ -357,7 +326,7 @@
       5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----."
     };
 
-    // Up to 20 grade-6-friendly riddles
+    // 40 grade-6-friendly riddles.
     // Answers are uppercase and may contain spaces only (letters A-Z + spaces).
     const RIDDLES = [
       { q: "I have hands, but I can’t clap. I have a face, but no eyes. What am I?", a: "A CLOCK", hint: "It shows time." },
@@ -368,18 +337,38 @@
       { q: "What has words but never speaks?", a: "A BOOK", hint: "You read it." },
       { q: "What kind of room has no doors or windows?", a: "A MUSHROOM", hint: "It’s a fungus." },
       { q: "What runs but never walks?", a: "WATER", hint: "Rivers do this." },
-      { q: "What has a bed but never sleeps?", a: "A RIVER", hint: "Its bed is made of rocks/sand." },
+      { q: "What has a bed but never sleeps?", a: "A RIVER", hint: "Its bed is rocks/sand." },
       { q: "What has one eye but can’t see?", a: "A NEEDLE", hint: "Used for sewing." },
       { q: "What can you catch but not throw?", a: "A COLD", hint: "You might sneeze." },
-      { q: "What has a thumb and four fingers but isn’t alive?", a: "A GLOVE", hint: "You wear it on your hand." },
-      { q: "What has legs but doesn’t walk?", a: "A TABLE", hint: "It holds things up." },
+      { q: "What has a thumb and four fingers but isn’t alive?", a: "A GLOVE", hint: "You wear it." },
+      { q: "What has legs but doesn’t walk?", a: "A TABLE", hint: "Holds things up." },
       { q: "What is full of holes but still holds water?", a: "A SPONGE", hint: "Used for cleaning." },
-      { q: "What can travel around the world while staying in a corner?", a: "A STAMP", hint: "It goes on an envelope." },
+      { q: "What can travel around the world while staying in a corner?", a: "A STAMP", hint: "Mail." },
       { q: "What has a tail but no body?", a: "A COIN", hint: "Heads and tails." },
-      { q: "What has an end but no beginning?", a: "A RAINBOW", hint: "You see it after rain." },
-      { q: "What goes up when rain comes down?", a: "AN UMBRELLA", hint: "You hold it over your head." },
+      { q: "What has an end but no beginning?", a: "A RAINBOW", hint: "After rain." },
+      { q: "What goes up when rain comes down?", a: "AN UMBRELLA", hint: "Keeps you dry." },
       { q: "What has a head and a foot but no legs?", a: "A BED", hint: "You sleep on it." },
-      { q: "What is always in front of you but can’t be seen?", a: "THE FUTURE", hint: "It hasn’t happened yet." }
+      { q: "What is always in front of you but can’t be seen?", a: "THE FUTURE", hint: "Not happened yet." },
+
+      { q: "What has a mouth but never eats?", a: "A RIVER", hint: "Where it meets the sea." },
+      { q: "What has a ring but no finger?", a: "A TELEPHONE", hint: "It can ring." },
+      { q: "What has ears but cannot hear?", a: "CORN", hint: "A vegetable." },
+      { q: "What has a spine but no bones?", a: "A BOOK", hint: "On a bookshelf." },
+      { q: "What is light as a feather but even the strongest person can’t hold it for long?", a: "YOUR BREATH", hint: "In and out." },
+      { q: "What has four wheels and flies?", a: "A GARBAGE TRUCK", hint: "It flies insects around it." },
+      { q: "What can fill a room but takes up no space?", a: "LIGHT", hint: "From a lamp." },
+      { q: "What has a face and two hands but no arms or legs?", a: "A CLOCK", hint: "Time again." },
+      { q: "What begins with T ends with T and has T in it?", a: "A TEAPOT", hint: "You pour from it." },
+      { q: "What goes up but never comes down?", a: "YOUR AGE", hint: "Birthday." },
+      { q: "What has lots of eyes but can’t see?", a: "A POTATO", hint: "You can plant it." },
+      { q: "What has one head, one foot, and four legs?", a: "A BED", hint: "Another bed one." },
+      { q: "What has two hands but can’t clap?", a: "A CLOCK", hint: "Yep!" },
+      { q: "What can you keep after giving it to someone?", a: "YOUR WORD", hint: "A promise." },
+      { q: "What has a bottom at the top?", a: "A LEG", hint: "Think of your body." },
+      { q: "What has three letters and starts with GAS?", a: "A CAR", hint: "It uses gas." },
+      { q: "What has many teeth but can’t bite?", a: "A COMB", hint: "For hair." },
+      { q: "What kind of band never plays music?", a: "A RUBBER BAND", hint: "Stretchy." },
+      { q: "What has an eye but cannot see and is often used with thread?", a: "A NEEDLE", hint: "Sewing again." }
     ];
 
     // UI
@@ -401,13 +390,10 @@
     const wpmVal = document.getElementById("wpmVal");
     const muteBtn = document.getElementById("muteBtn");
     const audioState = document.getElementById("audioState");
+    const refGrid = document.getElementById("refGrid");
 
     const showVisual = document.getElementById("showVisual");
-    const visualMorse = document.getElementById("visualMorse");
-    const visualLetter = document.getElementById("visualLetter");
-    const visualCode = document.getElementById("visualCode");
-
-    const refGrid = document.getElementById("refGrid");
+    const signalLight = document.getElementById("signalLight");
 
     // Audio
     let audioCtx = null;
@@ -421,9 +407,10 @@
     // Game state
     let riddleIndex = 0;
     let normalizedAnswer = "";
-    let index = 0;         // position in answer string (includes spaces)
+    let index = 0; // position in answer string (includes spaces)
     let started = false;
 
+    // Timing (PARIS standard): dot = 1200ms / WPM
     function dotMs() {
       const wpm = Number(wpmSlider.value);
       return 1200 / wpm;
@@ -446,24 +433,47 @@
       audioState.textContent = "Audio: on";
     }
 
+    function lightOn() {
+      if (!showVisual || !signalLight) return;
+      if (!showVisual.checked) return;
+      signalLight.classList.add("on");
+    }
+
+    function lightOff() {
+      if (!signalLight) return;
+      signalLight.classList.remove("on");
+    }
+
     async function beep(durationMs) {
-      if (muted) { await sleep(durationMs); return; }
-      ensureAudio();
-      if (audioCtx.state === "suspended") await audioCtx.resume();
+      // Flash light only if enabled
+      lightOn();
 
-      gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(0.0, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.005);
+      try {
+        if (muted) {
+          // still show timing via the light
+          await sleep(durationMs);
+          return;
+        }
 
-      await sleep(durationMs);
+        ensureAudio();
+        if (audioCtx.state === "suspended") await audioCtx.resume();
 
-      gainNode.gain.linearRampToValueAtTime(0.0, audioCtx.currentTime + 0.01);
-      await sleep(15);
+        gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.005);
+
+        await sleep(durationMs);
+
+        gainNode.gain.linearRampToValueAtTime(0.0, audioCtx.currentTime + 0.01);
+        await sleep(15);
+      } finally {
+        lightOff();
+      }
     }
 
     async function playMorseForChar(ch) {
       const up = ch.toUpperCase();
-      if (up === " ") return;
+      if (up === " ") return; // spaces handled by gaps elsewhere
       const pattern = MORSE[up];
       if (!pattern) return;
 
@@ -483,17 +493,6 @@
       if (kind === "good") pill.classList.add("good");
       if (kind === "bad") pill.classList.add("bad");
       msg.innerHTML = text;
-    }
-
-    function setVisualForChar(ch) {
-      const up = ch.toUpperCase();
-      if (showVisual.checked && up !== " " && MORSE[up]) {
-        visualLetter.textContent = up;
-        visualCode.textContent = MORSE[up];
-      } else {
-        visualLetter.textContent = "—";
-        visualCode.textContent = "—";
-      }
     }
 
     function buildSlots() {
@@ -534,17 +533,14 @@
     function updateSlots() {
       const slotDivs = [...slotsEl.querySelectorAll(".slot")].filter(el => !el.classList.contains("space"));
 
-      // clear highlights + reveal letters
       let slotIdx = 0;
       for (let i = 0; i < normalizedAnswer.length; i++) {
         if (normalizedAnswer[i] === " ") continue;
-
         const slot = slotDivs[slotIdx++];
         slot.classList.remove("current");
         slot.textContent = (i < index) ? normalizedAnswer[i] : "•";
       }
 
-      // highlight current (next non-space)
       const nextPos = findNextLetterPos(index);
       if (nextPos !== -1) {
         const sIdx = answerPosToSlotIndex(nextPos);
@@ -588,14 +584,12 @@
       isPlaying = true;
       stopRequested = false;
 
-      setVisualForChar(ch);
       setFeedback("Listen", `Listening for letter ${lettersTypedSoFar() + 1}.`, "neutral");
 
       await playMorseForChar(ch);
-
       if (!stopRequested) await sleep(3 * dotMs()); // letter gap
-      isPlaying = false;
 
+      isPlaying = false;
       if (!stopRequested) {
         setFeedback("Type", "Now type the letter you just heard.", "neutral");
         letterInput.focus();
@@ -605,6 +599,7 @@
     async function playFromStart() {
       if (!started) return;
       stopRequested = true;
+      lightOff();
       await sleep(0);
       stopRequested = false;
 
@@ -616,12 +611,10 @@
         const ch = normalizedAnswer[i];
 
         if (ch === " ") {
-          setVisualForChar(" ");
-          await sleep(7 * dotMs());
+          await sleep(7 * dotMs()); // word gap
           continue;
         }
 
-        setVisualForChar(ch);
         await playMorseForChar(ch);
         await sleep(3 * dotMs());
       }
@@ -651,7 +644,8 @@
       index = 0;
 
       letterInput.value = "";
-      setVisualForChar(" ");
+      lightOff();
+
       buildSlots();
       updateSlots();
       updateProgress();
@@ -663,15 +657,14 @@
     async function finishRiddle() {
       const r = RIDDLES[riddleIndex];
       setFeedback("Done", `You solved it! The answer is <b>${r.a}</b>. Next riddle starts in 2 seconds…`, "good");
-      setVisualForChar(" ");
+      lightOff();
 
-      // advance to next riddle (loop back to start)
       await sleep(2000);
 
       const next = (riddleIndex + 1) % RIDDLES.length;
       await loadRiddle(next);
 
-      // If user already started once, keep started=true and auto-start the next one
+      // Keep the game going
       started = true;
       setEnabledState();
       setFeedback("Listen", "Next riddle… listen to the first letter.", "neutral");
@@ -741,10 +734,10 @@
       stopRequested = true;
       isPlaying = false;
       letterInput.value = "";
-      setVisualForChar(" ");
+      lightOff();
       setEnabledState();
       setFeedback("Ready", 'Click <span class="kbd">Start</span> to begin.', "neutral");
-      // keep current riddle, reset progress
+
       index = 0;
       buildSlots();
       updateSlots();
@@ -771,12 +764,15 @@
 
     // Events
     startBtn.addEventListener("click", startGame);
+
     replayLetterBtn.addEventListener("click", async () => {
       stopRequested = true;
+      lightOff();
       await sleep(0);
       stopRequested = false;
       await playCurrentLetter();
     });
+
     replayAllBtn.addEventListener("click", playFromStart);
 
     hintBtn.addEventListener("click", () => {
@@ -808,17 +804,9 @@
       letterInput.focus();
     });
 
-    showVisual.addEventListener("change", () => {
-      visualMorse.classList.toggle("show", showVisual.checked);
-      // update panel immediately for current letter
-      const ch = (started && index < normalizedAnswer.length) ? normalizedAnswer[index] : " ";
-      setVisualForChar(ch);
-    });
-
     // Init
     renderReference();
     wpmVal.textContent = wpmSlider.value;
-    visualMorse.classList.toggle("show", showVisual.checked);
     loadRiddle(0);
   </script>
 </body>
