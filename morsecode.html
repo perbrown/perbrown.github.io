@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Morse Riddle (Grade 6)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a33;
+      --text: #e9ecff;
+      --muted: #a9b2df;
+      --good: #2fe38b;
+      --bad: #ff5c7a;
+      --accent: #7aa2ff;
+      --border: rgba(255,255,255,0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 20% 0%, #15214a 0%, var(--bg) 55%, #070a14 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .app {
+      width: min(860px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+      overflow: hidden;
+    }
+    header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.15);
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+    header .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+    .wrap { padding: 20px; display: grid; gap: 16px; }
+
+    .card {
+      background: rgba(0,0,0,0.18);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .riddle {
+      display: grid;
+      gap: 10px;
+    }
+    .riddle .label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+    .riddle .q {
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+    button {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { border-color: rgba(255,255,255,0.25); }
+    button.primary { background: rgba(122,162,255,0.18); border-color: rgba(122,162,255,0.35); }
+    button.danger { background: rgba(255,92,122,0.12); border-color: rgba(255,92,122,0.3); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .status {
+      display: grid;
+      gap: 12px;
+    }
+
+    .progressRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .progressBar {
+      height: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progressBar > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(47,227,139,0.85), rgba(122,162,255,0.85));
+      transition: width 200ms ease;
+    }
+
+    .answerBox {
+      display: grid;
+      gap: 10px;
+    }
+    .slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 20px;
+    }
+    .slot {
+      width: 28px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .slot.current {
+      outline: 2px solid rgba(122,162,255,0.75);
+      box-shadow: 0 0 0 4px rgba(122,162,255,0.15);
+    }
+    .slot.space {
+      width: 14px;
+      border: none;
+      background: transparent;
+    }
+
+    .feedback {
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pill {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .pill.good { color: #0b1a10; background: rgba(47,227,139,0.9); border-color: rgba(47,227,139,0.9); }
+    .pill.bad { color: #22070d; background: rgba(255,92,122,0.9); border-color: rgba(255,92,122,0.9); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .typeRow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    input[type="text"]{
+      flex: 1;
+      min-width: 220px;
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.25);
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+    }
+    input[type="text"]:focus{
+      border-color: rgba(122,162,255,0.55);
+      box-shadow: 0 0 0 4px rgba(122,162,255,0.14);
+    }
+
+    details {
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    summary { cursor: pointer; font-weight: 650; color: var(--accent); }
+    .small { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .kbd { font-family: ui-monospace, monospace; border: 1px solid var(--border); padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Morse riddle game">
+    <header>
+      <div>
+        <h1>Morse Riddle Challenge</h1>
+        <div class="sub">Listen to each letter in Morse code, then type the answer one letter at a time.</div>
+      </div>
+      <div class="pill mono" id="audioState">Audio: ready</div>
+    </header>
+
+    <div class="wrap">
+      <section class="card riddle" aria-label="Riddle">
+        <div class="label">Riddle</div>
+        <div class="q" id="riddleText">
+          I have hands, but I can’t clap. I have a face, but no eyes. What am I?
+        </div>
+        <div class="small">Tip: Click <span class="kbd">Start</span>, then type the answer letter-by-letter. Spaces are added automatically.</div>
+      </section>
+
+      <section class="card controls" aria-label="Controls">
+        <div class="btns">
+          <button class="primary" id="startBtn">Start</button>
+          <button id="replayLetterBtn" disabled>Replay current letter</button>
+          <button id="replayAllBtn" disabled>Replay from start</button>
+          <button id="hintBtn">Hint</button>
+          <button class="danger" id="resetBtn">Reset</button>
+        </div>
+
+        <label class="typeRow small" style="gap:10px;">
+          <span class="pill">WPM</span>
+          <input id="wpm" type="range" min="6" max="22" value="12" />
+          <span class="mono" id="wpmVal">12</span>
+          <span style="width:12px;"></span>
+          <button id="muteBtn">Mute</button>
+        </label>
+      </section>
+
+      <section class="card status" aria-label="Game status">
+        <div class="progressRow">
+          <div class="small">
+            Progress: <span class="mono" id="progressText">0 / 0</span>
+          </div>
+          <div class="progressBar" aria-hidden="true"><div id="progressFill"></div></div>
+        </div>
+
+        <div class="answerBox">
+          <div class="small">Answer (you reveal it as you type):</div>
+          <div class="slots" id="slots" aria-label="Answer slots"></div>
+        </div>
+
+        <div class="typeRow" aria-label="Typing row">
+          <input id="letterInput" type="text" inputmode="text" autocomplete="off"
+                 placeholder="Type the next letter…" maxlength="1" disabled
+                 aria-label="Type next letter" />
+          <button id="submitBtn" disabled>Submit</button>
+        </div>
+
+        <div class="feedback" id="feedback" aria-live="polite">
+          <span class="pill" id="pill">Waiting</span>
+          <span id="msg">Click <span class="kbd">Start</span> to begin.</span>
+        </div>
+
+        <details>
+          <summary>How it works (student-friendly)</summary>
+          <div class="small">
+            Each letter is played as <b>Morse code</b>: short beeps (dots) and long beeps (dashes).
+            When you type the correct letter, you move to the next one.
+            If you type the wrong letter, you can try again.
+            <br><br>
+            Controls: <span class="kbd">Replay current letter</span>, <span class="kbd">Replay from start</span>, and speed (WPM).
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // Grade 6 riddle + answer
+    const RIDDLE = "I have hands, but I can’t clap. I have a face, but no eyes. What am I?";
+    const ANSWER = "A CLOCK"; // students type letters only; spaces auto-advance
+
+    // Morse map (A-Z, 0-9). We'll only need A-Z here but it's nice to be complete.
+    const MORSE = {
+      A: ".-",    B: "-...",  C: "-.-.",  D: "-..",   E: ".",
+      F: "..-.",  G: "--.",   H: "....",  I: "..",    J: ".---",
+      K: "-.-",   L: ".-..",  M: "--",    N: "-.",    O: "---",
+      P: ".--.",  Q: "--.-",  R: ".-.",   S: "...",   T: "-",
+      U: "..-",   V: "...-",  W: ".--",   X: "-..-",  Y: "-.--",
+      Z: "--..",
+      0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-",
+      5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----."
+    };
+
+    // UI elements
+    const riddleText = document.getElementById("riddleText");
+    const slotsEl = document.getElementById("slots");
+    const letterInput = document.getElementById("letterInput");
+    const submitBtn = document.getElementById("submitBtn");
+    const startBtn = document.getElementById("startBtn");
+    const replayLetterBtn = document.getElementById("replayLetterBtn");
+    const replayAllBtn = document.getElementById("replayAllBtn");
+    const hintBtn = document.getElementById("hintBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const pill = document.getElementById("pill");
+    const msg = document.getElementById("msg");
+    const progressText = document.getElementById("progressText");
+    const progressFill = document.getElementById("progressFill");
+    const wpmSlider = document.getElementById("wpm");
+    const wpmVal = document.getElementById("wpmVal");
+    const muteBtn = document.getElementById("muteBtn");
+    const audioState = document.getElementById("audioState");
+
+    // Audio (Web Audio API)
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
+
+    let muted = false;
+    let isPlaying = false;
+    let stopRequested = false;
+
+    // Game state
+    const normalizedAnswer = ANSWER.toUpperCase();
+    let index = 0; // position in normalizedAnswer
+    let started = false;
+
+    // Morse timing:
+    // PARIS standard: 1 dot = 1200ms / WPM
+    // dash = 3 dots
+    // intra-symbol gap = 1 dot
+    // letter gap = 3 dots (we'll include after each letter)
+    // word gap = 7 dots (we'll include when answer has spaces)
+    function dotMs() {
+      const wpm = Number(wpmSlider.value);
+      return 1200 / wpm;
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function ensureAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.0;
+      gainNode.connect(audioCtx.destination);
+
+      oscillator = audioCtx.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.value = 700; // pleasant-ish beep
+      oscillator.connect(gainNode);
+      oscillator.start();
+
+      audioState.textContent = "Audio: on";
+      audioState.classList.remove("bad");
+    }
+
+    async function beep(durationMs) {
+      if (muted) { await sleep(durationMs); return; }
+      ensureAudio();
+      // Some browsers require a resume after a gesture
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+
+      gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(0.0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.005);
+
+      await sleep(durationMs);
+
+      gainNode.gain.linearRampToValueAtTime(0.0, audioCtx.currentTime + 0.01);
+      await sleep(15);
+    }
+
+    async function playMorseForChar(ch) {
+      const up = ch.toUpperCase();
+      if (up === " ") return; // spaces handled elsewhere
+      const pattern = MORSE[up];
+      if (!pattern) return;
+
+      const d = dotMs();
+
+      for (let i = 0; i < pattern.length; i++) {
+        if (stopRequested) return;
+        const sym = pattern[i];
+        if (sym === ".") await beep(d);
+        else if (sym === "-") await beep(3 * d);
+
+        // intra-symbol gap (1 dot) except after last symbol
+        if (i < pattern.length - 1) await sleep(d);
+      }
+    }
+
+    async function playCurrentLetter() {
+      if (!started) return;
+      await skipSpaces();
+      if (index >= normalizedAnswer.length) return;
+
+      const ch = normalizedAnswer[index];
+      isPlaying = true;
+      stopRequested = false;
+
+      setFeedback("Waiting", `Listening for letter ${index + 1}.`, "neutral");
+
+      await playMorseForChar(ch);
+
+      // letter gap (3 dots)
+      if (!stopRequested) await sleep(3 * dotMs());
+
+      isPlaying = false;
+      if (!stopRequested) {
+        setFeedback("Type", "Now type the letter you just heard.", "neutral");
+        letterInput.focus();
+      }
+    }
+
+    async function playFromStart() {
+      if (!started) return;
+      stopRequested = true;
+      await sleep(0);
+      stopRequested = false;
+
+      isPlaying = true;
+      setFeedback("Replay", "Replaying from the start…", "neutral");
+
+      // play from beginning up to current index (including spaces)
+      for (let i = 0; i <= index && i < normalizedAnswer.length; i++) {
+        if (stopRequested) break;
+        const ch = normalizedAnswer[i];
+        if (ch === " ") {
+          // word gap: 7 dots
+          await sleep(7 * dotMs());
+          continue;
+        }
+        await playMorseForChar(ch);
+        await sleep(3 * dotMs());
+      }
+
+      isPlaying = false;
+      if (!stopRequested) {
+        setFeedback("Type", "Type the next letter.", "neutral");
+        letterInput.focus();
+      }
+    }
+
+    function setFeedback(tag, text, kind) {
+      pill.textContent = tag;
+      pill.classList.remove("good", "bad");
+      if (kind === "good") pill.classList.add("good");
+      if (kind === "bad") pill.classList.add("bad");
+      msg.innerHTML = text;
+    }
+
+    function buildSlots() {
+      slotsEl.innerHTML = "";
+      for (let i = 0; i < normalizedAnswer.length; i++) {
+        const ch = normalizedAnswer[i];
+        if (ch === " ") {
+          const sp = document.createElement("div");
+          sp.className = "slot space";
+          slotsEl.appendChild(sp);
+          continue;
+        }
+        const d = document.createElement("div");
+        d.className = "slot";
+        d.dataset.pos = String(i);
+        d.textContent = "•"; // hidden placeholder
+        slotsEl.appendChild(d);
+      }
+    }
+
+    function updateSlots() {
+      // Reveal correctly typed letters; highlight current
+      const slotDivs = [...slotsEl.querySelectorAll(".slot")].filter(el => !el.classList.contains("space"));
+
+      let revealCount = 0;
+      for (let i = 0; i < normalizedAnswer.length; i++) {
+        const ch = normalizedAnswer[i];
+        if (ch === " ") continue;
+
+        const slot = slotDivs[revealCount];
+        slot.classList.remove("current");
+
+        if (i < index) slot.textContent = ch; // revealed
+        else slot.textContent = "•";
+
+        // mark current slot (next non-space)
+        revealCount++;
+      }
+
+      // Apply current highlight to the next letter slot
+      const nextLetterPos = findNextLetterPos(index);
+      if (nextLetterPos !== -1) {
+        // map answer position -> slot index
+        const slotIdx = answerPosToSlotIndex(nextLetterPos);
+        if (slotIdx !== -1 && slotDivs[slotIdx]) slotDivs[slotIdx].classList.add("current");
+      }
+    }
+
+    function answerPosToSlotIndex(answerPos) {
+      // converts position in full answer string (including spaces) to index among non-space slots
+      let slotIdx = 0;
+      for (let i = 0; i < normalizedAnswer.length; i++) {
+        if (normalizedAnswer[i] === " ") continue;
+        if (i === answerPos) return slotIdx;
+        slotIdx++;
+      }
+      return -1;
+    }
+
+    function findNextLetterPos(fromPos) {
+      for (let i = fromPos; i < normalizedAnswer.length; i++) {
+        if (normalizedAnswer[i] !== " ") return i;
+      }
+      return -1;
+    }
+
+    function countLetters() {
+      return [...normalizedAnswer].filter(c => c !== " ").length;
+    }
+
+    function lettersTypedSoFar() {
+      // number of letters revealed == letters before index, excluding spaces
+      return [...normalizedAnswer.slice(0, index)].filter(c => c !== " ").length;
+    }
+
+    function updateProgress() {
+      const total = countLetters();
+      const done = lettersTypedSoFar();
+      progressText.textContent = `${done} / ${total}`;
+      progressFill.style.width = `${total === 0 ? 0 : Math.round((done / total) * 100)}%`;
+    }
+
+    async function skipSpaces() {
+      // Auto-advance spaces
+      while (index < normalizedAnswer.length && normalizedAnswer[index] === " ") {
+        index++;
+      }
+      updateSlots();
+      updateProgress();
+    }
+
+    function setEnabledState() {
+      const finished = index >= normalizedAnswer.length;
+      letterInput.disabled = !started || finished;
+      submitBtn.disabled = !started || finished;
+      replayLetterBtn.disabled = !started;
+      replayAllBtn.disabled = !started;
+    }
+
+    function resetGame() {
+      started = false;
+      index = 0;
+      stopRequested = true;
+      isPlaying = false;
+
+      riddleText.textContent = RIDDLE;
+      buildSlots();
+      updateSlots();
+      updateProgress();
+      setEnabledState();
+
+      letterInput.value = "";
+      setFeedback("Waiting", 'Click <span class="kbd">Start</span> to begin.', "neutral");
+    }
+
+    async function startGame() {
+      started = true;
+      index = 0;
+      letterInput.value = "";
+      setEnabledState();
+      updateSlots();
+      updateProgress();
+
+      // audio must be initiated via a user gesture; start does that
+      try {
+        ensureAudio();
+        if (audioCtx.state === "suspended") await audioCtx.resume();
+      } catch (e) {
+        audioState.textContent = "Audio: blocked (click Start again)";
+      }
+
+      setFeedback("Listen", "Listen to the first letter in Morse code…", "neutral");
+      await playCurrentLetter();
+    }
+
+    function normalizeTypedLetter(val) {
+      if (!val) return "";
+      const up = val.toUpperCase();
+      // allow A-Z only
+      if (!/^[A-Z]$/.test(up)) return "";
+      return up;
+    }
+
+    async function submitLetter() {
+      if (!started) return;
+      if (isPlaying) {
+        setFeedback("Wait", "Audio is playing—wait for it to finish, then type.", "bad");
+        return;
+      }
+
+      await skipSpaces();
+      if (index >= normalizedAnswer.length) return;
+
+      const expected = normalizedAnswer[index];
+      const typed = normalizeTypedLetter(letterInput.value.trim());
+
+      if (!typed) {
+        setFeedback("Oops", "Type one letter A–Z.", "bad");
+        return;
+      }
+
+      if (typed === expected) {
+        setFeedback("Correct", `Nice! <span class="mono">${typed}</span> is correct.`, "good");
+        index++;
+        letterInput.value = "";
+
+        await skipSpaces();
+        updateSlots();
+        updateProgress();
+        setEnabledState();
+
+        if (index >= normalizedAnswer.length) {
+          setFeedback("Done", `You solved it! The answer is <b>${ANSWER}</b>.`, "good");
+          return;
+        }
+
+        // play next letter
+        await sleep(350);
+        setFeedback("Listen", "Next letter…", "neutral");
+        await playCurrentLetter();
+      } else {
+        setFeedback("Try again", `Not quite. You typed <span class="mono">${typed}</span>. Try again!`, "bad");
+        letterInput.select();
+        // Optionally replay the letter automatically on wrong:
+        // await playCurrentLetter();
+      }
+    }
+
+    // Events
+    startBtn.addEventListener("click", startGame);
+    replayLetterBtn.addEventListener("click", async () => {
+      stopRequested = true;
+      await sleep(0);
+      stopRequested = false;
+      await playCurrentLetter();
+    });
+    replayAllBtn.addEventListener("click", playFromStart);
+
+    hintBtn.addEventListener("click", () => {
+      setFeedback("Hint", "It’s something you might see in a classroom or on a wall, and it shows time.", "neutral");
+      letterInput.focus();
+    });
+
+    resetBtn.addEventListener("click", resetGame);
+
+    submitBtn.addEventListener("click", submitLetter);
+
+    letterInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submitLetter();
+    });
+
+    // Keep input 1 char and uppercase
+    letterInput.addEventListener("input", () => {
+      letterInput.value = letterInput.value.toUpperCase().slice(0, 1);
+    });
+
+    wpmSlider.addEventListener("input", () => {
+      wpmVal.textContent = wpmSlider.value;
+    });
+
+    muteBtn.addEventListener("click", async () => {
+      muted = !muted;
+      muteBtn.textContent = muted ? "Unmute" : "Mute";
+      audioState.textContent = muted ? "Audio: muted" : "Audio: on";
+      if (!muted) {
+        try {
+          ensureAudio();
+          if (audioCtx.state === "suspended") await audioCtx.resume();
+        } catch {}
+      }
+      letterInput.focus();
+    });
+
+    // Initialize
+    resetGame();
+  </script>
+</body>
+</html>
