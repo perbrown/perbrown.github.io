@@ -263,7 +263,6 @@
             <button class="primary" id="startBtn">Start</button>
             <button id="replayLetterBtn" disabled>Replay current letter</button>
             <button id="replayAllBtn" disabled>Replay from start</button>
-            <button id="hintBtn">Hint</button>
             <button class="danger" id="resetBtn">Reset</button>
           </div>
 
@@ -326,49 +325,47 @@
       5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----."
     };
 
-    // 40 grade-6-friendly riddles.
-    // Answers are uppercase and may contain spaces only (letters A-Z + spaces).
     const RIDDLES = [
-      { q: "I have hands, but I can’t clap. I have a face, but no eyes. What am I?", a: "A CLOCK", hint: "It shows time." },
-      { q: "What has to be broken before you can use it?", a: "AN EGG", hint: "Breakfast food." },
-      { q: "What has a neck but no head?", a: "A BOTTLE", hint: "It can hold water." },
-      { q: "What gets wetter the more it dries?", a: "A TOWEL", hint: "You use it after a shower." },
-      { q: "What has many keys but can’t open any doors?", a: "A PIANO", hint: "It makes music." },
-      { q: "What has words but never speaks?", a: "A BOOK", hint: "You read it." },
-      { q: "What kind of room has no doors or windows?", a: "A MUSHROOM", hint: "It’s a fungus." },
-      { q: "What runs but never walks?", a: "WATER", hint: "Rivers do this." },
-      { q: "What has a bed but never sleeps?", a: "A RIVER", hint: "Its bed is rocks/sand." },
-      { q: "What has one eye but can’t see?", a: "A NEEDLE", hint: "Used for sewing." },
-      { q: "What can you catch but not throw?", a: "A COLD", hint: "You might sneeze." },
-      { q: "What has a thumb and four fingers but isn’t alive?", a: "A GLOVE", hint: "You wear it." },
-      { q: "What has legs but doesn’t walk?", a: "A TABLE", hint: "Holds things up." },
-      { q: "What is full of holes but still holds water?", a: "A SPONGE", hint: "Used for cleaning." },
-      { q: "What can travel around the world while staying in a corner?", a: "A STAMP", hint: "Mail." },
-      { q: "What has a tail but no body?", a: "A COIN", hint: "Heads and tails." },
-      { q: "What has an end but no beginning?", a: "A RAINBOW", hint: "After rain." },
-      { q: "What goes up when rain comes down?", a: "AN UMBRELLA", hint: "Keeps you dry." },
-      { q: "What has a head and a foot but no legs?", a: "A BED", hint: "You sleep on it." },
-      { q: "What is always in front of you but can’t be seen?", a: "THE FUTURE", hint: "Not happened yet." },
+      { q: "I have hands, but I can’t clap. I have a face, but no eyes. What am I?", a: "A CLOCK" },
+      { q: "What has to be broken before you can use it?", a: "AN EGG" },
+      { q: "What has a neck but no head?", a: "A BOTTLE" },
+      { q: "What gets wetter the more it dries?", a: "A TOWEL" },
+      { q: "What has many keys but can’t open any doors?", a: "A PIANO" },
+      { q: "What has words but never speaks?", a: "A BOOK" },
+      { q: "What kind of room has no doors or windows?", a: "A MUSHROOM" },
+      { q: "What runs but never walks?", a: "WATER" },
+      { q: "What has a bed but never sleeps?", a: "A RIVER" },
+      { q: "What has one eye but can’t see?", a: "A NEEDLE" },
+      { q: "What can you catch but not throw?", a: "A COLD" },
+      { q: "What has a thumb and four fingers but isn’t alive?", a: "A GLOVE" },
+      { q: "What has legs but doesn’t walk?", a: "A TABLE" },
+      { q: "What is full of holes but still holds water?", a: "A SPONGE" },
+      { q: "What can travel around the world while staying in a corner?", a: "A STAMP" },
+      { q: "What has a tail but no body?", a: "A COIN" },
+      { q: "What has an end but no beginning?", a: "A RAINBOW" },
+      { q: "What goes up when rain comes down?", a: "AN UMBRELLA" },
+      { q: "What has a head and a foot but no legs?", a: "A BED" },
+      { q: "What is always in front of you but can’t be seen?", a: "THE FUTURE" },
 
-      { q: "What has a mouth but never eats?", a: "A RIVER", hint: "Where it meets the sea." },
-      { q: "What has a ring but no finger?", a: "A TELEPHONE", hint: "It can ring." },
-      { q: "What has ears but cannot hear?", a: "CORN", hint: "A vegetable." },
-      { q: "What has a spine but no bones?", a: "A BOOK", hint: "On a bookshelf." },
-      { q: "What is light as a feather but even the strongest person can’t hold it for long?", a: "YOUR BREATH", hint: "In and out." },
-      { q: "What has four wheels and flies?", a: "A GARBAGE TRUCK", hint: "It flies insects around it." },
-      { q: "What can fill a room but takes up no space?", a: "LIGHT", hint: "From a lamp." },
-      { q: "What has a face and two hands but no arms or legs?", a: "A CLOCK", hint: "Time again." },
-      { q: "What begins with T ends with T and has T in it?", a: "A TEAPOT", hint: "You pour from it." },
-      { q: "What goes up but never comes down?", a: "YOUR AGE", hint: "Birthday." },
-      { q: "What has lots of eyes but can’t see?", a: "A POTATO", hint: "You can plant it." },
-      { q: "What has one head, one foot, and four legs?", a: "A BED", hint: "Another bed one." },
-      { q: "What has two hands but can’t clap?", a: "A CLOCK", hint: "Yep!" },
-      { q: "What can you keep after giving it to someone?", a: "YOUR WORD", hint: "A promise." },
-      { q: "What has a bottom at the top?", a: "A LEG", hint: "Think of your body." },
-      { q: "What has three letters and starts with GAS?", a: "A CAR", hint: "It uses gas." },
-      { q: "What has many teeth but can’t bite?", a: "A COMB", hint: "For hair." },
-      { q: "What kind of band never plays music?", a: "A RUBBER BAND", hint: "Stretchy." },
-      { q: "What has an eye but cannot see and is often used with thread?", a: "A NEEDLE", hint: "Sewing again." }
+      { q: "What has a mouth but never eats?", a: "A RIVER" },
+      { q: "What has a ring but no finger?", a: "A TELEPHONE" },
+      { q: "What has ears but cannot hear?", a: "CORN" },
+      { q: "What has a spine but no bones?", a: "A BOOK" },
+      { q: "What is light as a feather but even the strongest person can’t hold it for long?", a: "YOUR BREATH" },
+      { q: "What has four wheels and flies?", a: "A GARBAGE TRUCK" },
+      { q: "What can fill a room but takes up no space?", a: "LIGHT" },
+      { q: "What has a face and two hands but no arms or legs?", a: "A CLOCK" },
+      { q: "What begins with T ends with T and has T in it?", a: "A TEAPOT" },
+      { q: "What goes up but never comes down?", a: "YOUR AGE" },
+      { q: "What has lots of eyes but can’t see?", a: "A POTATO" },
+      { q: "What has one head, one foot, and four legs?", a: "A BED" },
+      { q: "What has two hands but can’t clap?", a: "A CLOCK" },
+      { q: "What can you keep after giving it to someone?", a: "YOUR WORD" },
+      { q: "What has a bottom at the top?", a: "A LEG" },
+      { q: "What has three letters and starts with GAS?", a: "A CAR" },
+      { q: "What has many teeth but can’t bite?", a: "A COMB" },
+      { q: "What kind of band never plays music?", a: "A RUBBER BAND" },
+      { q: "What has an eye but cannot see and is often used with thread?", a: "A NEEDLE" }
     ];
 
     // UI
@@ -380,7 +377,6 @@
     const startBtn = document.getElementById("startBtn");
     const replayLetterBtn = document.getElementById("replayLetterBtn");
     const replayAllBtn = document.getElementById("replayAllBtn");
-    const hintBtn = document.getElementById("hintBtn");
     const resetBtn = document.getElementById("resetBtn");
     const pill = document.getElementById("pill");
     const msg = document.getElementById("msg");
@@ -410,7 +406,6 @@
     let index = 0; // position in answer string (includes spaces)
     let started = false;
 
-    // Timing (PARIS standard): dot = 1200ms / WPM
     function dotMs() {
       const wpm = Number(wpmSlider.value);
       return 1200 / wpm;
@@ -445,12 +440,9 @@
     }
 
     async function beep(durationMs) {
-      // Flash light only if enabled
       lightOn();
-
       try {
         if (muted) {
-          // still show timing via the light
           await sleep(durationMs);
           return;
         }
@@ -473,7 +465,7 @@
 
     async function playMorseForChar(ch) {
       const up = ch.toUpperCase();
-      if (up === " ") return; // spaces handled by gaps elsewhere
+      if (up === " ") return;
       const pattern = MORSE[up];
       if (!pattern) return;
 
@@ -483,7 +475,7 @@
         const sym = pattern[i];
         if (sym === ".") await beep(d);
         else if (sym === "-") await beep(3 * d);
-        if (i < pattern.length - 1) await sleep(d); // intra-symbol gap
+        if (i < pattern.length - 1) await sleep(d);
       }
     }
 
@@ -587,7 +579,7 @@
       setFeedback("Listen", `Listening for letter ${lettersTypedSoFar() + 1}.`, "neutral");
 
       await playMorseForChar(ch);
-      if (!stopRequested) await sleep(3 * dotMs()); // letter gap
+      if (!stopRequested) await sleep(3 * dotMs());
 
       isPlaying = false;
       if (!stopRequested) {
@@ -611,7 +603,7 @@
         const ch = normalizedAnswer[i];
 
         if (ch === " ") {
-          await sleep(7 * dotMs()); // word gap
+          await sleep(7 * dotMs());
           continue;
         }
 
@@ -664,7 +656,6 @@
       const next = (riddleIndex + 1) % RIDDLES.length;
       await loadRiddle(next);
 
-      // Keep the game going
       started = true;
       setEnabledState();
       setFeedback("Listen", "Next riddle… listen to the first letter.", "neutral");
@@ -762,7 +753,6 @@
       }
     }
 
-    // Events
     startBtn.addEventListener("click", startGame);
 
     replayLetterBtn.addEventListener("click", async () => {
@@ -774,12 +764,6 @@
     });
 
     replayAllBtn.addEventListener("click", playFromStart);
-
-    hintBtn.addEventListener("click", () => {
-      const r = RIDDLES[riddleIndex];
-      setFeedback("Hint", r.hint ? r.hint : "Think about something you might see at school or at home.", "neutral");
-      letterInput.focus();
-    });
 
     resetBtn.addEventListener("click", resetGame);
 
