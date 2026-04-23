@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Morse Riddle (Grade 6)</title>
+  <title>Morse Riddles (Grade 6)</title>
   <style>
     :root {
       --bg: #0b1020;
@@ -22,18 +22,31 @@
       background: radial-gradient(1200px 700px at 20% 0%, #15214a 0%, var(--bg) 55%, #070a14 100%);
       color: var(--text);
       min-height: 100vh;
-      display: grid;
-      place-items: center;
       padding: 24px;
     }
+
+    .layout {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .side { position: static !important; }
+    }
+
     .app {
-      width: min(860px, 100%);
       background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
       border: 1px solid var(--border);
       border-radius: 16px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.45);
       overflow: hidden;
     }
+
     header {
       padding: 18px 20px;
       border-bottom: 1px solid var(--border);
@@ -43,16 +56,9 @@
       justify-content: space-between;
       background: rgba(0,0,0,0.15);
     }
-    header h1 {
-      font-size: 18px;
-      margin: 0;
-      letter-spacing: 0.2px;
-    }
-    header .sub {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 2px;
-    }
+    header h1 { font-size: 18px; margin: 0; }
+    header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
     .wrap { padding: 20px; display: grid; gap: 16px; }
 
     .card {
@@ -62,20 +68,14 @@
       padding: 16px;
     }
 
-    .riddle {
-      display: grid;
-      gap: 10px;
-    }
-    .riddle .label {
+    .riddle { display: grid; gap: 10px; }
+    .label {
       font-size: 12px;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.14em;
     }
-    .riddle .q {
-      font-size: 18px;
-      line-height: 1.35;
-    }
+    .q { font-size: 18px; line-height: 1.35; }
 
     .controls {
       display: flex;
@@ -85,6 +85,7 @@
       justify-content: space-between;
     }
     .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+
     button {
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.06);
@@ -99,16 +100,9 @@
     button.danger { background: rgba(255,92,122,0.12); border-color: rgba(255,92,122,0.3); }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
 
-    .status {
-      display: grid;
-      gap: 12px;
-    }
+    .status { display: grid; gap: 12px; }
 
-    .progressRow {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
+    .progressRow { display: grid; grid-template-columns: 1fr; gap: 8px; }
     .progressBar {
       height: 10px;
       background: rgba(255,255,255,0.06);
@@ -123,10 +117,7 @@
       transition: width 200ms ease;
     }
 
-    .answerBox {
-      display: grid;
-      gap: 10px;
-    }
+    .answerBox { display: grid; gap: 10px; }
     .slots {
       display: flex;
       flex-wrap: wrap;
@@ -143,17 +134,12 @@
       background: rgba(255,255,255,0.05);
       display: grid;
       place-items: center;
-      position: relative;
     }
     .slot.current {
       outline: 2px solid rgba(122,162,255,0.75);
       box-shadow: 0 0 0 4px rgba(122,162,255,0.15);
     }
-    .slot.space {
-      width: 14px;
-      border: none;
-      background: transparent;
-    }
+    .slot.space { width: 14px; border: none; background: transparent; }
 
     .feedback {
       padding: 12px 12px;
@@ -176,13 +162,10 @@
     .pill.good { color: #0b1a10; background: rgba(47,227,139,0.9); border-color: rgba(47,227,139,0.9); }
     .pill.bad { color: #22070d; background: rgba(255,92,122,0.9); border-color: rgba(255,92,122,0.9); }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .small { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .kbd { font-family: ui-monospace, monospace; border: 1px solid var(--border); padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.06); }
 
-    .typeRow {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
+    .typeRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     input[type="text"]{
       flex: 1;
       min-width: 220px;
@@ -199,99 +182,170 @@
       box-shadow: 0 0 0 4px rgba(122,162,255,0.14);
     }
 
-    details {
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.12);
-      border-radius: 12px;
-      padding: 10px 12px;
+    .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-end;
+      color: var(--muted);
+      font-size: 13px;
     }
-    summary { cursor: pointer; font-weight: 650; color: var(--accent); }
-    .small { color: var(--muted); font-size: 13px; line-height: 1.35; }
-    .kbd { font-family: ui-monospace, monospace; border: 1px solid var(--border); padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.06); }
+    .toggle {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      user-select: none;
+    }
+    .toggle input { transform: translateY(1px); }
+
+    .visualMorse {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+    }
+    .visualMorse.show { display: block; }
+    .visualLine { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+    .big { font-size: 18px; }
+    .codeChip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* Side reference panel */
+    .side {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+    }
+    .refGrid {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+    }
+    .refItem {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 6px 8px;
+    }
+    .refItem .k { color: var(--text); font-weight: 700; }
+    .refItem .v { color: var(--muted); }
   </style>
 </head>
 <body>
-  <div class="app" role="application" aria-label="Morse riddle game">
-    <header>
-      <div>
-        <h1>Morse Riddle Challenge</h1>
-        <div class="sub">Listen to each letter in Morse code, then type the answer one letter at a time.</div>
+  <div class="layout">
+    <div class="app" role="application" aria-label="Morse riddle game">
+      <header>
+        <div>
+          <h1>Morse Riddle Challenge</h1>
+          <div class="sub">Listen to each letter in Morse code, then type the answer one letter at a time.</div>
+        </div>
+        <div class="pill mono" id="audioState">Audio: ready</div>
+      </header>
+
+      <div class="wrap">
+        <section class="card riddle" aria-label="Riddle">
+          <div class="label">Riddle <span class="mono" id="riddleCount"></span></div>
+          <div class="q" id="riddleText"></div>
+
+          <div class="toggles" aria-label="Toggles">
+            <label class="toggle">
+              <input type="checkbox" id="showVisual" />
+              Show Morse visually
+            </label>
+          </div>
+
+          <div class="visualMorse" id="visualMorse" aria-live="polite">
+            <div class="visualLine">
+              <span class="pill">Now playing</span>
+              <span class="big">Letter:</span> <span class="codeChip" id="visualLetter">—</span>
+              <span class="big">Code:</span> <span class="codeChip" id="visualCode">—</span>
+            </div>
+            <div class="small" style="margin-top:8px;">
+              Dots are short beeps. Dashes are long beeps.
+            </div>
+          </div>
+
+          <div class="small">
+            Tip: Click <span class="kbd">Start</span>, then type the answer letter-by-letter. Spaces are added automatically.
+          </div>
+        </section>
+
+        <section class="card controls" aria-label="Controls">
+          <div class="btns">
+            <button class="primary" id="startBtn">Start</button>
+            <button id="replayLetterBtn" disabled>Replay current letter</button>
+            <button id="replayAllBtn" disabled>Replay from start</button>
+            <button id="hintBtn">Hint</button>
+            <button class="danger" id="resetBtn">Reset</button>
+          </div>
+
+          <div class="typeRow small" style="gap:10px;">
+            <span class="pill">WPM</span>
+            <input id="wpm" type="range" min="6" max="22" value="12" />
+            <span class="mono" id="wpmVal">12</span>
+            <span style="width:12px;"></span>
+            <button id="muteBtn">Mute</button>
+          </div>
+        </section>
+
+        <section class="card status" aria-label="Game status">
+          <div class="progressRow">
+            <div class="small">
+              Progress: <span class="mono" id="progressText">0 / 0</span>
+            </div>
+            <div class="progressBar" aria-hidden="true"><div id="progressFill"></div></div>
+          </div>
+
+          <div class="answerBox">
+            <div class="small">Answer (you reveal it as you type):</div>
+            <div class="slots" id="slots" aria-label="Answer slots"></div>
+          </div>
+
+          <div class="typeRow" aria-label="Typing row">
+            <input id="letterInput" type="text" inputmode="text" autocomplete="off"
+                   placeholder="Type the next letter…" maxlength="1" disabled
+                   aria-label="Type next letter" />
+            <button id="submitBtn" disabled>Submit</button>
+          </div>
+
+          <div class="feedback" id="feedback" aria-live="polite">
+            <span class="pill" id="pill">Waiting</span>
+            <span id="msg">Click <span class="kbd">Start</span> to begin.</span>
+          </div>
+        </section>
       </div>
-      <div class="pill mono" id="audioState">Audio: ready</div>
-    </header>
-
-    <div class="wrap">
-      <section class="card riddle" aria-label="Riddle">
-        <div class="label">Riddle</div>
-        <div class="q" id="riddleText">
-          I have hands, but I can’t clap. I have a face, but no eyes. What am I?
-        </div>
-        <div class="small">Tip: Click <span class="kbd">Start</span>, then type the answer letter-by-letter. Spaces are added automatically.</div>
-      </section>
-
-      <section class="card controls" aria-label="Controls">
-        <div class="btns">
-          <button class="primary" id="startBtn">Start</button>
-          <button id="replayLetterBtn" disabled>Replay current letter</button>
-          <button id="replayAllBtn" disabled>Replay from start</button>
-          <button id="hintBtn">Hint</button>
-          <button class="danger" id="resetBtn">Reset</button>
-        </div>
-
-        <label class="typeRow small" style="gap:10px;">
-          <span class="pill">WPM</span>
-          <input id="wpm" type="range" min="6" max="22" value="12" />
-          <span class="mono" id="wpmVal">12</span>
-          <span style="width:12px;"></span>
-          <button id="muteBtn">Mute</button>
-        </label>
-      </section>
-
-      <section class="card status" aria-label="Game status">
-        <div class="progressRow">
-          <div class="small">
-            Progress: <span class="mono" id="progressText">0 / 0</span>
-          </div>
-          <div class="progressBar" aria-hidden="true"><div id="progressFill"></div></div>
-        </div>
-
-        <div class="answerBox">
-          <div class="small">Answer (you reveal it as you type):</div>
-          <div class="slots" id="slots" aria-label="Answer slots"></div>
-        </div>
-
-        <div class="typeRow" aria-label="Typing row">
-          <input id="letterInput" type="text" inputmode="text" autocomplete="off"
-                 placeholder="Type the next letter…" maxlength="1" disabled
-                 aria-label="Type next letter" />
-          <button id="submitBtn" disabled>Submit</button>
-        </div>
-
-        <div class="feedback" id="feedback" aria-live="polite">
-          <span class="pill" id="pill">Waiting</span>
-          <span id="msg">Click <span class="kbd">Start</span> to begin.</span>
-        </div>
-
-        <details>
-          <summary>How it works (student-friendly)</summary>
-          <div class="small">
-            Each letter is played as <b>Morse code</b>: short beeps (dots) and long beeps (dashes).
-            When you type the correct letter, you move to the next one.
-            If you type the wrong letter, you can try again.
-            <br><br>
-            Controls: <span class="kbd">Replay current letter</span>, <span class="kbd">Replay from start</span>, and speed (WPM).
-          </div>
-        </details>
-      </section>
     </div>
+
+    <aside class="card side" aria-label="Morse code reference">
+      <div class="label">Morse Reference (A–Z)</div>
+      <div class="small">Use this chart if you get stuck.</div>
+      <div class="refGrid" id="refGrid"></div>
+      <div class="small" style="margin-top:10px;">
+        Spacing: dot = 1 beat, dash = 3 beats. Between letters = 3 beats.
+      </div>
+    </aside>
   </div>
 
   <script>
-    // Grade 6 riddle + answer
-    const RIDDLE = "I have hands, but I can’t clap. I have a face, but no eyes. What am I?";
-    const ANSWER = "A CLOCK"; // students type letters only; spaces auto-advance
-
-    // Morse map (A-Z, 0-9). We'll only need A-Z here but it's nice to be complete.
+    // Morse map
     const MORSE = {
       A: ".-",    B: "-...",  C: "-.-.",  D: "-..",   E: ".",
       F: "..-.",  G: "--.",   H: "....",  I: "..",    J: ".---",
@@ -303,8 +357,34 @@
       5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----."
     };
 
-    // UI elements
+    // Up to 20 grade-6-friendly riddles
+    // Answers are uppercase and may contain spaces only (letters A-Z + spaces).
+    const RIDDLES = [
+      { q: "I have hands, but I can’t clap. I have a face, but no eyes. What am I?", a: "A CLOCK", hint: "It shows time." },
+      { q: "What has to be broken before you can use it?", a: "AN EGG", hint: "Breakfast food." },
+      { q: "What has a neck but no head?", a: "A BOTTLE", hint: "It can hold water." },
+      { q: "What gets wetter the more it dries?", a: "A TOWEL", hint: "You use it after a shower." },
+      { q: "What has many keys but can’t open any doors?", a: "A PIANO", hint: "It makes music." },
+      { q: "What has words but never speaks?", a: "A BOOK", hint: "You read it." },
+      { q: "What kind of room has no doors or windows?", a: "A MUSHROOM", hint: "It’s a fungus." },
+      { q: "What runs but never walks?", a: "WATER", hint: "Rivers do this." },
+      { q: "What has a bed but never sleeps?", a: "A RIVER", hint: "Its bed is made of rocks/sand." },
+      { q: "What has one eye but can’t see?", a: "A NEEDLE", hint: "Used for sewing." },
+      { q: "What can you catch but not throw?", a: "A COLD", hint: "You might sneeze." },
+      { q: "What has a thumb and four fingers but isn’t alive?", a: "A GLOVE", hint: "You wear it on your hand." },
+      { q: "What has legs but doesn’t walk?", a: "A TABLE", hint: "It holds things up." },
+      { q: "What is full of holes but still holds water?", a: "A SPONGE", hint: "Used for cleaning." },
+      { q: "What can travel around the world while staying in a corner?", a: "A STAMP", hint: "It goes on an envelope." },
+      { q: "What has a tail but no body?", a: "A COIN", hint: "Heads and tails." },
+      { q: "What has an end but no beginning?", a: "A RAINBOW", hint: "You see it after rain." },
+      { q: "What goes up when rain comes down?", a: "AN UMBRELLA", hint: "You hold it over your head." },
+      { q: "What has a head and a foot but no legs?", a: "A BED", hint: "You sleep on it." },
+      { q: "What is always in front of you but can’t be seen?", a: "THE FUTURE", hint: "It hasn’t happened yet." }
+    ];
+
+    // UI
     const riddleText = document.getElementById("riddleText");
+    const riddleCount = document.getElementById("riddleCount");
     const slotsEl = document.getElementById("slots");
     const letterInput = document.getElementById("letterInput");
     const submitBtn = document.getElementById("submitBtn");
@@ -322,7 +402,14 @@
     const muteBtn = document.getElementById("muteBtn");
     const audioState = document.getElementById("audioState");
 
-    // Audio (Web Audio API)
+    const showVisual = document.getElementById("showVisual");
+    const visualMorse = document.getElementById("visualMorse");
+    const visualLetter = document.getElementById("visualLetter");
+    const visualCode = document.getElementById("visualCode");
+
+    const refGrid = document.getElementById("refGrid");
+
+    // Audio
     let audioCtx = null;
     let oscillator = null;
     let gainNode = null;
@@ -332,22 +419,16 @@
     let stopRequested = false;
 
     // Game state
-    const normalizedAnswer = ANSWER.toUpperCase();
-    let index = 0; // position in normalizedAnswer
+    let riddleIndex = 0;
+    let normalizedAnswer = "";
+    let index = 0;         // position in answer string (includes spaces)
     let started = false;
 
-    // Morse timing:
-    // PARIS standard: 1 dot = 1200ms / WPM
-    // dash = 3 dots
-    // intra-symbol gap = 1 dot
-    // letter gap = 3 dots (we'll include after each letter)
-    // word gap = 7 dots (we'll include when answer has spaces)
     function dotMs() {
       const wpm = Number(wpmSlider.value);
       return 1200 / wpm;
     }
-
-    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     function ensureAudio() {
       if (audioCtx) return;
@@ -358,18 +439,16 @@
 
       oscillator = audioCtx.createOscillator();
       oscillator.type = "sine";
-      oscillator.frequency.value = 700; // pleasant-ish beep
+      oscillator.frequency.value = 700;
       oscillator.connect(gainNode);
       oscillator.start();
 
       audioState.textContent = "Audio: on";
-      audioState.classList.remove("bad");
     }
 
     async function beep(durationMs) {
       if (muted) { await sleep(durationMs); return; }
       ensureAudio();
-      // Some browsers require a resume after a gesture
       if (audioCtx.state === "suspended") await audioCtx.resume();
 
       gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
@@ -384,72 +463,17 @@
 
     async function playMorseForChar(ch) {
       const up = ch.toUpperCase();
-      if (up === " ") return; // spaces handled elsewhere
+      if (up === " ") return;
       const pattern = MORSE[up];
       if (!pattern) return;
 
       const d = dotMs();
-
       for (let i = 0; i < pattern.length; i++) {
         if (stopRequested) return;
         const sym = pattern[i];
         if (sym === ".") await beep(d);
         else if (sym === "-") await beep(3 * d);
-
-        // intra-symbol gap (1 dot) except after last symbol
-        if (i < pattern.length - 1) await sleep(d);
-      }
-    }
-
-    async function playCurrentLetter() {
-      if (!started) return;
-      await skipSpaces();
-      if (index >= normalizedAnswer.length) return;
-
-      const ch = normalizedAnswer[index];
-      isPlaying = true;
-      stopRequested = false;
-
-      setFeedback("Waiting", `Listening for letter ${index + 1}.`, "neutral");
-
-      await playMorseForChar(ch);
-
-      // letter gap (3 dots)
-      if (!stopRequested) await sleep(3 * dotMs());
-
-      isPlaying = false;
-      if (!stopRequested) {
-        setFeedback("Type", "Now type the letter you just heard.", "neutral");
-        letterInput.focus();
-      }
-    }
-
-    async function playFromStart() {
-      if (!started) return;
-      stopRequested = true;
-      await sleep(0);
-      stopRequested = false;
-
-      isPlaying = true;
-      setFeedback("Replay", "Replaying from the start…", "neutral");
-
-      // play from beginning up to current index (including spaces)
-      for (let i = 0; i <= index && i < normalizedAnswer.length; i++) {
-        if (stopRequested) break;
-        const ch = normalizedAnswer[i];
-        if (ch === " ") {
-          // word gap: 7 dots
-          await sleep(7 * dotMs());
-          continue;
-        }
-        await playMorseForChar(ch);
-        await sleep(3 * dotMs());
-      }
-
-      isPlaying = false;
-      if (!stopRequested) {
-        setFeedback("Type", "Type the next letter.", "neutral");
-        letterInput.focus();
+        if (i < pattern.length - 1) await sleep(d); // intra-symbol gap
       }
     }
 
@@ -459,6 +483,17 @@
       if (kind === "good") pill.classList.add("good");
       if (kind === "bad") pill.classList.add("bad");
       msg.innerHTML = text;
+    }
+
+    function setVisualForChar(ch) {
+      const up = ch.toUpperCase();
+      if (showVisual.checked && up !== " " && MORSE[up]) {
+        visualLetter.textContent = up;
+        visualCode.textContent = MORSE[up];
+      } else {
+        visualLetter.textContent = "—";
+        visualCode.textContent = "—";
+      }
     }
 
     function buildSlots() {
@@ -474,41 +509,12 @@
         const d = document.createElement("div");
         d.className = "slot";
         d.dataset.pos = String(i);
-        d.textContent = "•"; // hidden placeholder
+        d.textContent = "•";
         slotsEl.appendChild(d);
       }
     }
 
-    function updateSlots() {
-      // Reveal correctly typed letters; highlight current
-      const slotDivs = [...slotsEl.querySelectorAll(".slot")].filter(el => !el.classList.contains("space"));
-
-      let revealCount = 0;
-      for (let i = 0; i < normalizedAnswer.length; i++) {
-        const ch = normalizedAnswer[i];
-        if (ch === " ") continue;
-
-        const slot = slotDivs[revealCount];
-        slot.classList.remove("current");
-
-        if (i < index) slot.textContent = ch; // revealed
-        else slot.textContent = "•";
-
-        // mark current slot (next non-space)
-        revealCount++;
-      }
-
-      // Apply current highlight to the next letter slot
-      const nextLetterPos = findNextLetterPos(index);
-      if (nextLetterPos !== -1) {
-        // map answer position -> slot index
-        const slotIdx = answerPosToSlotIndex(nextLetterPos);
-        if (slotIdx !== -1 && slotDivs[slotIdx]) slotDivs[slotIdx].classList.add("current");
-      }
-    }
-
     function answerPosToSlotIndex(answerPos) {
-      // converts position in full answer string (including spaces) to index among non-space slots
       let slotIdx = 0;
       for (let i = 0; i < normalizedAnswer.length; i++) {
         if (normalizedAnswer[i] === " ") continue;
@@ -525,15 +531,33 @@
       return -1;
     }
 
+    function updateSlots() {
+      const slotDivs = [...slotsEl.querySelectorAll(".slot")].filter(el => !el.classList.contains("space"));
+
+      // clear highlights + reveal letters
+      let slotIdx = 0;
+      for (let i = 0; i < normalizedAnswer.length; i++) {
+        if (normalizedAnswer[i] === " ") continue;
+
+        const slot = slotDivs[slotIdx++];
+        slot.classList.remove("current");
+        slot.textContent = (i < index) ? normalizedAnswer[i] : "•";
+      }
+
+      // highlight current (next non-space)
+      const nextPos = findNextLetterPos(index);
+      if (nextPos !== -1) {
+        const sIdx = answerPosToSlotIndex(nextPos);
+        if (sIdx !== -1 && slotDivs[sIdx]) slotDivs[sIdx].classList.add("current");
+      }
+    }
+
     function countLetters() {
       return [...normalizedAnswer].filter(c => c !== " ").length;
     }
-
     function lettersTypedSoFar() {
-      // number of letters revealed == letters before index, excluding spaces
       return [...normalizedAnswer.slice(0, index)].filter(c => c !== " ").length;
     }
-
     function updateProgress() {
       const total = countLetters();
       const done = lettersTypedSoFar();
@@ -542,10 +566,7 @@
     }
 
     async function skipSpaces() {
-      // Auto-advance spaces
-      while (index < normalizedAnswer.length && normalizedAnswer[index] === " ") {
-        index++;
-      }
+      while (index < normalizedAnswer.length && normalizedAnswer[index] === " ") index++;
       updateSlots();
       updateProgress();
     }
@@ -558,48 +579,103 @@
       replayAllBtn.disabled = !started;
     }
 
-    function resetGame() {
-      started = false;
-      index = 0;
-      stopRequested = true;
+    async function playCurrentLetter() {
+      if (!started) return;
+      await skipSpaces();
+      if (index >= normalizedAnswer.length) return;
+
+      const ch = normalizedAnswer[index];
+      isPlaying = true;
+      stopRequested = false;
+
+      setVisualForChar(ch);
+      setFeedback("Listen", `Listening for letter ${lettersTypedSoFar() + 1}.`, "neutral");
+
+      await playMorseForChar(ch);
+
+      if (!stopRequested) await sleep(3 * dotMs()); // letter gap
       isPlaying = false;
 
-      riddleText.textContent = RIDDLE;
-      buildSlots();
-      updateSlots();
-      updateProgress();
-      setEnabledState();
-
-      letterInput.value = "";
-      setFeedback("Waiting", 'Click <span class="kbd">Start</span> to begin.', "neutral");
+      if (!stopRequested) {
+        setFeedback("Type", "Now type the letter you just heard.", "neutral");
+        letterInput.focus();
+      }
     }
 
-    async function startGame() {
-      started = true;
-      index = 0;
-      letterInput.value = "";
-      setEnabledState();
-      updateSlots();
-      updateProgress();
+    async function playFromStart() {
+      if (!started) return;
+      stopRequested = true;
+      await sleep(0);
+      stopRequested = false;
 
-      // audio must be initiated via a user gesture; start does that
-      try {
-        ensureAudio();
-        if (audioCtx.state === "suspended") await audioCtx.resume();
-      } catch (e) {
-        audioState.textContent = "Audio: blocked (click Start again)";
+      isPlaying = true;
+      setFeedback("Replay", "Replaying from the start…", "neutral");
+
+      for (let i = 0; i <= index && i < normalizedAnswer.length; i++) {
+        if (stopRequested) break;
+        const ch = normalizedAnswer[i];
+
+        if (ch === " ") {
+          setVisualForChar(" ");
+          await sleep(7 * dotMs());
+          continue;
+        }
+
+        setVisualForChar(ch);
+        await playMorseForChar(ch);
+        await sleep(3 * dotMs());
       }
 
-      setFeedback("Listen", "Listen to the first letter in Morse code…", "neutral");
-      await playCurrentLetter();
+      isPlaying = false;
+      if (!stopRequested) {
+        setFeedback("Type", "Type the next letter.", "neutral");
+        letterInput.focus();
+      }
     }
 
     function normalizeTypedLetter(val) {
       if (!val) return "";
       const up = val.toUpperCase();
-      // allow A-Z only
       if (!/^[A-Z]$/.test(up)) return "";
       return up;
+    }
+
+    async function loadRiddle(i) {
+      riddleIndex = i;
+      const r = RIDDLES[riddleIndex];
+
+      riddleText.textContent = r.q;
+      riddleCount.textContent = `(${riddleIndex + 1} of ${RIDDLES.length})`;
+
+      normalizedAnswer = r.a.toUpperCase().replace(/[^A-Z ]/g, "");
+      index = 0;
+
+      letterInput.value = "";
+      setVisualForChar(" ");
+      buildSlots();
+      updateSlots();
+      updateProgress();
+      setEnabledState();
+
+      setFeedback("Ready", 'Click <span class="kbd">Start</span> to begin.', "neutral");
+    }
+
+    async function finishRiddle() {
+      const r = RIDDLES[riddleIndex];
+      setFeedback("Done", `You solved it! The answer is <b>${r.a}</b>. Next riddle starts in 2 seconds…`, "good");
+      setVisualForChar(" ");
+
+      // advance to next riddle (loop back to start)
+      await sleep(2000);
+
+      const next = (riddleIndex + 1) % RIDDLES.length;
+      await loadRiddle(next);
+
+      // If user already started once, keep started=true and auto-start the next one
+      started = true;
+      setEnabledState();
+      setFeedback("Listen", "Next riddle… listen to the first letter.", "neutral");
+      await playCurrentLetter();
     }
 
     async function submitLetter() {
@@ -631,19 +707,65 @@
         setEnabledState();
 
         if (index >= normalizedAnswer.length) {
-          setFeedback("Done", `You solved it! The answer is <b>${ANSWER}</b>.`, "good");
+          await finishRiddle();
           return;
         }
 
-        // play next letter
-        await sleep(350);
+        await sleep(300);
         setFeedback("Listen", "Next letter…", "neutral");
         await playCurrentLetter();
       } else {
         setFeedback("Try again", `Not quite. You typed <span class="mono">${typed}</span>. Try again!`, "bad");
         letterInput.select();
-        // Optionally replay the letter automatically on wrong:
-        // await playCurrentLetter();
+      }
+    }
+
+    async function startGame() {
+      started = true;
+      setEnabledState();
+
+      try {
+        ensureAudio();
+        if (audioCtx.state === "suspended") await audioCtx.resume();
+        audioState.textContent = muted ? "Audio: muted" : "Audio: on";
+      } catch (e) {
+        audioState.textContent = "Audio: blocked (click Start again)";
+      }
+
+      setFeedback("Listen", "Listen to the first letter in Morse code…", "neutral");
+      await playCurrentLetter();
+    }
+
+    function resetGame() {
+      started = false;
+      stopRequested = true;
+      isPlaying = false;
+      letterInput.value = "";
+      setVisualForChar(" ");
+      setEnabledState();
+      setFeedback("Ready", 'Click <span class="kbd">Start</span> to begin.', "neutral");
+      // keep current riddle, reset progress
+      index = 0;
+      buildSlots();
+      updateSlots();
+      updateProgress();
+    }
+
+    function renderReference() {
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+      refGrid.innerHTML = "";
+      for (const ch of letters) {
+        const item = document.createElement("div");
+        item.className = "refItem";
+        const k = document.createElement("div");
+        k.className = "k";
+        k.textContent = ch;
+        const v = document.createElement("div");
+        v.className = "v";
+        v.textContent = MORSE[ch];
+        item.appendChild(k);
+        item.appendChild(v);
+        refGrid.appendChild(item);
       }
     }
 
@@ -658,26 +780,20 @@
     replayAllBtn.addEventListener("click", playFromStart);
 
     hintBtn.addEventListener("click", () => {
-      setFeedback("Hint", "It’s something you might see in a classroom or on a wall, and it shows time.", "neutral");
+      const r = RIDDLES[riddleIndex];
+      setFeedback("Hint", r.hint ? r.hint : "Think about something you might see at school or at home.", "neutral");
       letterInput.focus();
     });
 
     resetBtn.addEventListener("click", resetGame);
 
     submitBtn.addEventListener("click", submitLetter);
-
-    letterInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") submitLetter();
-    });
-
-    // Keep input 1 char and uppercase
+    letterInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submitLetter(); });
     letterInput.addEventListener("input", () => {
       letterInput.value = letterInput.value.toUpperCase().slice(0, 1);
     });
 
-    wpmSlider.addEventListener("input", () => {
-      wpmVal.textContent = wpmSlider.value;
-    });
+    wpmSlider.addEventListener("input", () => { wpmVal.textContent = wpmSlider.value; });
 
     muteBtn.addEventListener("click", async () => {
       muted = !muted;
@@ -692,8 +808,18 @@
       letterInput.focus();
     });
 
-    // Initialize
-    resetGame();
+    showVisual.addEventListener("change", () => {
+      visualMorse.classList.toggle("show", showVisual.checked);
+      // update panel immediately for current letter
+      const ch = (started && index < normalizedAnswer.length) ? normalizedAnswer[index] : " ";
+      setVisualForChar(ch);
+    });
+
+    // Init
+    renderReference();
+    wpmVal.textContent = wpmSlider.value;
+    visualMorse.classList.toggle("show", showVisual.checked);
+    loadRiddle(0);
   </script>
 </body>
 </html>
