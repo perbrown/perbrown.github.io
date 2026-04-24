@@ -226,47 +226,84 @@
     .refItem .k{ color:var(--text); font-weight:700; }
     .refItem .v{ color:var(--muted); }
 
-    /* Modal (no JS popup): uses <dialog> and showModal() */
+    /* Modal (not a JS popup): <dialog> */
     dialog{
       border:none;
       padding:0;
-      border-radius:14px;
-      width:min(820px, calc(100% - 32px));
+      border-radius:16px;
+      width:min(980px, calc(100% - 32px));
       background:transparent;
     }
     dialog::backdrop{
-      background:rgba(0,0,0,0.65);
-      backdrop-filter: blur(2px);
+      background:rgba(0,0,0,0.75);
+      backdrop-filter: blur(3px);
     }
     .modalCard{
-      background:rgba(10, 14, 28, 0.98);
-      border:1px solid var(--border);
-      border-radius:14px;
-      box-shadow:0 25px 80px rgba(0,0,0,0.55);
-      padding:16px;
+      background:rgba(6, 8, 16, 0.98);
+      border:1px solid rgba(255,255,255,0.18);
+      border-radius:16px;
+      box-shadow:0 25px 80px rgba(0,0,0,0.65);
+      padding:20px;
+      color:#ffffff; /* make popup text white */
     }
     .modalHeader{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:10px;
-      border-bottom:1px solid var(--border);
-      padding-bottom:10px;
-      margin-bottom:12px;
+      border-bottom:1px solid rgba(255,255,255,0.18);
+      padding-bottom:12px;
+      margin-bottom:14px;
     }
     .modalTitle{
-      font-weight:800;
-      letter-spacing:0.2px;
+      font-weight:900;
+      letter-spacing:0.3px;
+      font-size:24px;
+      color:#ffffff;
+    }
+    .modalSmall{
+      color:rgba(255,255,255,0.85);
+      font-size:16px;
+      line-height:1.35;
+      margin-top:4px;
+    }
+    .modalLabel{
+      font-size:14px;
+      text-transform:uppercase;
+      letter-spacing:0.14em;
+      color:rgba(255,255,255,0.85);
+      margin-top:8px;
+    }
+    .modalRiddle{
+      font-size:36px;          /* much larger */
+      line-height:1.15;
+      font-weight:900;
+      margin-top:10px;
+      color:#ffffff;
+    }
+    @media (max-width:520px){
+      .modalRiddle{ font-size:28px; }
     }
     .morseBlock{
-      margin-top:10px;
-      padding:12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,0.04);
+      margin-top:12px;
+      padding:16px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(255,255,255,0.06);
       font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       white-space:pre-wrap;
-      line-height:1.55;
+      line-height:1.6;
+      font-size:26px;          /* much larger */
+      color:#ffffff;
+      word-break: break-word;
+    }
+    @media (max-width:520px){
+      .morseBlock{ font-size:20px; }
+    }
+    .closeBtn{
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.18);
+      color:#ffffff;
     }
   </style>
 </head>
@@ -298,7 +335,6 @@
             </div>
           </div>
 
-          <!-- New: modal opener button -->
           <div class="typeRow" style="margin-top:6px;">
             <button id="openMorseBtn" type="button">Show riddle + answer in Morse</button>
           </div>
@@ -364,28 +400,27 @@
     </aside>
   </div>
 
-  <!-- Modal dialog (not a JS popup) -->
   <dialog id="morseDialog" aria-label="Riddle and answer in Morse code">
     <div class="modalCard">
       <div class="modalHeader">
         <div>
           <div class="modalTitle">Riddle + Answer in Morse</div>
-          <div class="small">This shows the current riddle and the answer written in Morse code.</div>
+          <div class="modalSmall">This shows the current riddle and the answer written in Morse code.</div>
         </div>
         <form method="dialog">
-          <button type="submit">Close</button>
+          <button class="closeBtn" type="submit">Close</button>
         </form>
       </div>
 
-      <div class="label">Riddle</div>
-      <div class="q" id="dialogRiddle" style="font-size:22px; font-weight:800;"></div>
+      <div class="modalLabel">Riddle</div>
+      <div class="modalRiddle" id="dialogRiddle"></div>
 
-      <div style="height:12px;"></div>
+      <div style="height:16px;"></div>
 
-      <div class="label">Answer (Morse)</div>
+      <div class="modalLabel">Answer (Morse)</div>
       <div class="morseBlock" id="dialogMorse"></div>
 
-      <div class="small" style="margin-top:10px;">
+      <div class="modalSmall" style="margin-top:12px;">
         Legend: dot <span class="mono">.</span> and dash <span class="mono">-</span>. Word gaps are shown with <span class="mono">/</span>.
       </div>
     </div>
@@ -725,17 +760,12 @@
     }
 
     function answerToMorse(answer) {
-      // letters separated by spaces; words separated by " / "
       const parts = [];
       const txt = normalizeAnswerText(answer);
       for (const ch of txt) {
-        if (ch === " ") {
-          parts.push("/"); // word separator
-          continue;
-        }
+        if (ch === " ") { parts.push("/"); continue; }
         parts.push(MORSE[ch] || "");
       }
-      // join with single spaces, but keep / as its own token
       return parts.filter(Boolean).join(" ").replace(/\s*\/\s*/g, " / ");
     }
 
@@ -849,14 +879,12 @@
     }
 
     async function nextRiddle() {
-      // Stop current playback and jump to next riddle.
       stopRequested = true;
       lightOff();
       isPlaying = false;
 
       await loadRiddle(riddleIndex + 1);
 
-      // Keep started state as-is; if started, immediately play first letter of next riddle.
       if (started) {
         setEnabledState();
         setFeedback("Listen", "Next riddle… listen to the first letter.", "neutral");
@@ -902,7 +930,6 @@
       if (e.key === "Enter") submitAnswerSoFar();
     });
 
-    // Live normalize input: uppercase, letters/spaces only, collapse spaces
     answerInput.addEventListener("input", () => {
       const caret = answerInput.selectionStart;
       const before = answerInput.value;
@@ -926,7 +953,6 @@
       answerInput.focus();
     });
 
-    // Modal opener: fill with current riddle + answer in morse
     openMorseBtn.addEventListener("click", () => {
       const r = RIDDLES[riddleIndex];
       dialogRiddle.textContent = r.q;
