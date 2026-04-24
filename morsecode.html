@@ -5,233 +5,269 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Morse Riddles (Grade 6) — 40</title>
   <style>
-    :root {
-      --bg: #0b1020;
-      --text: #e9ecff;
-      --muted: #a9b2df;
-      --good: #2fe38b;
-      --bad: #ff5c7a;
-      --accent: #7aa2ff;
-      --border: rgba(255,255,255,0.12);
+    :root{
+      --bg:#0b1020;
+      --text:#e9ecff;
+      --muted:#a9b2df;
+      --good:#2fe38b;
+      --bad:#ff5c7a;
+      --accent:#7aa2ff;
+      --border:rgba(255,255,255,0.12);
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 700px at 20% 0%, #15214a 0%, var(--bg) 55%, #070a14 100%);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px;
-    }
-
-    .layout {
-      width: min(1100px, 100%);
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 16px;
-      align-items: start;
-    }
-    @media (max-width: 980px) {
-      .layout { grid-template-columns: 1fr; }
-      .side { position: static !important; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:radial-gradient(1200px 700px at 20% 0%, #15214a 0%, var(--bg) 55%, #070a14 100%);
+      color:var(--text);
+      min-height:100vh;
+      padding:24px;
     }
 
-    .app {
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-      overflow: hidden;
+    .layout{
+      width:min(1100px, 100%);
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:1fr 320px;
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width:980px){
+      .layout{ grid-template-columns:1fr; }
+      .side{ position:static !important; }
     }
 
-    header {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(0,0,0,0.15);
-    }
-    header h1 { font-size: 18px; margin: 0; }
-    header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
-
-    .wrap { padding: 20px; display: grid; gap: 16px; }
-
-    .card {
-      background: rgba(0,0,0,0.18);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
+    .app{
+      background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.45);
+      overflow:hidden;
     }
 
-    .riddle { display: grid; gap: 12px; }
-    .label {
-      font-size: 12px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
+    header{
+      padding:18px 20px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      gap:16px;
+      align-items:center;
+      justify-content:space-between;
+      background:rgba(0,0,0,0.15);
+    }
+    header h1{ font-size:18px; margin:0; }
+    header .sub{ color:var(--muted); font-size:13px; margin-top:2px; }
+
+    .wrap{ padding:20px; display:grid; gap:16px; }
+
+    .card{
+      background:rgba(0,0,0,0.18);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:16px;
     }
 
-    /* Large riddle text */
-    .q {
-      font-size: 28px;
-      line-height: 1.25;
-      font-weight: 750;
-      letter-spacing: 0.2px;
-    }
-    @media (max-width: 520px) {
-      .q { font-size: 24px; }
+    .riddle{ display:grid; gap:12px; }
+    .label{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.14em;
     }
 
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
+    .q{
+      font-size:28px;
+      line-height:1.25;
+      font-weight:750;
+      letter-spacing:0.2px;
     }
-    .btns { display: flex; flex-wrap: wrap; gap: 10px; }
-
-    button {
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button:hover { border-color: rgba(255,255,255,0.25); }
-    button.primary { background: rgba(122,162,255,0.18); border-color: rgba(122,162,255,0.35); }
-    button.danger { background: rgba(255,92,122,0.12); border-color: rgba(255,92,122,0.3); }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    .status { display: grid; gap: 12px; }
-
-    .progressRow { display: grid; grid-template-columns: 1fr; gap: 8px; }
-    .progressBar {
-      height: 10px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .progressBar > div {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, rgba(47,227,139,0.85), rgba(122,162,255,0.85));
-      transition: width 200ms ease;
+    @media (max-width:520px){
+      .q{ font-size:24px; }
     }
 
-    .answerBox { display: grid; gap: 10px; }
-    .slots {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size: 20px;
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
     }
-    .slot {
-      width: 28px;
-      height: 36px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.05);
-      display: grid;
-      place-items: center;
-    }
-    .slot.current {
-      outline: 2px solid rgba(122,162,255,0.75);
-      box-shadow: 0 0 0 4px rgba(122,162,255,0.15);
-    }
-    .slot.space { width: 14px; border: none; background: transparent; }
+    .btns{ display:flex; flex-wrap:wrap; gap:10px; }
 
-    .feedback {
-      padding: 12px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.15);
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    button{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
     }
-    .pill {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    .pill.good { color: #0b1a10; background: rgba(47,227,139,0.9); border-color: rgba(47,227,139,0.9); }
-    .pill.bad { color: #22070d; background: rgba(255,92,122,0.9); border-color: rgba(255,92,122,0.9); }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-    .small { color: var(--muted); font-size: 13px; line-height: 1.35; }
-    .kbd { font-family: ui-monospace, monospace; border: 1px solid var(--border); padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.06); }
+    button:hover{ border-color:rgba(255,255,255,0.25); }
+    button.primary{ background:rgba(122,162,255,0.18); border-color:rgba(122,162,255,0.35); }
+    button.danger{ background:rgba(255,92,122,0.12); border-color:rgba(255,92,122,0.3); }
+    button:disabled{ opacity:0.55; cursor:not-allowed; }
 
-    .typeRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .status{ display:grid; gap:12px; }
+
+    .progressRow{ display:grid; grid-template-columns:1fr; gap:8px; }
+    .progressBar{
+      height:10px;
+      background:rgba(255,255,255,0.06);
+      border:1px solid var(--border);
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .progressBar > div{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(47,227,139,0.85), rgba(122,162,255,0.85));
+      transition:width 200ms ease;
+    }
+
+    .answerBox{ display:grid; gap:10px; }
+    .slots{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:20px;
+    }
+    .slot{
+      width:28px;
+      height:36px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.05);
+      display:grid;
+      place-items:center;
+    }
+    .slot.current{
+      outline:2px solid rgba(122,162,255,0.75);
+      box-shadow:0 0 0 4px rgba(122,162,255,0.15);
+    }
+    .slot.space{ width:14px; border:none; background:transparent; }
+
+    .feedback{
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,0.15);
+      min-height:48px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .pill{
+      font-size:12px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .pill.good{ color:#0b1a10; background:rgba(47,227,139,0.9); border-color:rgba(47,227,139,0.9); }
+    .pill.bad{ color:#22070d; background:rgba(255,92,122,0.9); border-color:rgba(255,92,122,0.9); }
+    .mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .small{ color:var(--muted); font-size:13px; line-height:1.35; }
+    .kbd{ font-family:ui-monospace, monospace; border:1px solid var(--border); padding:1px 6px; border-radius:6px; background:rgba(255,255,255,0.06); }
+
+    .typeRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     input[type="text"]{
-      flex: 1;
-      min-width: 260px;
-      padding: 12px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.25);
-      color: var(--text);
-      font-size: 16px;
-      outline: none;
+      flex:1;
+      min-width:260px;
+      padding:12px 12px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,0.25);
+      color:var(--text);
+      font-size:16px;
+      outline:none;
     }
     input[type="text"]:focus{
-      border-color: rgba(122,162,255,0.55);
-      box-shadow: 0 0 0 4px rgba(122,162,255,0.14);
+      border-color:rgba(122,162,255,0.55);
+      box-shadow:0 0 0 4px rgba(122,162,255,0.14);
     }
 
     /* Larger signal light */
     #signalLight{
-      width: 64px;
-      height: 64px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
-      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25);
+      width:64px;
+      height:64px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.06);
+      box-shadow:inset 0 0 0 2px rgba(0,0,0,0.25);
     }
     #signalLight.on{
-      background: rgba(122,162,255,0.95);
-      box-shadow:
-        0 0 28px rgba(122,162,255,0.85),
-        0 0 90px rgba(122,162,255,0.35);
-      border-color: rgba(122,162,255,0.9);
+      background:rgba(122,162,255,0.95);
+      box-shadow:0 0 28px rgba(122,162,255,0.85), 0 0 90px rgba(122,162,255,0.35);
+      border-color:rgba(122,162,255,0.9);
     }
 
     /* Side reference panel */
-    .side {
-      position: sticky;
-      top: 16px;
-      align-self: start;
+    .side{ position:sticky; top:16px; align-self:start; }
+    .refGrid{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px 10px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:13px;
     }
-    .refGrid {
-      margin-top: 10px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px 10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size: 13px;
+    .refItem{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.05);
+      border-radius:10px;
+      padding:6px 8px;
     }
-    .refItem {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.05);
-      border-radius: 10px;
-      padding: 6px 8px;
+    .refItem .k{ color:var(--text); font-weight:700; }
+    .refItem .v{ color:var(--muted); }
+
+    /* Modal (no JS popup): uses <dialog> and showModal() */
+    dialog{
+      border:none;
+      padding:0;
+      border-radius:14px;
+      width:min(820px, calc(100% - 32px));
+      background:transparent;
     }
-    .refItem .k { color: var(--text); font-weight: 700; }
-    .refItem .v { color: var(--muted); }
+    dialog::backdrop{
+      background:rgba(0,0,0,0.65);
+      backdrop-filter: blur(2px);
+    }
+    .modalCard{
+      background:rgba(10, 14, 28, 0.98);
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:0 25px 80px rgba(0,0,0,0.55);
+      padding:16px;
+    }
+    .modalHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid var(--border);
+      padding-bottom:10px;
+      margin-bottom:12px;
+    }
+    .modalTitle{
+      font-weight:800;
+      letter-spacing:0.2px;
+    }
+    .morseBlock{
+      margin-top:10px;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.04);
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space:pre-wrap;
+      line-height:1.55;
+    }
   </style>
 </head>
 <body>
@@ -240,7 +276,7 @@
       <header>
         <div>
           <h1>Morse Riddle Challenge</h1>
-          <div class="sub">Listen to each letter in Morse code, then type the answer one letter at a time—or the whole answer.</div>
+          <div class="sub">Listen to each letter in Morse code, then type the answer (part or all), then submit.</div>
         </div>
         <div class="pill mono" id="audioState">Audio: ready</div>
       </header>
@@ -262,6 +298,11 @@
             </div>
           </div>
 
+          <!-- New: modal opener button -->
+          <div class="typeRow" style="margin-top:6px;">
+            <button id="openMorseBtn" type="button">Show riddle + answer in Morse</button>
+          </div>
+
           <div class="small">
             Tip: You can type the <b>whole answer</b> and press <span class="kbd">Submit</span>. We’ll check what you have so far.
           </div>
@@ -269,10 +310,11 @@
 
         <section class="card controls" aria-label="Controls">
           <div class="btns">
-            <button class="primary" id="startBtn">Start</button>
-            <button id="replayLetterBtn" disabled>Replay current letter</button>
-            <button id="replayAllBtn" disabled>Replay from start</button>
-            <button class="danger" id="resetBtn">Reset</button>
+            <button class="primary" id="startBtn" type="button">Start</button>
+            <button id="replayLetterBtn" type="button" disabled>Replay current letter</button>
+            <button id="replayAllBtn" type="button" disabled>Replay from start</button>
+            <button id="nextRiddleBtn" type="button">Next riddle</button>
+            <button class="danger" id="resetBtn" type="button">Reset</button>
           </div>
 
           <div class="typeRow small" style="gap:10px;">
@@ -280,7 +322,7 @@
             <input id="wpm" type="range" min="6" max="22" value="12" />
             <span class="mono" id="wpmVal">12</span>
             <span style="width:12px;"></span>
-            <button id="muteBtn">Mute</button>
+            <button id="muteBtn" type="button">Mute</button>
           </div>
         </section>
 
@@ -301,7 +343,7 @@
             <input id="answerInput" type="text" inputmode="text" autocomplete="off"
                    placeholder="Type the answer (letters and spaces)…" disabled
                    aria-label="Type your answer" />
-            <button id="submitBtn" disabled>Submit</button>
+            <button id="submitBtn" type="button" disabled>Submit</button>
           </div>
 
           <div class="feedback" id="feedback" aria-live="polite">
@@ -321,6 +363,33 @@
       </div>
     </aside>
   </div>
+
+  <!-- Modal dialog (not a JS popup) -->
+  <dialog id="morseDialog" aria-label="Riddle and answer in Morse code">
+    <div class="modalCard">
+      <div class="modalHeader">
+        <div>
+          <div class="modalTitle">Riddle + Answer in Morse</div>
+          <div class="small">This shows the current riddle and the answer written in Morse code.</div>
+        </div>
+        <form method="dialog">
+          <button type="submit">Close</button>
+        </form>
+      </div>
+
+      <div class="label">Riddle</div>
+      <div class="q" id="dialogRiddle" style="font-size:22px; font-weight:800;"></div>
+
+      <div style="height:12px;"></div>
+
+      <div class="label">Answer (Morse)</div>
+      <div class="morseBlock" id="dialogMorse"></div>
+
+      <div class="small" style="margin-top:10px;">
+        Legend: dot <span class="mono">.</span> and dash <span class="mono">-</span>. Word gaps are shown with <span class="mono">/</span>.
+      </div>
+    </div>
+  </dialog>
 
   <script>
     const MORSE = {
@@ -388,6 +457,7 @@
     const startBtn = document.getElementById("startBtn");
     const replayLetterBtn = document.getElementById("replayLetterBtn");
     const replayAllBtn = document.getElementById("replayAllBtn");
+    const nextRiddleBtn = document.getElementById("nextRiddleBtn");
     const resetBtn = document.getElementById("resetBtn");
 
     const pill = document.getElementById("pill");
@@ -404,6 +474,12 @@
     const showVisual = document.getElementById("showVisual");
     const signalLight = document.getElementById("signalLight");
 
+    // Modal
+    const openMorseBtn = document.getElementById("openMorseBtn");
+    const morseDialog = document.getElementById("morseDialog");
+    const dialogRiddle = document.getElementById("dialogRiddle");
+    const dialogMorse = document.getElementById("dialogMorse");
+
     // Audio
     let audioCtx = null;
     let oscillator = null;
@@ -416,7 +492,7 @@
     // Game state
     let riddleIndex = 0;
     let normalizedAnswer = "";
-    let index = 0; // how many characters (including spaces) are confirmed correct from the start
+    let index = 0; // confirmed correct prefix length (includes spaces)
     let started = false;
 
     function dotMs() {
@@ -501,7 +577,6 @@
     }
 
     function normalizeAnswerText(s) {
-      // Keep only A-Z and spaces, compress multiple spaces, trim.
       return (s || "")
         .toUpperCase()
         .replace(/[^A-Z ]/g, "")
@@ -649,8 +724,23 @@
       return i;
     }
 
+    function answerToMorse(answer) {
+      // letters separated by spaces; words separated by " / "
+      const parts = [];
+      const txt = normalizeAnswerText(answer);
+      for (const ch of txt) {
+        if (ch === " ") {
+          parts.push("/"); // word separator
+          continue;
+        }
+        parts.push(MORSE[ch] || "");
+      }
+      // join with single spaces, but keep / as its own token
+      return parts.filter(Boolean).join(" ").replace(/\s*\/\s*/g, " / ");
+    }
+
     async function loadRiddle(i) {
-      riddleIndex = i;
+      riddleIndex = (i + RIDDLES.length) % RIDDLES.length;
       const r = RIDDLES[riddleIndex];
 
       riddleText.textContent = r.q;
@@ -694,15 +784,7 @@
       }
 
       const typed = normalizeAnswerText(answerInput.value);
-
-      // If they typed less than we've already confirmed, keep progress (don't go backwards).
-      // We'll compare against the expected prefix length they provided.
       const prefixLen = longestCorrectPrefix(normalizedAnswer, typed);
-
-      if (prefixLen === 0 && typed.length > 0 && normalizedAnswer[0] !== typed[0]) {
-        setFeedback("Try again", "The first letter is not correct yet. Keep listening and try again.", "bad");
-        return;
-      }
 
       if (prefixLen > index) {
         index = prefixLen;
@@ -727,13 +809,28 @@
         return;
       }
 
-      // No progress gained
       if (prefixLen === typed.length && prefixLen < normalizedAnswer.length) {
         setFeedback("So far so good", "Everything you typed is correct so far. Keep going!", "good");
       } else {
         setFeedback("Not quite", "You have the beginning correct, but there’s a mistake after that. Fix it and submit again.", "bad");
       }
       answerInput.focus();
+    }
+
+    async function startGame() {
+      started = true;
+      setEnabledState();
+
+      try {
+        ensureAudio();
+        if (audioCtx.state === "suspended") await audioCtx.resume();
+        audioState.textContent = muted ? "Audio: muted" : "Audio: on";
+      } catch (e) {
+        audioState.textContent = "Audio: blocked (click Start again)";
+      }
+
+      setFeedback("Listen", "Listen to the first letter in Morse code…", "neutral");
+      await playCurrentLetter();
     }
 
     function resetGame() {
@@ -749,6 +846,22 @@
       buildSlots();
       updateSlots();
       updateProgress();
+    }
+
+    async function nextRiddle() {
+      // Stop current playback and jump to next riddle.
+      stopRequested = true;
+      lightOff();
+      isPlaying = false;
+
+      await loadRiddle(riddleIndex + 1);
+
+      // Keep started state as-is; if started, immediately play first letter of next riddle.
+      if (started) {
+        setEnabledState();
+        setFeedback("Listen", "Next riddle… listen to the first letter.", "neutral");
+        await playCurrentLetter();
+      }
     }
 
     function renderReference() {
@@ -769,22 +882,6 @@
       }
     }
 
-    async function startGame() {
-      started = true;
-      setEnabledState();
-
-      try {
-        ensureAudio();
-        if (audioCtx.state === "suspended") await audioCtx.resume();
-        audioState.textContent = muted ? "Audio: muted" : "Audio: on";
-      } catch (e) {
-        audioState.textContent = "Audio: blocked (click Start again)";
-      }
-
-      setFeedback("Listen", "Listen to the first letter in Morse code…", "neutral");
-      await playCurrentLetter();
-    }
-
     // Events
     startBtn.addEventListener("click", startGame);
 
@@ -797,6 +894,7 @@
     });
 
     replayAllBtn.addEventListener("click", playFromStart);
+    nextRiddleBtn.addEventListener("click", nextRiddle);
     resetBtn.addEventListener("click", resetGame);
 
     submitBtn.addEventListener("click", submitAnswerSoFar);
@@ -804,13 +902,12 @@
       if (e.key === "Enter") submitAnswerSoFar();
     });
 
-    // Live normalize (optional): keep letters/spaces only, uppercase
+    // Live normalize input: uppercase, letters/spaces only, collapse spaces
     answerInput.addEventListener("input", () => {
       const caret = answerInput.selectionStart;
       const before = answerInput.value;
       const after = before.toUpperCase().replace(/[^A-Z ]/g, "").replace(/\s+/g, " ");
       answerInput.value = after;
-      // best-effort caret restore
       answerInput.selectionStart = answerInput.selectionEnd = Math.min(caret, after.length);
     });
 
@@ -827,6 +924,14 @@
         } catch {}
       }
       answerInput.focus();
+    });
+
+    // Modal opener: fill with current riddle + answer in morse
+    openMorseBtn.addEventListener("click", () => {
+      const r = RIDDLES[riddleIndex];
+      dialogRiddle.textContent = r.q;
+      dialogMorse.textContent = answerToMorse(r.a);
+      morseDialog.showModal();
     });
 
     // Init
