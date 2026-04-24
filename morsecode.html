@@ -244,7 +244,7 @@
       border-radius:16px;
       box-shadow:0 25px 80px rgba(0,0,0,0.65);
       padding:20px;
-      color:#ffffff; /* make popup text white */
+      color:#ffffff;
     }
     .modalHeader{
       display:flex;
@@ -275,7 +275,7 @@
       margin-top:8px;
     }
     .modalRiddle{
-      font-size:36px;          /* much larger */
+      font-size:36px;
       line-height:1.15;
       font-weight:900;
       margin-top:10px;
@@ -284,6 +284,8 @@
     @media (max-width:520px){
       .modalRiddle{ font-size:28px; }
     }
+
+    /* Twice as big as before (was 26px); now 52px */
     .morseBlock{
       margin-top:12px;
       padding:16px;
@@ -292,14 +294,15 @@
       background:rgba(255,255,255,0.06);
       font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       white-space:pre-wrap;
-      line-height:1.6;
-      font-size:26px;          /* much larger */
+      line-height:1.25;
+      font-size:52px;
       color:#ffffff;
       word-break: break-word;
     }
     @media (max-width:520px){
-      .morseBlock{ font-size:20px; }
+      .morseBlock{ font-size:36px; }
     }
+
     .closeBtn{
       background:rgba(255,255,255,0.08);
       border:1px solid rgba(255,255,255,0.18);
