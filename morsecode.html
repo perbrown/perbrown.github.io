@@ -189,7 +189,6 @@
       box-shadow:0 0 0 4px rgba(122,162,255,0.14);
     }
 
-    /* Larger signal light */
     #signalLight{
       width:64px;
       height:64px;
@@ -204,7 +203,6 @@
       border-color:rgba(122,162,255,0.9);
     }
 
-    /* Side reference panel */
     .side{ position:sticky; top:16px; align-self:start; }
     .refGrid{
       margin-top:10px;
@@ -226,7 +224,7 @@
     .refItem .k{ color:var(--text); font-weight:700; }
     .refItem .v{ color:var(--muted); }
 
-    /* Modal (not a JS popup): <dialog> */
+    /* Modal */
     dialog{
       border:none;
       padding:0;
@@ -285,22 +283,34 @@
       .modalRiddle{ font-size:28px; }
     }
 
-    /* Twice as big as before (was 26px); now 52px */
-    .morseBlock{
+    /* Morse chips: each letter highlighted */
+    .morseChips{
       margin-top:12px;
-      padding:16px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(255,255,255,0.06);
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+    }
+    .morseChip{
       font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      white-space:pre-wrap;
-      line-height:1.25;
       font-size:52px;
+      line-height:1;
+      padding:14px 18px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.20);
+      background:rgba(255,255,255,0.08);
       color:#ffffff;
-      word-break: break-word;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      white-space:nowrap;
+    }
+    .morseChip.word{
+      background:rgba(122,162,255,0.22);
+      border-color:rgba(122,162,255,0.35);
+      font-weight:900;
+      padding:14px 16px;
     }
     @media (max-width:520px){
-      .morseBlock{ font-size:36px; }
+      .morseChip{ font-size:36px; padding:10px 12px; border-radius:12px; }
     }
 
     .closeBtn{
@@ -408,7 +418,7 @@
       <div class="modalHeader">
         <div>
           <div class="modalTitle">Riddle + Answer in Morse</div>
-          <div class="modalSmall">This shows the current riddle and the answer written in Morse code.</div>
+          <div class="modalSmall">Each colored box is one letter in Morse (so you can see where letters start/stop).</div>
         </div>
         <form method="dialog">
           <button class="closeBtn" type="submit">Close</button>
@@ -421,7 +431,7 @@
       <div style="height:16px;"></div>
 
       <div class="modalLabel">Answer (Morse)</div>
-      <div class="morseBlock" id="dialogMorse"></div>
+      <div class="morseChips" id="dialogMorse" aria-label="Morse answer chips"></div>
 
       <div class="modalSmall" style="margin-top:12px;">
         Legend: dot <span class="mono">.</span> and dash <span class="mono">-</span>. Word gaps are shown with <span class="mono">/</span>.
@@ -530,16 +540,13 @@
     // Game state
     let riddleIndex = 0;
     let normalizedAnswer = "";
-    let index = 0; // confirmed correct prefix length (includes spaces)
+    let index = 0;
     let started = false;
 
-    function dotMs() {
-      const wpm = Number(wpmSlider.value);
-      return 1200 / wpm;
-    }
+    function dotMs(){ return 1200 / Number(wpmSlider.value); }
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-    function ensureAudio() {
+    function ensureAudio(){
       if (audioCtx) return;
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       gainNode = audioCtx.createGain();
@@ -555,24 +562,16 @@
       audioState.textContent = "Audio: on";
     }
 
-    function lightOn() {
-      if (!showVisual || !signalLight) return;
+    function lightOn(){
       if (!showVisual.checked) return;
       signalLight.classList.add("on");
     }
+    function lightOff(){ signalLight.classList.remove("on"); }
 
-    function lightOff() {
-      if (!signalLight) return;
-      signalLight.classList.remove("on");
-    }
-
-    async function beep(durationMs) {
+    async function beep(durationMs){
       lightOn();
-      try {
-        if (muted) {
-          await sleep(durationMs);
-          return;
-        }
+      try{
+        if (muted){ await sleep(durationMs); return; }
 
         ensureAudio();
         if (audioCtx.state === "suspended") await audioCtx.resume();
@@ -590,43 +589,39 @@
       }
     }
 
-    async function playMorseForChar(ch) {
+    async function playMorseForChar(ch){
       const up = ch.toUpperCase();
       if (up === " ") return;
       const pattern = MORSE[up];
       if (!pattern) return;
 
       const d = dotMs();
-      for (let i = 0; i < pattern.length; i++) {
+      for (let i=0;i<pattern.length;i++){
         if (stopRequested) return;
         const sym = pattern[i];
         if (sym === ".") await beep(d);
-        else if (sym === "-") await beep(3 * d);
-        if (i < pattern.length - 1) await sleep(d);
+        else await beep(3*d);
+        if (i < pattern.length-1) await sleep(d);
       }
     }
 
-    function setFeedback(tag, text, kind) {
+    function setFeedback(tag, text, kind){
       pill.textContent = tag;
-      pill.classList.remove("good", "bad");
-      if (kind === "good") pill.classList.add("good");
-      if (kind === "bad") pill.classList.add("bad");
+      pill.classList.remove("good","bad");
+      if (kind==="good") pill.classList.add("good");
+      if (kind==="bad") pill.classList.add("bad");
       msg.innerHTML = text;
     }
 
-    function normalizeAnswerText(s) {
-      return (s || "")
-        .toUpperCase()
-        .replace(/[^A-Z ]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
+    function normalizeAnswerText(s){
+      return (s||"").toUpperCase().replace(/[^A-Z ]/g,"").replace(/\s+/g," ").trim();
     }
 
-    function buildSlots() {
+    function buildSlots(){
       slotsEl.innerHTML = "";
-      for (let i = 0; i < normalizedAnswer.length; i++) {
+      for (let i=0;i<normalizedAnswer.length;i++){
         const ch = normalizedAnswer[i];
-        if (ch === " ") {
+        if (ch===" "){
           const sp = document.createElement("div");
           sp.className = "slot space";
           slotsEl.appendChild(sp);
@@ -634,67 +629,62 @@
         }
         const d = document.createElement("div");
         d.className = "slot";
-        d.dataset.pos = String(i);
         d.textContent = "•";
         slotsEl.appendChild(d);
       }
     }
 
-    function answerPosToSlotIndex(answerPos) {
+    function answerPosToSlotIndex(answerPos){
       let slotIdx = 0;
-      for (let i = 0; i < normalizedAnswer.length; i++) {
-        if (normalizedAnswer[i] === " ") continue;
-        if (i === answerPos) return slotIdx;
+      for (let i=0;i<normalizedAnswer.length;i++){
+        if (normalizedAnswer[i]===" ") continue;
+        if (i===answerPos) return slotIdx;
         slotIdx++;
       }
       return -1;
     }
 
-    function findNextLetterPos(fromPos) {
-      for (let i = fromPos; i < normalizedAnswer.length; i++) {
+    function findNextLetterPos(fromPos){
+      for (let i=fromPos;i<normalizedAnswer.length;i++){
         if (normalizedAnswer[i] !== " ") return i;
       }
       return -1;
     }
 
-    function updateSlots() {
+    function updateSlots(){
       const slotDivs = [...slotsEl.querySelectorAll(".slot")].filter(el => !el.classList.contains("space"));
-
       let slotIdx = 0;
-      for (let i = 0; i < normalizedAnswer.length; i++) {
-        if (normalizedAnswer[i] === " ") continue;
+
+      for (let i=0;i<normalizedAnswer.length;i++){
+        if (normalizedAnswer[i]===" ") continue;
         const slot = slotDivs[slotIdx++];
         slot.classList.remove("current");
-        slot.textContent = (i < index) ? normalizedAnswer[i] : "•";
+        slot.textContent = (i<index) ? normalizedAnswer[i] : "•";
       }
 
       const nextPos = findNextLetterPos(index);
-      if (nextPos !== -1) {
+      if (nextPos !== -1){
         const sIdx = answerPosToSlotIndex(nextPos);
         if (sIdx !== -1 && slotDivs[sIdx]) slotDivs[sIdx].classList.add("current");
       }
     }
 
-    function countLetters() {
-      return [...normalizedAnswer].filter(c => c !== " ").length;
-    }
-    function lettersTypedSoFar() {
-      return [...normalizedAnswer.slice(0, index)].filter(c => c !== " ").length;
-    }
-    function updateProgress() {
+    function countLetters(){ return [...normalizedAnswer].filter(c=>c!==" ").length; }
+    function lettersTypedSoFar(){ return [...normalizedAnswer.slice(0,index)].filter(c=>c!==" ").length; }
+    function updateProgress(){
       const total = countLetters();
       const done = lettersTypedSoFar();
       progressText.textContent = `${done} / ${total}`;
-      progressFill.style.width = `${total === 0 ? 0 : Math.round((done / total) * 100)}%`;
+      progressFill.style.width = `${total===0?0:Math.round((done/total)*100)}%`;
     }
 
-    async function skipSpaces() {
+    async function skipSpaces(){
       while (index < normalizedAnswer.length && normalizedAnswer[index] === " ") index++;
       updateSlots();
       updateProgress();
     }
 
-    function setEnabledState() {
+    function setEnabledState(){
       const finished = index >= normalizedAnswer.length;
       answerInput.disabled = !started || finished;
       submitBtn.disabled = !started || finished;
@@ -702,7 +692,7 @@
       replayAllBtn.disabled = !started;
     }
 
-    async function playCurrentLetter() {
+    async function playCurrentLetter(){
       if (!started) return;
       await skipSpaces();
       if (index >= normalizedAnswer.length) return;
@@ -712,67 +702,70 @@
       stopRequested = false;
 
       setFeedback("Listen", `Listening for letter ${lettersTypedSoFar() + 1}.`, "neutral");
-
       await playMorseForChar(ch);
       if (!stopRequested) await sleep(3 * dotMs());
 
       isPlaying = false;
-      if (!stopRequested) {
+      if (!stopRequested){
         setFeedback("Type", "Type more of the answer, then press Submit.", "neutral");
         answerInput.focus();
       }
     }
 
-    async function playFromStart() {
+    async function playFromStart(){
       if (!started) return;
-      stopRequested = true;
-      lightOff();
+      stopRequested = true; lightOff();
       await sleep(0);
       stopRequested = false;
 
       isPlaying = true;
       setFeedback("Replay", "Replaying from the start…", "neutral");
 
-      for (let i = 0; i <= index && i < normalizedAnswer.length; i++) {
+      for (let i=0;i<=index && i<normalizedAnswer.length;i++){
         if (stopRequested) break;
         const ch = normalizedAnswer[i];
-
-        if (ch === " ") {
-          await sleep(7 * dotMs());
-          continue;
-        }
-
+        if (ch===" "){ await sleep(7*dotMs()); continue; }
         await playMorseForChar(ch);
-        await sleep(3 * dotMs());
+        await sleep(3*dotMs());
       }
 
       isPlaying = false;
-      if (!stopRequested) {
+      if (!stopRequested){
         setFeedback("Type", "Type more of the answer, then press Submit.", "neutral");
         answerInput.focus();
       }
     }
 
-    function longestCorrectPrefix(expected, typed) {
+    function longestCorrectPrefix(expected, typed){
       const n = Math.min(expected.length, typed.length);
-      let i = 0;
-      for (; i < n; i++) {
+      let i=0;
+      for (; i<n; i++){
         if (expected[i] !== typed[i]) break;
       }
       return i;
     }
 
-    function answerToMorse(answer) {
-      const parts = [];
+    function answerToMorseTokens(answer){
+      const tokens = [];
       const txt = normalizeAnswerText(answer);
-      for (const ch of txt) {
-        if (ch === " ") { parts.push("/"); continue; }
-        parts.push(MORSE[ch] || "");
+      for (const ch of txt){
+        if (ch === " ") { tokens.push({ type:"word", text:"/" }); continue; }
+        tokens.push({ type:"letter", text: (MORSE[ch] || "") });
       }
-      return parts.filter(Boolean).join(" ").replace(/\s*\/\s*/g, " / ");
+      return tokens.filter(t => t.text);
     }
 
-    async function loadRiddle(i) {
+    function renderMorseChips(container, tokens){
+      container.innerHTML = "";
+      for (const t of tokens){
+        const chip = document.createElement("span");
+        chip.className = "morseChip" + (t.type === "word" ? " word" : "");
+        chip.textContent = t.text;
+        container.appendChild(chip);
+      }
+    }
+
+    async function loadRiddle(i){
       riddleIndex = (i + RIDDLES.length) % RIDDLES.length;
       const r = RIDDLES[riddleIndex];
 
@@ -793,15 +786,13 @@
       setFeedback("Ready", 'Click <span class="kbd">Start</span> to begin.', "neutral");
     }
 
-    async function finishRiddle() {
+    async function finishRiddle(){
       const r = RIDDLES[riddleIndex];
       setFeedback("Done", `You solved it! The answer is <b>${r.a}</b>. Next riddle starts in 2 seconds…`, "good");
       lightOff();
-
       await sleep(2000);
 
-      const next = (riddleIndex + 1) % RIDDLES.length;
-      await loadRiddle(next);
+      await loadRiddle(riddleIndex + 1);
 
       started = true;
       setEnabledState();
@@ -809,9 +800,9 @@
       await playCurrentLetter();
     }
 
-    async function submitAnswerSoFar() {
+    async function submitAnswerSoFar(){
       if (!started) return;
-      if (isPlaying) {
+      if (isPlaying){
         setFeedback("Wait", "Audio is playing—wait for it to finish, then submit.", "bad");
         return;
       }
@@ -819,14 +810,11 @@
       const typed = normalizeAnswerText(answerInput.value);
       const prefixLen = longestCorrectPrefix(normalizedAnswer, typed);
 
-      if (prefixLen > index) {
+      if (prefixLen > index){
         index = prefixLen;
         await skipSpaces();
-        updateSlots();
-        updateProgress();
-        setEnabledState();
 
-        if (index >= normalizedAnswer.length) {
+        if (index >= normalizedAnswer.length){
           await finishRiddle();
           return;
         }
@@ -837,12 +825,12 @@
         return;
       }
 
-      if (typed.length === 0) {
+      if (typed.length === 0){
         setFeedback("Type", "Type some of the answer, then press Submit.", "neutral");
         return;
       }
 
-      if (prefixLen === typed.length && prefixLen < normalizedAnswer.length) {
+      if (prefixLen === typed.length && prefixLen < normalizedAnswer.length){
         setFeedback("So far so good", "Everything you typed is correct so far. Keep going!", "good");
       } else {
         setFeedback("Not quite", "You have the beginning correct, but there’s a mistake after that. Fix it and submit again.", "bad");
@@ -850,15 +838,15 @@
       answerInput.focus();
     }
 
-    async function startGame() {
+    async function startGame(){
       started = true;
       setEnabledState();
 
-      try {
+      try{
         ensureAudio();
         if (audioCtx.state === "suspended") await audioCtx.resume();
         audioState.textContent = muted ? "Audio: muted" : "Audio: on";
-      } catch (e) {
+      } catch {
         audioState.textContent = "Audio: blocked (click Start again)";
       }
 
@@ -866,7 +854,7 @@
       await playCurrentLetter();
     }
 
-    function resetGame() {
+    function resetGame(){
       started = false;
       stopRequested = true;
       isPlaying = false;
@@ -881,24 +869,24 @@
       updateProgress();
     }
 
-    async function nextRiddle() {
+    async function nextRiddle(){
       stopRequested = true;
       lightOff();
       isPlaying = false;
 
       await loadRiddle(riddleIndex + 1);
 
-      if (started) {
+      if (started){
         setEnabledState();
         setFeedback("Listen", "Next riddle… listen to the first letter.", "neutral");
         await playCurrentLetter();
       }
     }
 
-    function renderReference() {
+    function renderReference(){
       const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
       refGrid.innerHTML = "";
-      for (const ch of letters) {
+      for (const ch of letters){
         const item = document.createElement("div");
         item.className = "refItem";
         const k = document.createElement("div");
@@ -915,23 +903,18 @@
 
     // Events
     startBtn.addEventListener("click", startGame);
-
     replayLetterBtn.addEventListener("click", async () => {
-      stopRequested = true;
-      lightOff();
+      stopRequested = true; lightOff();
       await sleep(0);
       stopRequested = false;
       await playCurrentLetter();
     });
-
     replayAllBtn.addEventListener("click", playFromStart);
     nextRiddleBtn.addEventListener("click", nextRiddle);
     resetBtn.addEventListener("click", resetGame);
 
     submitBtn.addEventListener("click", submitAnswerSoFar);
-    answerInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") submitAnswerSoFar();
-    });
+    answerInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAnswerSoFar(); });
 
     answerInput.addEventListener("input", () => {
       const caret = answerInput.selectionStart;
@@ -947,8 +930,8 @@
       muted = !muted;
       muteBtn.textContent = muted ? "Unmute" : "Mute";
       audioState.textContent = muted ? "Audio: muted" : "Audio: on";
-      if (!muted) {
-        try {
+      if (!muted){
+        try{
           ensureAudio();
           if (audioCtx.state === "suspended") await audioCtx.resume();
         } catch {}
@@ -959,7 +942,10 @@
     openMorseBtn.addEventListener("click", () => {
       const r = RIDDLES[riddleIndex];
       dialogRiddle.textContent = r.q;
-      dialogMorse.textContent = answerToMorse(r.a);
+
+      const tokens = answerToMorseTokens(r.a);
+      renderMorseChips(dialogMorse, tokens);
+
       morseDialog.showModal();
     });
 
