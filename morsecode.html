@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -67,14 +66,24 @@
       padding: 16px;
     }
 
-    .riddle { display: grid; gap: 10px; }
+    .riddle { display: grid; gap: 12px; }
     .label {
       font-size: 12px;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.14em;
     }
-    .q { font-size: 18px; line-height: 1.35; }
+
+    /* Large riddle text */
+    .q {
+      font-size: 28px;
+      line-height: 1.25;
+      font-weight: 750;
+      letter-spacing: 0.2px;
+    }
+    @media (max-width: 520px) {
+      .q { font-size: 24px; }
+    }
 
     .controls {
       display: flex;
@@ -167,7 +176,7 @@
     .typeRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     input[type="text"]{
       flex: 1;
-      min-width: 220px;
+      min-width: 260px;
       padding: 12px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
@@ -181,10 +190,10 @@
       box-shadow: 0 0 0 4px rgba(122,162,255,0.14);
     }
 
-    /* Signal light */
+    /* Larger signal light */
     #signalLight{
-      width: 34px;
-      height: 34px;
+      width: 64px;
+      height: 64px;
       border-radius: 999px;
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.06);
@@ -193,8 +202,8 @@
     #signalLight.on{
       background: rgba(122,162,255,0.95);
       box-shadow:
-        0 0 20px rgba(122,162,255,0.85),
-        0 0 60px rgba(122,162,255,0.35);
+        0 0 28px rgba(122,162,255,0.85),
+        0 0 90px rgba(122,162,255,0.35);
       border-color: rgba(122,162,255,0.9);
     }
 
@@ -231,7 +240,7 @@
       <header>
         <div>
           <h1>Morse Riddle Challenge</h1>
-          <div class="sub">Listen to each letter in Morse code, then type the answer one letter at a time.</div>
+          <div class="sub">Listen to each letter in Morse code, then type the answer one letter at a time—or the whole answer.</div>
         </div>
         <div class="pill mono" id="audioState">Audio: ready</div>
       </header>
@@ -254,7 +263,7 @@
           </div>
 
           <div class="small">
-            Tip: Click <span class="kbd">Start</span>, then type the answer letter-by-letter. Spaces are added automatically.
+            Tip: You can type the <b>whole answer</b> and press <span class="kbd">Submit</span>. We’ll check what you have so far.
           </div>
         </section>
 
@@ -284,14 +293,14 @@
           </div>
 
           <div class="answerBox">
-            <div class="small">Answer (you reveal it as you type):</div>
+            <div class="small">Answer (reveals as you get letters correct):</div>
             <div class="slots" id="slots" aria-label="Answer slots"></div>
           </div>
 
           <div class="typeRow" aria-label="Typing row">
-            <input id="letterInput" type="text" inputmode="text" autocomplete="off"
-                   placeholder="Type the next letter…" maxlength="1" disabled
-                   aria-label="Type next letter" />
+            <input id="answerInput" type="text" inputmode="text" autocomplete="off"
+                   placeholder="Type the answer (letters and spaces)…" disabled
+                   aria-label="Type your answer" />
             <button id="submitBtn" disabled>Submit</button>
           </div>
 
@@ -372,16 +381,20 @@
     const riddleText = document.getElementById("riddleText");
     const riddleCount = document.getElementById("riddleCount");
     const slotsEl = document.getElementById("slots");
-    const letterInput = document.getElementById("letterInput");
+
+    const answerInput = document.getElementById("answerInput");
     const submitBtn = document.getElementById("submitBtn");
+
     const startBtn = document.getElementById("startBtn");
     const replayLetterBtn = document.getElementById("replayLetterBtn");
     const replayAllBtn = document.getElementById("replayAllBtn");
     const resetBtn = document.getElementById("resetBtn");
+
     const pill = document.getElementById("pill");
     const msg = document.getElementById("msg");
     const progressText = document.getElementById("progressText");
     const progressFill = document.getElementById("progressFill");
+
     const wpmSlider = document.getElementById("wpm");
     const wpmVal = document.getElementById("wpmVal");
     const muteBtn = document.getElementById("muteBtn");
@@ -403,7 +416,7 @@
     // Game state
     let riddleIndex = 0;
     let normalizedAnswer = "";
-    let index = 0; // position in answer string (includes spaces)
+    let index = 0; // how many characters (including spaces) are confirmed correct from the start
     let started = false;
 
     function dotMs() {
@@ -487,6 +500,15 @@
       msg.innerHTML = text;
     }
 
+    function normalizeAnswerText(s) {
+      // Keep only A-Z and spaces, compress multiple spaces, trim.
+      return (s || "")
+        .toUpperCase()
+        .replace(/[^A-Z ]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
     function buildSlots() {
       slotsEl.innerHTML = "";
       for (let i = 0; i < normalizedAnswer.length; i++) {
@@ -561,7 +583,7 @@
 
     function setEnabledState() {
       const finished = index >= normalizedAnswer.length;
-      letterInput.disabled = !started || finished;
+      answerInput.disabled = !started || finished;
       submitBtn.disabled = !started || finished;
       replayLetterBtn.disabled = !started;
       replayAllBtn.disabled = !started;
@@ -583,8 +605,8 @@
 
       isPlaying = false;
       if (!stopRequested) {
-        setFeedback("Type", "Now type the letter you just heard.", "neutral");
-        letterInput.focus();
+        setFeedback("Type", "Type more of the answer, then press Submit.", "neutral");
+        answerInput.focus();
       }
     }
 
@@ -613,16 +635,18 @@
 
       isPlaying = false;
       if (!stopRequested) {
-        setFeedback("Type", "Type the next letter.", "neutral");
-        letterInput.focus();
+        setFeedback("Type", "Type more of the answer, then press Submit.", "neutral");
+        answerInput.focus();
       }
     }
 
-    function normalizeTypedLetter(val) {
-      if (!val) return "";
-      const up = val.toUpperCase();
-      if (!/^[A-Z]$/.test(up)) return "";
-      return up;
+    function longestCorrectPrefix(expected, typed) {
+      const n = Math.min(expected.length, typed.length);
+      let i = 0;
+      for (; i < n; i++) {
+        if (expected[i] !== typed[i]) break;
+      }
+      return i;
     }
 
     async function loadRiddle(i) {
@@ -632,10 +656,10 @@
       riddleText.textContent = r.q;
       riddleCount.textContent = `(${riddleIndex + 1} of ${RIDDLES.length})`;
 
-      normalizedAnswer = r.a.toUpperCase().replace(/[^A-Z ]/g, "");
+      normalizedAnswer = normalizeAnswerText(r.a);
       index = 0;
 
-      letterInput.value = "";
+      answerInput.value = "";
       lightOff();
 
       buildSlots();
@@ -662,29 +686,26 @@
       await playCurrentLetter();
     }
 
-    async function submitLetter() {
+    async function submitAnswerSoFar() {
       if (!started) return;
       if (isPlaying) {
-        setFeedback("Wait", "Audio is playing—wait for it to finish, then type.", "bad");
+        setFeedback("Wait", "Audio is playing—wait for it to finish, then submit.", "bad");
         return;
       }
 
-      await skipSpaces();
-      if (index >= normalizedAnswer.length) return;
+      const typed = normalizeAnswerText(answerInput.value);
 
-      const expected = normalizedAnswer[index];
-      const typed = normalizeTypedLetter(letterInput.value.trim());
+      // If they typed less than we've already confirmed, keep progress (don't go backwards).
+      // We'll compare against the expected prefix length they provided.
+      const prefixLen = longestCorrectPrefix(normalizedAnswer, typed);
 
-      if (!typed) {
-        setFeedback("Oops", "Type one letter A–Z.", "bad");
+      if (prefixLen === 0 && typed.length > 0 && normalizedAnswer[0] !== typed[0]) {
+        setFeedback("Try again", "The first letter is not correct yet. Keep listening and try again.", "bad");
         return;
       }
 
-      if (typed === expected) {
-        setFeedback("Correct", `Nice! <span class="mono">${typed}</span> is correct.`, "good");
-        index++;
-        letterInput.value = "";
-
+      if (prefixLen > index) {
+        index = prefixLen;
         await skipSpaces();
         updateSlots();
         updateProgress();
@@ -695,36 +716,31 @@
           return;
         }
 
-        await sleep(300);
-        setFeedback("Listen", "Next letter…", "neutral");
+        setFeedback("Good", "Nice! You got more letters correct. Listen for the next letter…", "good");
+        await sleep(250);
         await playCurrentLetter();
+        return;
+      }
+
+      if (typed.length === 0) {
+        setFeedback("Type", "Type some of the answer, then press Submit.", "neutral");
+        return;
+      }
+
+      // No progress gained
+      if (prefixLen === typed.length && prefixLen < normalizedAnswer.length) {
+        setFeedback("So far so good", "Everything you typed is correct so far. Keep going!", "good");
       } else {
-        setFeedback("Try again", `Not quite. You typed <span class="mono">${typed}</span>. Try again!`, "bad");
-        letterInput.select();
+        setFeedback("Not quite", "You have the beginning correct, but there’s a mistake after that. Fix it and submit again.", "bad");
       }
-    }
-
-    async function startGame() {
-      started = true;
-      setEnabledState();
-
-      try {
-        ensureAudio();
-        if (audioCtx.state === "suspended") await audioCtx.resume();
-        audioState.textContent = muted ? "Audio: muted" : "Audio: on";
-      } catch (e) {
-        audioState.textContent = "Audio: blocked (click Start again)";
-      }
-
-      setFeedback("Listen", "Listen to the first letter in Morse code…", "neutral");
-      await playCurrentLetter();
+      answerInput.focus();
     }
 
     function resetGame() {
       started = false;
       stopRequested = true;
       isPlaying = false;
-      letterInput.value = "";
+      answerInput.value = "";
       lightOff();
       setEnabledState();
       setFeedback("Ready", 'Click <span class="kbd">Start</span> to begin.', "neutral");
@@ -753,6 +769,23 @@
       }
     }
 
+    async function startGame() {
+      started = true;
+      setEnabledState();
+
+      try {
+        ensureAudio();
+        if (audioCtx.state === "suspended") await audioCtx.resume();
+        audioState.textContent = muted ? "Audio: muted" : "Audio: on";
+      } catch (e) {
+        audioState.textContent = "Audio: blocked (click Start again)";
+      }
+
+      setFeedback("Listen", "Listen to the first letter in Morse code…", "neutral");
+      await playCurrentLetter();
+    }
+
+    // Events
     startBtn.addEventListener("click", startGame);
 
     replayLetterBtn.addEventListener("click", async () => {
@@ -764,13 +797,21 @@
     });
 
     replayAllBtn.addEventListener("click", playFromStart);
-
     resetBtn.addEventListener("click", resetGame);
 
-    submitBtn.addEventListener("click", submitLetter);
-    letterInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submitLetter(); });
-    letterInput.addEventListener("input", () => {
-      letterInput.value = letterInput.value.toUpperCase().slice(0, 1);
+    submitBtn.addEventListener("click", submitAnswerSoFar);
+    answerInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submitAnswerSoFar();
+    });
+
+    // Live normalize (optional): keep letters/spaces only, uppercase
+    answerInput.addEventListener("input", () => {
+      const caret = answerInput.selectionStart;
+      const before = answerInput.value;
+      const after = before.toUpperCase().replace(/[^A-Z ]/g, "").replace(/\s+/g, " ");
+      answerInput.value = after;
+      // best-effort caret restore
+      answerInput.selectionStart = answerInput.selectionEnd = Math.min(caret, after.length);
     });
 
     wpmSlider.addEventListener("input", () => { wpmVal.textContent = wpmSlider.value; });
@@ -785,7 +826,7 @@
           if (audioCtx.state === "suspended") await audioCtx.resume();
         } catch {}
       }
-      letterInput.focus();
+      answerInput.focus();
     });
 
     // Init
