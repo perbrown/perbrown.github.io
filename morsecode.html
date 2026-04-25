@@ -283,7 +283,6 @@
       .modalRiddle{ font-size:28px; }
     }
 
-    /* Morse chips: each letter highlighted */
     .morseChips{
       margin-top:12px;
       display:flex;
@@ -451,47 +450,48 @@
       5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----."
     };
 
+    // Harder riddles (40). Answers must be A-Z + spaces only.
     const RIDDLES = [
-      { q: "I have hands, but I can’t clap. I have a face, but no eyes. What am I?", a: "A CLOCK" },
-      { q: "What has to be broken before you can use it?", a: "AN EGG" },
-      { q: "What has a neck but no head?", a: "A BOTTLE" },
-      { q: "What gets wetter the more it dries?", a: "A TOWEL" },
-      { q: "What has many keys but can’t open any doors?", a: "A PIANO" },
-      { q: "What has words but never speaks?", a: "A BOOK" },
-      { q: "What kind of room has no doors or windows?", a: "A MUSHROOM" },
-      { q: "What runs but never walks?", a: "WATER" },
-      { q: "What has a bed but never sleeps?", a: "A RIVER" },
-      { q: "What has one eye but can’t see?", a: "A NEEDLE" },
-      { q: "What can you catch but not throw?", a: "A COLD" },
-      { q: "What has a thumb and four fingers but isn’t alive?", a: "A GLOVE" },
-      { q: "What has legs but doesn’t walk?", a: "A TABLE" },
-      { q: "What is full of holes but still holds water?", a: "A SPONGE" },
-      { q: "What can travel around the world while staying in a corner?", a: "A STAMP" },
-      { q: "What has a tail but no body?", a: "A COIN" },
-      { q: "What has an end but no beginning?", a: "A RAINBOW" },
-      { q: "What goes up when rain comes down?", a: "AN UMBRELLA" },
-      { q: "What has a head and a foot but no legs?", a: "A BED" },
-      { q: "What is always in front of you but can’t be seen?", a: "THE FUTURE" },
+      { q: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", a: "AN ECHO" },
+      { q: "The more you take, the more you leave behind. What are they?", a: "FOOTSTEPS" },
+      { q: "I am not alive, but I can grow. I have no lungs, but I need air. What am I?", a: "A FIRE" },
+      { q: "I have cities, but no houses. I have rivers, but no water. I have forests, but no trees. What am I?", a: "A MAP" },
+      { q: "I can be cracked, made, told, and played. What am I?", a: "A JOKE" },
+      { q: "I have branches, but no fruit, trunk, or leaves. What am I?", a: "A BANK" },
+      { q: "I am full of letters, yet I never speak. What am I?", a: "A MAILBOX" },
+      { q: "What has many layers, but is not an onion, and can make you cry without being sad?", a: "A MYSTERY" },
+      { q: "I am always coming, but never arrive. What am I?", a: "TOMORROW" },
+      { q: "I can fill a room, yet I weigh nothing. What am I?", a: "LIGHT" },
+      { q: "I run around a yard, yet I never move. What am I?", a: "A FENCE" },
+      { q: "I get sharper the more you use me, yet I am not a knife. What am I?", a: "YOUR MIND" },
+      { q: "I can be long, I can be short, I can be grown, I can be bought. What am I?", a: "A STORY" },
+      { q: "I have a head and a tail but no body. What am I?", a: "A COIN" },
+      { q: "I go up and down but never move. What am I?", a: "A STAIRCASE" },
+      { q: "I can be written, I can be spoken, I can be exposed, I can be broken. What am I?", a: "A SECRET" },
+      { q: "I build bridges of words and can carry meaning, but I am not a book. What am I?", a: "A LANGUAGE" },
+      { q: "I am taken from a mine and shut in a wooden case, from which I am never released. What am I?", a: "PENCIL LEAD" },
+      { q: "I have keys but no locks and space but no rooms. You can enter but cannot go outside. What am I?", a: "A KEYBOARD" },
+      { q: "I am easy to lift but hard to throw. What am I?", a: "A FEATHER" },
 
-      { q: "What has a mouth but never eats?", a: "A RIVER" },
-      { q: "What has a ring but no finger?", a: "A TELEPHONE" },
-      { q: "What has ears but cannot hear?", a: "CORN" },
-      { q: "What has a spine but no bones?", a: "A BOOK" },
-      { q: "What is light as a feather but even the strongest person can’t hold it for long?", a: "YOUR BREATH" },
-      { q: "What has four wheels and flies?", a: "A GARBAGE TRUCK" },
-      { q: "What can fill a room but takes up no space?", a: "LIGHT" },
-      { q: "What has a face and two hands but no arms or legs?", a: "A CLOCK" },
-      { q: "What begins with T ends with T and has T in it?", a: "A TEAPOT" },
-      { q: "What goes up but never comes down?", a: "YOUR AGE" },
-      { q: "What has lots of eyes but can’t see?", a: "A POTATO" },
-      { q: "What has one head, one foot, and four legs?", a: "A BED" },
-      { q: "What has two hands but can’t clap?", a: "A CLOCK" },
-      { q: "What can you keep after giving it to someone?", a: "YOUR WORD" },
-      { q: "What has a bottom at the top?", a: "A LEG" },
-      { q: "What has three letters and starts with GAS?", a: "A CAR" },
-      { q: "What has many teeth but can’t bite?", a: "A COMB" },
-      { q: "What kind of band never plays music?", a: "A RUBBER BAND" },
-      { q: "What has an eye but cannot see and is often used with thread?", a: "A NEEDLE" }
+      { q: "I can fly without wings and cry without eyes. Wherever I go, darkness follows me. What am I?", a: "A CLOUD" },
+      { q: "I have one eye but cannot see. What am I?", a: "A NEEDLE" },
+      { q: "I have a tongue but cannot taste, and I can be tied but not with string. What am I?", a: "A SHOE" },
+      { q: "I can be measured but not seen. I can be saved but not held. What am I?", a: "TIME" },
+      { q: "I am a word of five letters. Remove two and I still sound the same. What am I?", a: "QUEUE" },
+      { q: "I can be caught but never thrown. What am I?", a: "A COLD" },
+      { q: "The more of me you have, the less you see. What am I?", a: "DARKNESS" },
+      { q: "I am always in front of you but cannot be seen. What am I?", a: "THE FUTURE" },
+      { q: "I am tall when I am young and short when I am old. What am I?", a: "A CANDLE" },
+      { q: "I have teeth but cannot bite. What am I?", a: "A COMB" },
+      { q: "I can be kept, given, and broken, but I am not a thing you can touch. What am I?", a: "A PROMISE" },
+      { q: "I can be opened, but I am not a door. I can be closed, but I am not a window. What am I?", a: "A BOOK" },
+      { q: "I am a path between two points, but I am not a road. What am I?", a: "A LINE" },
+      { q: "I can be shared and still kept. What am I?", a: "A SECRET" },
+      { q: "I have a face and two hands but no arms or legs. What am I?", a: "A CLOCK" },
+      { q: "I am found in the ocean and in the sky, but I am not a fish or a bird. What am I?", a: "A STAR" },
+      { q: "I can be read but I am not a book. I can be delivered but I am not a package. What am I?", a: "A MESSAGE" },
+      { q: "I have no beginning, end, or middle, yet I surround you. What am I?", a: "A CIRCLE" },
+      { q: "I am a place where yesterday follows today. What am I?", a: "A DICTIONARY" }
     ];
 
     // UI
