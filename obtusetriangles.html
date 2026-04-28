@@ -3,119 +3,149 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Area of an Obtuse Triangle → Parallelogram (Step-by-step)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Area of an Obtuse Triangle (Grade 6)</title>
   <style>
     :root{
-      --bg:#0b1020;
-      --text:#e9eeff;
-      --muted:#b7c3ff;
-      --base:#66d9ff;
+      --bg:#071027;
+      --panel:#0c1a3a;
+      --ink:#eef3ff;
+      --muted:#b9c7ff;
+
+      --triA:#39d98a;
+      --triB:#3fb9ff;
+
+      --base:#6fe8ff;
       --height:#ffd166;
-      --tri:#56f39a;
-      --tri2:#3bd0ff;
-      --grid:rgba(255,255,255,0.08);
+
+      --outline:rgba(255,255,255,.35);
+      --grid:rgba(255,255,255,.06);
+      --shadow:rgba(0,0,0,.45);
     }
 
+    *{ box-sizing:border-box; }
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 800px at 25% 10%, #182454 0%, var(--bg) 55%, #060913 100%);
-      color: var(--text);
+      background: radial-gradient(1100px 700px at 20% 10%, #1c2d68 0%, var(--bg) 55%, #040714 100%);
+      color:var(--ink);
+      min-height:100vh;
       display:flex;
       align-items:center;
       justify-content:center;
-      min-height:100vh;
+      padding:18px;
     }
 
     .wrap{
-      width:min(980px, 96vw);
+      width:min(1040px, 100%);
       display:grid;
-      grid-template-columns: 1.3fr 1fr;
+      grid-template-columns: 1.5fr 1fr;
       gap:14px;
     }
 
-    .stage, .card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:14px;
+    .stage, .side{
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:16px;
       overflow:hidden;
-      box-shadow: 0 22px 60px rgba(0,0,0,0.45);
+      box-shadow: 0 18px 55px var(--shadow);
     }
 
     .stage{
+      height:600px;
       position:relative;
-      height:560px;
     }
 
-    .stage header{
+    .topbar{
       position:absolute;
       left:0; right:0; top:0;
-      padding:12px 14px;
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
-      gap:10px;
-      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0));
-      z-index:5;
+      gap:12px;
+      padding:12px 14px;
+      background: linear-gradient(180deg, rgba(0,0,0,.6), rgba(0,0,0,0));
       pointer-events:none;
+      z-index:5;
     }
-    .stage header .title{
-      font-weight:700;
-      letter-spacing:0.2px;
+    .topbar .title{
+      font-weight:800;
+      letter-spacing:.2px;
     }
-    .stage header .subtitle{
-      font-size: 12.5px;
-      color: var(--muted);
-      font-weight: 520;
-      text-align:right;
+    .topbar .subtitle{
+      margin-top:4px;
+      font-size:12.5px;
+      color:var(--muted);
+      font-weight:600;
+      max-width: 420px;
+      line-height:1.25;
     }
 
     canvas{ width:100%; height:100%; display:block; }
 
-    .card{
-      padding:14px 14px 12px;
+    .side{
+      height:600px;
+      padding:14px;
       display:flex;
       flex-direction:column;
       gap:12px;
-      height:560px;
-      box-sizing:border-box;
     }
 
-    .step{
+    .card{
+      background: rgba(0,0,0,.20);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
       padding:12px;
-      border-radius:12px;
-      background: rgba(0,0,0,0.18);
-      border:1px solid rgba(255,255,255,0.10);
     }
 
-    .stepTop{
+    .stepLine{
       display:flex;
-      align-items:baseline;
+      align-items:center;
       justify-content:space-between;
-      gap:12px;
-      margin-bottom:6px;
+      gap:10px;
+      margin-bottom:8px;
     }
-
-    .step h3{
-      margin:0;
-      font-size: 15px;
-    }
-    .pill{
+    .badge{
       font-size:12px;
-      color: rgba(233,238,255,0.9);
-      background: rgba(255,255,255,0.10);
-      border:1px solid rgba(255,255,255,0.12);
-      padding:4px 8px;
+      color:rgba(238,243,255,.92);
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      padding:4px 9px;
       border-radius:999px;
       white-space:nowrap;
     }
-    .step p{
+    h2{
+      font-size:16px;
       margin:0;
-      color: rgba(233,238,255,0.88);
-      line-height:1.35;
-      font-size: 13.5px;
     }
+    p{
+      margin:0;
+      color:rgba(238,243,255,.90);
+      line-height:1.35;
+      font-size:13.8px;
+    }
+
+    .formula{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      padding:10px;
+      color:rgba(238,243,255,.95);
+      line-height:1.35;
+      font-size:13px;
+      white-space:pre-wrap;
+    }
+
+    .legend{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:7px 10px;
+      align-items:center;
+      font-size:13px;
+      color:rgba(238,243,255,.90);
+    }
+    .sw{ width:14px; height:14px; border-radius:4px; border:1px solid rgba(255,255,255,.25); }
 
     .controls{
       margin-top:auto;
@@ -123,121 +153,95 @@
       flex-direction:column;
       gap:10px;
       padding-top:10px;
-      border-top:1px solid rgba(255,255,255,0.10);
+      border-top:1px solid rgba(255,255,255,.12);
     }
-
-    .btnrow{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
-    .leftBtns{ display:flex; gap:10px; flex-wrap:wrap; }
-
-    button{
-      background: rgba(255,255,255,0.10);
-      border:1px solid rgba(255,255,255,0.16);
-      color: var(--text);
-      border-radius:10px;
-      padding:10px 12px;
-      font-weight:650;
-      cursor:pointer;
-      transition: transform .06s ease, background .15s ease;
-    }
-    button:hover{ background: rgba(255,255,255,0.14); }
-    button:active{ transform: translateY(1px); }
-    button:disabled{
-      opacity:0.45;
-      cursor:not-allowed;
-    }
-
-    label{
-      font-size: 12.5px;
-      color: var(--muted);
+    .row{
       display:flex;
+      gap:10px;
+      flex-wrap:wrap;
       align-items:center;
-      gap:8px;
-      user-select:none;
       justify-content:space-between;
     }
-    input[type="range"]{ width: 180px; }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; }
 
-    .formula{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      background: rgba(255,255,255,0.08);
-      border:1px solid rgba(255,255,255,0.12);
-      padding:10px 10px;
+    button{
+      padding:10px 12px;
       border-radius:12px;
-      font-size: 13px;
-      color: rgba(233,238,255,0.95);
-      line-height:1.35;
-      white-space:pre-wrap;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.10);
+      color:var(--ink);
+      font-weight:800;
+      cursor:pointer;
     }
+    button:hover{ background: rgba(255,255,255,.14); }
+    button:disabled{ opacity:.45; cursor:not-allowed; }
 
-    .legend{
-      display:grid;
-      grid-template-columns: auto 1fr;
-      gap:6px 10px;
+    label{
+      display:flex;
       align-items:center;
-      font-size: 13px;
-      color: rgba(233,238,255,0.9);
+      gap:10px;
+      color:var(--muted);
+      font-size:12.5px;
+      font-weight:650;
+      user-select:none;
     }
-    .swatch{ width:14px; height:14px; border-radius:4px; border:1px solid rgba(255,255,255,0.22); }
+    input[type="range"]{ width:190px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="stage" aria-label="Animation stage">
-      <header>
+    <div class="stage">
+      <div class="topbar">
         <div>
-          <div class="title">Obtuse Triangle → Parallelogram</div>
-          <div class="subtitle">Use Next to move through the proof</div>
+          <div class="title">Area of an Obtuse Triangle</div>
+          <div class="subtitle">We will use TWO copies of the same triangle to make a parallelogram.</div>
         </div>
         <div class="subtitle" id="status"></div>
-      </header>
-      <canvas id="c" width="980" height="560"></canvas>
+      </div>
+      <canvas id="cv"></canvas>
     </div>
 
-    <div class="card">
-      <div class="step" id="stepBox">
-        <div class="stepTop">
-          <h3 id="stepTitle">Step 1: Base and height</h3>
-          <div class="pill" id="stepPill">Step 1 of 4</div>
+    <div class="side">
+      <div class="card">
+        <div class="stepLine">
+          <h2 id="stepTitle">Step 1: Base and height</h2>
+          <div class="badge" id="stepBadge">1 / 4</div>
         </div>
-        <p id="stepText">
-          The height is the <b>perpendicular</b> distance to the base. For an obtuse triangle, the height can fall <b>outside</b> the triangle.
-        </p>
+        <p id="stepText"></p>
       </div>
 
-      <div class="legend">
-        <div class="swatch" style="background: var(--tri);"></div><div>Triangle (original)</div>
-        <div class="swatch" style="background: var(--tri2);"></div><div>Second copy</div>
-        <div class="swatch" style="background: var(--base);"></div><div>Base</div>
-        <div class="swatch" style="background: var(--height);"></div><div>Height (perpendicular)</div>
+      <div class="card">
+        <div class="legend">
+          <div class="sw" style="background:var(--triA)"></div><div>Triangle (copy 1)</div>
+          <div class="sw" style="background:var(--triB)"></div><div>Triangle (copy 2)</div>
+          <div class="sw" style="background:var(--base)"></div><div>Base (b)</div>
+          <div class="sw" style="background:var(--height)"></div><div>Height (h) — perpendicular</div>
+        </div>
       </div>
 
       <div class="formula" id="formula">
-Parallelogram area = base × height
-Two same triangles make a parallelogram
-
-So: 2 × (triangle area) = base × height
-Triangle area = (base × height) ÷ 2
+Parallelogram area = b × h
+Two equal triangles make a parallelogram
+So triangle area = (b × h) ÷ 2
       </div>
 
       <div class="controls">
-        <div class="btnrow">
-          <div class="leftBtns">
-            <button id="prevStep">Previous</button>
-            <button id="nextStep">Next</button>
-            <button id="restartStep">Replay step</button>
+        <div class="row">
+          <div class="btns">
+            <button id="back">Back</button>
+            <button id="next">Next</button>
+            <button id="replay">Replay</button>
           </div>
-          <div class="leftBtns">
-            <button id="play">Play</button>
+          <div class="btns">
             <button id="pause">Pause</button>
+            <button id="play">Play</button>
           </div>
         </div>
 
         <label>
-          <span>Speed</span>
-          <span style="display:flex; gap:10px; align-items:center;">
-            <input id="speed" type="range" min="0.5" max="2.0" value="1.0" step="0.1" />
-            <span id="speedVal">1.0×</span>
-          </span>
+          Speed
+          <input id="speed" type="range" min="0.6" max="2.0" value="1.0" step="0.1"/>
+          <span id="speedVal">1.0×</span>
         </label>
       </div>
     </div>
@@ -245,327 +249,333 @@ Triangle area = (base × height) ÷ 2
 
 <script>
 (() => {
-  const canvas = document.getElementById('c');
+  const canvas = document.getElementById('cv');
   const ctx = canvas.getContext('2d');
 
-  // HiDPI
-  function fitCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  window.addEventListener('resize', fitCanvas);
-  fitCanvas();
-
   const statusEl = document.getElementById('status');
-  const stepTitle = document.getElementById('stepTitle');
-  const stepText = document.getElementById('stepText');
-  const stepPill = document.getElementById('stepPill');
+  const stepTitleEl = document.getElementById('stepTitle');
+  const stepTextEl = document.getElementById('stepText');
+  const stepBadgeEl = document.getElementById('stepBadge');
 
-  const prevStepBtn = document.getElementById('prevStep');
-  const nextStepBtn = document.getElementById('nextStep');
-  const restartStepBtn = document.getElementById('restartStep');
-  const playBtn = document.getElementById('play');
+  const backBtn = document.getElementById('back');
+  const nextBtn = document.getElementById('next');
+  const replayBtn = document.getElementById('replay');
   const pauseBtn = document.getElementById('pause');
+  const playBtn = document.getElementById('play');
+
   const speedInput = document.getElementById('speed');
   const speedVal = document.getElementById('speedVal');
 
-  // Geometry (obtuse triangle)
-  const A = {x: 220, y: 390}; // left base
-  const B = {x: 640, y: 390}; // right base
-  const C = {x: 360, y: 250}; // apex (obtuse triangle)
-
-  function footToLine(P, L1, L2) {
-    const vx = L2.x - L1.x, vy = L2.y - L1.y;
-    const wx = P.x - L1.x, wy = P.y - L1.y;
-    const vv = vx*vx + vy*vy;
-    const t = (wx*vx + wy*vy) / vv;
-    return {x: L1.x + t*vx, y: L1.y + t*vy, t};
+  // Resize for crisp drawing
+  function resize(){
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, Math.min(2.5, devicePixelRatio || 1));
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
   }
-  const H = footToLine(C, A, B);
+  addEventListener('resize', resize);
+  resize();
 
+  // -------- Geometry: choose a clearly obtuse triangle.
+  // Base is horizontal; apex is placed so one angle is obtuse, and the perpendicular foot
+  // from apex to the base lands OUTSIDE the segment AB.
+  const A = {x: 170, y: 430};
+  const B = {x: 640, y: 430};
+  const C = {x: 90,  y: 260};   // apex left of A => obtuse + height outside
+
+  function footPoint(P, L1, L2){
+    const vx = L2.x-L1.x, vy = L2.y-L1.y;
+    const wx = P.x-L1.x, wy = P.y-L1.y;
+    const t = (wx*vx + wy*vy) / (vx*vx + vy*vy);
+    return {x:L1.x + t*vx, y:L1.y + t*vy, t};
+  }
+  const H = footPoint(C, A, B); // this will be left of A (outside)
+  const tri1 = [A,B,C];
+
+  // For the second copy: rotate 180° around midpoint of AB.
   const midAB = {x:(A.x+B.x)/2, y:(A.y+B.y)/2};
+  function rot180AboutMid(p){
+    return {x: 2*midAB.x - p.x, y: 2*midAB.y - p.y};
+  }
+  const tri2Final = tri1.map(rot180AboutMid);
 
-  // Steps (each step is a self-contained mini-timeline)
+  // Start tri2 off to the right, then bring it in, then rotate into place.
+  const tri2Start = tri2Final.map(p => ({x:p.x + 240, y:p.y - 40}));
+  // Intermediate: in same orientation as final but still shifted (slide in first).
+  const tri2Slide = tri2Final.map(p => ({x:p.x + 120, y:p.y}));
+
+  // Parallelogram outline (using A -> B -> C' -> C)
+  const C2 = tri2Final[2]; // opposite vertex from C
+  const para = [A, B, C2, C];
+
+  // -------- Steps
   const steps = [
     {
-      name: "base-height",
       title: "Step 1: Base and height",
-      text: `The <b>height</b> is the line straight down (perpendicular) to the base. For an <b>obtuse</b> triangle, that perpendicular line can land <b>outside</b> the triangle.`,
-      dur: 2.2
+      text: `Choose the <b>base</b> (b). Now draw the <b>height</b> (h): a line from the top corner straight down at a <b>right angle</b> to the base. <br><br>
+             Because this triangle is <b>obtuse</b>, the height lands <b>outside</b> the triangle.`,
+      dur: 2.4,
+      draw: (u) => drawScene({u, showTri2:false, showPara:false, mode:"height"})
     },
     {
-      name: "double",
-      title: "Step 2: Double the triangle",
-      text: `Make a <b>second copy</b> of the same triangle. Two identical triangles have <b>double</b> the area of one triangle.`,
-      dur: 2.0
+      title: "Step 2: Make a second copy (doubling)",
+      text: `Make a <b>second identical triangle</b>. Now we have <b>two</b> triangles, so the total area is <b>double</b> the area of one triangle.`,
+      dur: 2.0,
+      draw: (u) => drawScene({u, showTri2:true, showPara:false, mode:"copy"})
     },
     {
-      name: "form-par",
-      title: "Step 3: Form a parallelogram",
-      text: `Slide the second triangle so the two triangles fit together into a <b>parallelogram</b>. The parallelogram has the <b>same base</b> and <b>same height</b>.`,
-      dur: 2.6
+      title: "Step 3: Rotate & fit to make a parallelogram",
+      text: `Rotate and slide the second triangle so the two triangles fit together perfectly. <br><br>
+             Together they make a <b>parallelogram</b> with the <b>same base (b)</b> and <b>same height (h)</b>.`,
+      dur: 2.8,
+      draw: (u) => drawScene({u, showTri2:true, showPara:true, mode:"form"})
     },
     {
-      name: "result",
-      title: "Step 4: Conclusion",
-      text: `Parallelogram area = <b>base × height</b>. Since it’s made of <b>two</b> identical triangles, one triangle has area <b>(base × height) ÷ 2</b>.`,
-      dur: 2.2
+      title: "Step 4: Use parallelogram area",
+      text: `Parallelogram area = <b>b × h</b>. <br>
+             That parallelogram is made of <b>two equal triangles</b>. <br><br>
+             So the triangle’s area is <b>(b × h) ÷ 2</b>.`,
+      dur: 2.0,
+      draw: (u) => drawScene({u, showTri2:true, showPara:true, mode:"result"})
     }
   ];
 
-  function easeInOut(u){
-    u = Math.max(0, Math.min(1, u));
+  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+  function ease(u){
+    u = clamp01(u);
     return u < 0.5 ? 4*u*u*u : 1 - Math.pow(-2*u+2,3)/2;
   }
   function lerp(a,b,u){ return a + (b-a)*u; }
-  function lerpPt(P,Q,u){ return {x:lerp(P.x,Q.x,u), y:lerp(P.y,Q.y,u)}; }
+  function lerpPt(p,q,u){ return {x:lerp(p.x,q.x,u), y:lerp(p.y,q.y,u)}; }
 
-  function drawGrid(w,h){
+  function cssVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function clear(w,h){
+    ctx.clearRect(0,0,w,h);
+    // subtle grid
     ctx.save();
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim() || 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = cssVar('--grid');
     ctx.lineWidth = 1;
-    const step = 40;
-    for(let x=0; x<=w; x+=step){
-      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
-    }
-    for(let y=0; y<=h; y+=step){
-      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
-    }
+    const step = 44;
+    for(let x=0; x<=w; x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+    for(let y=0; y<=h; y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
     ctx.restore();
   }
 
-  function polyPath(points){
+  function pathPoly(points){
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
     for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
     ctx.closePath();
   }
 
-  function drawTriangle(points, fill, alpha=1){
+  function drawTri(points, fill, alpha=1){
     ctx.save();
     ctx.globalAlpha = alpha;
-    polyPath(points);
+    pathPoly(points);
     ctx.fillStyle = fill;
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "rgba(255,255,255,0.28)";
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = cssVar('--outline');
     ctx.stroke();
     ctx.restore();
   }
 
-  function drawSegment(P,Q,color,width=4, dash=null){
+  function drawLine(p,q,color,w=5,dash=null,alpha=1){
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.strokeStyle = color;
-    ctx.lineWidth = width;
+    ctx.lineWidth = w;
+    ctx.lineCap = "round";
     if(dash) ctx.setLineDash(dash);
-    ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(Q.x,Q.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
     ctx.restore();
   }
 
-  function unit(P,Q){
-    const dx=Q.x-P.x, dy=Q.y-P.y;
-    const d=Math.hypot(dx,dy) || 1;
-    return {x:dx/d, y:dy/d};
+  function unit(p,q){
+    const dx=q.x-p.x, dy=q.y-p.y;
+    const d=Math.hypot(dx,dy)||1;
+    return {x:dx/d,y:dy/d};
   }
 
-  function drawRightAngleMark(at, along, perp, size=14, color="rgba(255,255,255,0.75)"){
+  function rightAngleMark(at, along, perp, size=14, alpha=1){
     ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = "rgba(255,255,255,.85)";
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(at.x, at.y);
     ctx.lineTo(at.x + along.x*size, at.y + along.y*size);
     ctx.lineTo(at.x + along.x*size + perp.x*size, at.y + along.y*size + perp.y*size);
     ctx.lineTo(at.x + perp.x*size, at.y + perp.y*size);
-    ctx.lineTo(at.x, at.y);
+    ctx.closePath();
     ctx.stroke();
     ctx.restore();
   }
 
-  function drawLabel(text, P, color="rgba(233,238,255,0.95)", bg="rgba(0,0,0,0.55)"){
+  function label(text, p, color="rgba(255,255,255,.95)"){
     ctx.save();
-    ctx.font = "600 13px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    const padX=8, padY=6;
+    ctx.font = "800 14px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    const padX=10, padY=7;
     const w = ctx.measureText(text).width + padX*2;
-    const h = 24;
-    ctx.fillStyle = bg;
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    const h = 28;
+    ctx.fillStyle = "rgba(0,0,0,.55)";
+    ctx.strokeStyle = "rgba(255,255,255,.14)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(P.x, P.y, w, h, 10);
-    ctx.fill();
-    ctx.stroke();
+    ctx.roundRect(p.x, p.y, w, h, 12);
+    ctx.fill(); ctx.stroke();
     ctx.fillStyle = color;
-    ctx.fillText(text, P.x+padX, P.x && 0, 0); // placeholder to keep font loaded
-    ctx.fillText(text, P.x+padX, P.y+16);
+    ctx.fillText(text, p.x+padX, p.y+19);
     ctx.restore();
   }
 
-  const tri1 = [A,B,C];
+  function drawScene({u, showTri2, showPara, mode}){
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width, Hh = rect.height;
+    clear(W,Hh);
 
-  function rotate180AboutMid(points){
-    return points.map(p => ({x:2*midAB.x - p.x, y:2*midAB.y - p.y}));
+    // Triangle 1
+    drawTri(tri1, cssVar('--triA'), 0.92);
+
+    // Base
+    drawLine(A,B, cssVar('--base'), 6, null, 1);
+    label("base b", {x:(A.x+B.x)/2 - 28, y:A.y + 14}, cssVar('--base'));
+
+    // Height: draw perpendicular from C to base line (even if outside the segment)
+    const baseDir = unit(A,B);
+    const perp = {x:-baseDir.y, y:baseDir.x};
+
+    // Extend from C past H for visibility
+    const dirCH = unit(C,H);
+    const Hext = {x: H.x + dirCH.x*55, y: H.y + dirCH.y*55};
+
+    let heightAlpha = 0.15;
+    if(mode === "height") heightAlpha = ease(u);
+    else heightAlpha = 0.9;
+
+    drawLine(C, Hext, cssVar('--height'), 5, [10,8], heightAlpha);
+    rightAngleMark(H, baseDir, perp, 14, heightAlpha);
+    label("height h", {x: Math.min(H.x, C.x) + 10, y: Math.min(H.y, C.y) - 30}, cssVar('--height'));
+
+    // Show that the foot is outside (little pointer text near A side)
+    if(mode === "height"){
+      const uu = ease(u);
+      label("The height lands outside", {x: 24, y: 58}, `rgba(238,243,255,${0.95*uu})`);
+    }
+
+    // Triangle 2 motion
+    if(showTri2){
+      let tri2;
+      let alpha = 0.9;
+
+      if(mode === "copy"){
+        // slide in from start to "near" position
+        const uu = ease(u);
+        tri2 = tri2Start.map((p,i) => lerpPt(p, tri2Slide[i], uu));
+        alpha = 0.15 + 0.75*uu;
+        label("2nd copy", {x: 24, y: 58}, cssVar('--triB'));
+        label("Two triangles = double area", {x: 24, y: 92}, "rgba(238,243,255,.95)");
+      } else if(mode === "form"){
+        // finish the slide + "snap/rotate into place" feel (we interpolate slide->final)
+        const uu = ease(u);
+        tri2 = tri2Slide.map((p,i) => lerpPt(p, tri2Final[i], uu));
+        alpha = 0.88;
+      } else {
+        tri2 = tri2Final;
+        alpha = 0.88;
+      }
+
+      drawTri(tri2, cssVar('--triB'), alpha);
+    }
+
+    // Parallelogram outline
+    if(showPara){
+      const a = (mode === "form") ? (0.15 + 0.55*ease(u)) : 0.70;
+
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "rgba(255,255,255,.55)";
+      ctx.setLineDash([12,10]);
+      pathPoly(para);
+      ctx.stroke();
+      ctx.restore();
+
+      if(mode === "form"){
+        label("Now it's a parallelogram!", {x: 24, y: 58});
+      }
+      if(mode === "result"){
+        label("Parallelogram area = b × h", {x: 24, y: 58});
+        label("Triangle area = (b × h) ÷ 2", {x: 24, y: 92});
+      }
+    }
   }
-  function transformTriangle(points, translate){
-    return points.map(p => ({x:p.x+translate.x, y:p.y+translate.y}));
-  }
 
-  const tri2Target = rotate180AboutMid(tri1);
-  const tri2StartOffset = {x: 220, y: -140};
-  const tri2Start = transformTriangle(tri2Target, tri2StartOffset);
-  const tri2Par = transformTriangle(tri2Target, {x: 110, y: 0});
-
+  // ------- Step player
   let stepIndex = 0;
-  let stepTime = 0;     // time within the current step
+  let t = 0;
   let running = true;
   let speed = 1.0;
   let last = null;
 
-  function setUIForStep(i){
-    const s = steps[i];
-    stepTitle.textContent = s.title;
-    stepText.innerHTML = s.text;
-    stepPill.textContent = `Step ${i+1} of ${steps.length}`;
-    statusEl.textContent = running ? "Playing step…" : "Paused";
+  function syncUI(){
+    const s = steps[stepIndex];
+    stepTitleEl.textContent = s.title;
+    stepTextEl.innerHTML = s.text;
+    stepBadgeEl.textContent = `${stepIndex+1} / ${steps.length}`;
 
-    prevStepBtn.disabled = (i === 0);
-    nextStepBtn.disabled = (i === steps.length - 1);
-  }
-
-  function restartStep(){
-    stepTime = 0;
-    running = true;
-    setUIForStep(stepIndex);
+    backBtn.disabled = (stepIndex === 0);
+    nextBtn.disabled = (stepIndex === steps.length - 1);
   }
 
   function gotoStep(i){
     stepIndex = Math.max(0, Math.min(steps.length-1, i));
-    stepTime = 0;
+    t = 0;
     running = true;
-    setUIForStep(stepIndex);
+    syncUI();
   }
 
-  prevStepBtn.addEventListener('click', () => gotoStep(stepIndex - 1));
-  nextStepBtn.addEventListener('click', () => gotoStep(stepIndex + 1));
-  restartStepBtn.addEventListener('click', () => restartStep());
+  backBtn.addEventListener('click', () => gotoStep(stepIndex-1));
+  nextBtn.addEventListener('click', () => gotoStep(stepIndex+1));
+  replayBtn.addEventListener('click', () => { t = 0; running = true; });
 
-  playBtn.addEventListener('click', () => { running = true; setUIForStep(stepIndex); });
-  pauseBtn.addEventListener('click', () => { running = false; setUIForStep(stepIndex); });
+  pauseBtn.addEventListener('click', () => running = false);
+  playBtn.addEventListener('click', () => running = true);
 
   speedInput.addEventListener('input', () => {
     speed = parseFloat(speedInput.value);
     speedVal.textContent = speed.toFixed(1) + "×";
   });
 
-  function draw(stepName, u){
-    const rect = canvas.getBoundingClientRect();
-    const w = rect.width, h = rect.height;
-
-    ctx.clearRect(0,0,w,h);
-    drawGrid(w,h);
-
-    const baseColor = getComputedStyle(document.documentElement).getPropertyValue('--base').trim();
-    const heightColor = getComputedStyle(document.documentElement).getPropertyValue('--height').trim();
-    const triColor = getComputedStyle(document.documentElement).getPropertyValue('--tri').trim();
-    const tri2Color = getComputedStyle(document.documentElement).getPropertyValue('--tri2').trim();
-
-    // Triangle 1 always visible
-    drawTriangle(tri1, triColor, 0.92);
-
-    // Base always visible
-    drawSegment(A,B, baseColor, 5, null);
-    drawLabel("base", {x: (A.x+B.x)/2 - 18, y: A.y + 12}, baseColor);
-
-    // Height visibility depends on step
-    const showHeight = (stepName === "base-height" || stepName === "double" || stepName === "form-par" || stepName === "result");
-    if(showHeight){
-      const hAlpha = (stepName === "base-height") ? easeInOut(u) : 0.85;
-      const dirCH = unit(C, {x:H.x, y:H.y});
-      const extendedH = {x:H.x + dirCH.x*40, y:H.y + dirCH.y*40};
-
-      ctx.save(); ctx.globalAlpha = hAlpha;
-      drawSegment(C, extendedH, heightColor, 4, [8,7]);
-      const baseDir = unit(A,B);
-      const perp = {x:-baseDir.y, y:baseDir.x};
-      drawRightAngleMark({x:H.x, y:H.y}, baseDir, perp, 10, "rgba(255,255,255,0.72)");
-      drawLabel("height", {x: H.x + 10, y: Math.min(C.y,H.y) - 18}, heightColor);
-      ctx.restore();
-    }
-
-    // Triangle 2 appears and moves in steps 2-4
-    let tri2 = null;
-    let tri2Alpha = 0;
-
-    if(stepName === "double"){
-      const uu = easeInOut(u);
-      tri2 = tri2Start.map((p,i) => lerpPt(p, tri2Par[i], uu));
-      tri2Alpha = uu;
-    } else if(stepName === "form-par"){
-      const uu = easeInOut(u);
-      tri2 = tri2Par.map((p,i) => lerpPt(p, tri2Target[i], uu));
-      tri2Alpha = 1;
-    } else if(stepName === "result"){
-      tri2 = tri2Target;
-      tri2Alpha = 1;
-    }
-
-    if(tri2){
-      drawTriangle(tri2, tri2Color, 0.78*tri2Alpha + 0.05);
-    }
-
-    // Parallelogram outline in steps 3-4
-    if(stepName === "form-par" || stepName === "result"){
-      const uu = (stepName === "form-par") ? easeInOut(u) : 1;
-      const C2 = tri2Target[2];
-      const P = [A, C2, B, C];
-
-      ctx.save();
-      ctx.globalAlpha = 0.35 * uu + 0.10;
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10,8]);
-      ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      polyPath(P);
-      ctx.stroke();
-      ctx.restore();
-
-      if(stepName === "result"){
-        drawLabel("Parallelogram area = base × height", {x: 18, y: 58}, "rgba(233,238,255,0.95)");
-        drawLabel("Triangle area = (base × height) ÷ 2", {x: 18, y: 90}, "rgba(233,238,255,0.95)");
-      }
-    }
-  }
-
-  function tick(ts){
+  function frame(ts){
     if(last == null) last = ts;
-    const dt = (ts - last) / 1000;
+    const dt = (ts - last)/1000;
     last = ts;
 
-    const step = steps[stepIndex];
-
+    const s = steps[stepIndex];
     if(running){
-      stepTime += dt * speed;
-      if(stepTime >= step.dur){
-        stepTime = step.dur;
-        running = false; // auto-pause at end of each step until Next
+      t += dt * speed;
+      if(t >= s.dur){
+        t = s.dur;
+        running = false; // pause at end of step so teacher can talk
       }
     }
 
-    const u = step.dur === 0 ? 1 : (stepTime / step.dur);
-    draw(step.name, u);
+    const u = (s.dur === 0) ? 1 : (t / s.dur);
+    s.draw(u);
 
-    // Status text
-    statusEl.textContent = running ? "Playing step…" : (u >= 1 ? "Step complete — click Next" : "Paused");
-
-    requestAnimationFrame(tick);
+    statusEl.textContent = running ? "Playing…" : (u >= 1 ? "Step complete — click Next" : "Paused");
+    requestAnimationFrame(frame);
   }
 
   // init
-  setUIForStep(stepIndex);
-  draw(steps[0].name, 0);
-  requestAnimationFrame(tick);
+  syncUI();
+  steps[0].draw(0);
+  requestAnimationFrame(frame);
 })();
 </script>
 </body>
