@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Interactive Triangle Height</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#f4f7fb;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+
+.wrap{
+  background:white;
+  padding:20px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.12);
+  width:95%;
+  max-width:900px;
+}
+
+h2{
+  text-align:center;
+  margin:0 0 10px;
+}
+
+svg{
+  width:100%;
+  height:auto;
+  border:1px solid #ddd;
+  border-radius:12px;
+  background:white;
+}
+
+text{
+  font-size:16px;
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+<h2>Drag the top point to change the triangle</h2>
+
+<svg viewBox="0 0 800 450" id="svg">
+
+  <!-- base -->
+  <line x1="150" y1="350" x2="650" y2="350"
+        stroke="#111" stroke-width="3"/>
+
+  <!-- triangle -->
+  <polygon id="tri"
+           fill="#93c5fd"
+           stroke="#1d4ed8"
+           stroke-width="3"/>
+
+  <!-- height (dotted) -->
+  <line id="heightLine"
+        stroke="#dc2626"
+        stroke-width="2"
+        stroke-dasharray="6,6"/>
+
+  <!-- draggable vertex -->
+  <circle id="topPoint"
+          r="10"
+          fill="#f43f5e"
+          stroke="#111"
+          stroke-width="2"
+          style="cursor:grab"/>
+
+  <!-- labels -->
+  <text x="150" y="380">A</text>
+  <text x="650" y="380">B</text>
+  <text id="cLabel">C</text>
+
+</svg>
+</div>
+
+<script>
+const svg = document.getElementById("svg");
+const tri = document.getElementById("tri");
+const topPoint = document.getElementById("topPoint");
+const heightLine = document.getElementById("heightLine");
+const cLabel = document.getElementById("cLabel");
+
+// fixed base points
+const A = {x:150, y:350};
+const B = {x:650, y:350};
+
+// initial top point
+let C = {x:400, y:180};
+
+let dragging = false;
+
+function update(){
+  // triangle
+  tri.setAttribute("points",
+    `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`
+  );
+
+  // height foot (since base is horizontal)
+  const foot = {x:C.x, y:A.y};
+
+  // height line (dotted)
+  heightLine.setAttribute("x1", C.x);
+  heightLine.setAttribute("y1", C.y);
+  heightLine.setAttribute("x2", foot.x);
+  heightLine.setAttribute("y2", foot.y);
+
+  // draggable point
+  topPoint.setAttribute("cx", C.x);
+  topPoint.setAttribute("cy", C.y);
+
+  // label
+  cLabel.setAttribute("x", C.x + 10);
+  cLabel.setAttribute("y", C.y - 10);
+  cLabel.textContent = "C";
+}
+
+function getMousePos(evt){
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+topPoint.addEventListener("mousedown", () => dragging = true);
+window.addEventListener("mouseup", () => dragging = false);
+
+window.addEventListener("mousemove", (e) => {
+  if(!dragging) return;
+
+  const pos = getMousePos(e);
+
+  // constrain horizontally a bit so it stays visible
+  C.x = Math.max(50, Math.min(750, pos.x));
+  C.y = Math.max(50, Math.min(300, pos.y));
+
+  update();
+});
+
+update();
+</script>
+
+</body>
+</html>
