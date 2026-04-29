@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triangle to Parallelogram</title>
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f7fb;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+.wrap{
+  background:#fff;
+  padding:24px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
+  max-width:920px;
+  width:95%;
+}
+h1{text-align:center;margin:0 0 10px}
+svg{
+  width:100%;
+  height:auto;
+  border:1px solid #ddd;
+  border-radius:16px;
+  background:white;
+}
+button{
+  display:block;
+  margin:16px auto 0;
+  padding:12px 22px;
+  border:none;
+  border-radius:12px;
+  background:#2563eb;
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+}
+.note{text-align:center;color:#555}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<h1>Two Triangles = One Parallelogram</h1>
+
+<!-- expanded viewBox so rotated triangle is visible -->
+<svg viewBox="0 0 820 520">
+
+<!-- obtuse triangle -->
+<polygon points="180,320 620,320 760,200"
+         fill="#93c5fd"
+         stroke="#1d4ed8"
+         stroke-width="3"/>
+
+<!-- identical triangle (will rotate into place) -->
+<polygon id="red" points="180,320 620,320 760,200"
+         fill="#fca5a5"
+         stroke="#dc2626"
+         stroke-width="3"
+         opacity="0.9"/>
+
+<text id="msg" x="220" y="70" font-size="28">Press Animate</text>
+
+</svg>
+
+<button onclick="anim()">Animate</button>
+
+<div class="note">
+Two identical obtuse triangles form a parallelogram.
+</div>
+</div>
+
+<script>
+let on=false;
+
+function anim(){
+  const r=document.getElementById('red');
+  const m=document.getElementById('msg');
+
+  // rotate around midpoint of base (400,320)
+  r.style.transition='transform 2s ease';
+  r.style.transformOrigin='400px 320px';
+
+  if(!on){
+    r.style.transform='rotate(180deg)';
+    m.textContent='Rotation forms a parallelogram';
+  }else{
+    r.style.transform='none';
+    m.textContent='Press Animate';
+  }
+
+  on=!on;
+}
+</script>
+
+</body>
+</html>
