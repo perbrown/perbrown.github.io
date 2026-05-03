@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stroop Test - Rainbow</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: #111;
+    color: white;
+  }
+  #word {
+    font-size: 80px;
+    margin-top: 100px;
+    height: 120px;
+  }
+  #buttons button {
+    margin: 10px;
+    padding: 15px 25px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  #startBtn {
+    padding: 15px 30px;
+    font-size: 20px;
+    margin-top: 50px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Stroop Test (Rainbow)</h1>
+<p>Click the COLOR of the word, not what it says.</p>
+
+<div id="word"></div>
+
+<div id="buttons" style="display:none;">
+  <button style="background:red;" onclick="answer('red')">Red</button>
+  <button style="background:orange;" onclick="answer('orange')">Orange</button>
+  <button style="background:yellow; color:black;" onclick="answer('yellow')">Yellow</button>
+  <button style="background:green;" onclick="answer('green')">Green</button>
+  <button style="background:blue;" onclick="answer('blue')">Blue</button>
+  <button style="background:indigo;" onclick="answer('indigo')">Indigo</button>
+  <button style="background:violet;" onclick="answer('violet')">Violet</button>
+</div>
+
+<button id="startBtn" onclick="startGame()">Start</button>
+
+<h2 id="result"></h2>
+
+<script>
+const colors = ["red","orange","yellow","green","blue","indigo","violet"];
+
+let currentColor = "";
+let currentWord = "";
+let score = 0;
+let round = 0;
+let totalRounds = 10;
+let startTime = 0;
+
+function startGame() {
+  score = 0;
+  round = 0;
+  startTime = Date.now();
+  document.getElementById("startBtn").style.display = "none";
+  document.getElementById("result").innerText = "";
+  nextRound();
+}
+
+function nextRound() {
+  if (round >= totalRounds) {
+    const endTime = Date.now();
+    const totalTime = ((endTime - startTime) / 1000).toFixed(2);
+
+    document.getElementById("word").innerText = "";
+    document.getElementById("buttons").style.display = "none";
+    document.getElementById("result").innerText =
+      "Score: " + score + " / " + totalRounds +
+      " | Time: " + totalTime + " seconds";
+
+    document.getElementById("startBtn").style.display = "inline-block";
+    return;
+  }
+
+  round++;
+
+  // Pick color
+  currentColor = colors[Math.floor(Math.random() * colors.length)];
+
+  // Pick a DIFFERENT word
+  do {
+    currentWord = colors[Math.floor(Math.random() * colors.length)];
+  } while (currentWord === currentColor);
+
+  const wordDiv = document.getElementById("word");
+  wordDiv.innerText = currentWord.toUpperCase();
+  wordDiv.style.color = currentColor;
+
+  document.getElementById("buttons").style.display = "none";
+
+  setTimeout(() => {
+    wordDiv.innerText = "";
+    document.getElementById("buttons").style.display = "block";
+  }, 1000);
+}
+
+function answer(choice) {
+  if (choice === currentColor) {
+    score++;
+  }
+  nextRound();
+}
+</script>
+
+</body>
+</html>
