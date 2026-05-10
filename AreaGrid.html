@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Grid Shapes: Draw, Cut, Select</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 16px; }
+  #toolbar { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+  button, select { padding: 6px 10px; }
+  button.active { background: #2d6cdf; color: #fff; }
+  canvas { border: 1px solid #ccc; display: block; }
+  .hint { margin-top: 8px; color: #555; font-size: 13px; }
+  #metrics { margin-top: 8px; font-size: 14px; color: #222; }
+</style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="drawSquareBtn" class="active">Draw Square</button>
+    <button id="cutBtn">Cut Mode</button>
+    <button id="selectBtn">Select/Move</button>
+    <button id="combineBtn">Combine</button>
+    <button id="areaBtn">Area</button>
+    <button id="perimeterBtn">Perimeter</button>
+    <button id="perimeterStepBtn">Perimeter Step</button>
+    <button id="rotateBtn">Rotate 90°</button>
+    <button id="copyBtn">Copy</button>
+    <button id="mirrorHBtn">Mirror Horizontal</button>
+    <button id="mirrorVBtn">Mirror Vertical</button>
+    <button id="deleteBtn">Delete</button>
+    <select id="shapeSelect">
+      <option value="square">Square</option>
+      <option value="rectangle">Rectangle</option>
+      <option value="triangle">Triangle</option>
+      <option value="trapezoid">Trapezoid</option>
+      <option value="parallelogram">Parallelogram</option>
+    </select>
+    <button id="addShapeBtn">Add Shape</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+  <canvas id="canvas" width="1200" height="600"></canvas>
+  <div id="metrics">Select a shape to compute area or perimeter.</div>
+  <div class="hint">
+    Draw Square: drag between grid vertices. Cut: drag between two points on the same shape. Combine: merges selected shape with any sharing a vertex.
+  </div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const metricsEl = document.getElementById('metrics');
+
+const gridSize = 25;
+const dotRadius = 1.6;
+const EPS = 2;
+
+let mode = 'draw-square';
+let shapes = [];
+let selectedId = null;
+
+let dragStart = null;
+let dragEnd = null;
+let isDragging = false;
+let moveOffset = null;
+
+let stepActive = false;
+let stepSegments = [];
+let stepHighlighted = [];
+let stepIndex = 0;
+let stepTotal = 0;
+let stepClearTimer = null;
+
+const palette = [
+  '#ff6b6b','#feca57','#48dbfb','#1dd1a1','#5f27cd',
+  '#54a0ff','#ff9f43','#00d2d3','#c8d6e5','#576574'
+];
+let colorIndex = 0;
+function nextColor() {
+  const c = palette[colorIndex % palette.length];
+  colorIndex++;
+  return c;
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function snap(v) { return Math.round(v / gridSize) * gridSize; }
+function snapPoint(p) { return { x: snap(p.x), y: snap(p.y) }; }
+function nearly(a,b){ return Math.abs(a-b) <= EPS; }
+function clonePoint(p){ return { x: p.x, y: p.y }; }
+function clonePoints(arr){ return arr.map(clonePoint); }
+
+function resetPerimeterStep() {
+  stepActive = false;
+  stepSegments = [];
+  stepHighlighted = [];
+  stepIndex = 0;
+  stepTotal = 0;
+  if (stepClearTimer) {
+    clearTimeout(stepClearTimer);
+    stepClearTimer = null;
+  }
+}
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#eee';
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x <= canvas.width; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= canvas.height; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+
+  ctx.fillStyle = '#bbb';
+  for (let x = 0; x <= canvas.width; x += gridSize) {
+    for (let y = 0; y <= canvas.height; y += gridSize) {
+      ctx.beginPath(); ctx.arc(x, y, dotRadius, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawShapes() {
+  shapes.forEach(s => {
+    ctx.beginPath();
+    if (s.type === 'rect') {
+      ctx.rect(s.x, s.y, s.w, s.h);
+    } else if (s.type === 'tri') {
+      ctx.moveTo(s.p1.x, s.p1.y);
+      ctx.lineTo(s.p2.x, s.p2.y);
+      ctx.lineTo(s.p3.x, s.p3.y);
+      ctx.closePath();
+    } else if (s.type === 'poly') {
+      ctx.moveTo(s.points[0].x, s.points[0].y);
+      for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i].x, s.points[i].y);
+      ctx.closePath();
+    }
+    ctx.fillStyle = s.id === selectedId ? 'rgba(45,108,223,0.25)' : s.color;
+    ctx.strokeStyle = s.id === selectedId ? '#2d6cdf' : '#333';
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  if (stepHighlighted.length) {
+    ctx.strokeStyle = '#e67e22';
+    ctx.lineWidth = 4;
+    stepHighlighted.forEach(seg => {
+      ctx.beginPath();
+      ctx.moveTo(seg[0].x, seg[0].y);
+      ctx.lineTo(seg[1].x, seg[1].y);
+      ctx.stroke();
+    });
+  }
+}
+
+function render() {
+  drawGrid();
+  drawShapes();
+
+  if (isDragging && dragStart && dragEnd && mode === 'draw-square') {
+    const s = squareFromDrag(dragStart, dragEnd);
+    if (s) {
+      ctx.beginPath();
+      ctx.rect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = '#2d6cdf';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  if (isDragging && dragStart && dragEnd && mode === 'cut') {
+    ctx.beginPath();
+    ctx.moveTo(dragStart.x, dragStart.y);
+    ctx.lineTo(dragEnd.x, dragEnd.y);
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function squareFromDrag(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  if (dx === 0 || dy === 0) return null;
+
+  const size = Math.min(Math.abs(dx), Math.abs(dy));
+  const x = dx > 0 ? a.x : a.x - size;
+  const y = dy > 0 ? a.y : a.y - size;
+  return { x, y, w: size, h: size };
+}
+
+function pointInRect(p, r) {
+  return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+}
+
+function pointInTriangle(p, t) {
+  const { p1, p2, p3 } = t;
+  const area = (a,b,c) => Math.abs((a.x*(b.y-c.y)+b.x*(c.y-a.y)+c.x*(a.y-b.y))/2);
+  const A = area(p1,p2,p3);
+  const A1 = area(p,p2,p3);
+  const A2 = area(p1,p,p3);
+  const A3 = area(p1,p2,p);
+  return Math.abs(A - (A1+A2+A3)) < 0.1;
+}
+
+function pointInPolygon(p, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i].x, yi = pts[i].y;
+    const xj = pts[j].x, yj = pts[j].y;
+    const intersect = ((yi > p.y) !== (yj > p.y)) &&
+      (p.x < (xj - xi) * (p.y - yi) / (yj - yi + 0.00001) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function hitTest(point) {
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    const s = shapes[i];
+    if (s.type === 'rect' && pointInRect(point, s)) return s.id;
+    if (s.type === 'tri' && pointInTriangle(point, s)) return s.id;
+    if (s.type === 'poly' && pointInPolygon(point, s.points)) return s.id;
+  }
+  return null;
+}
+
+function getShapeById(id) {
+  return shapes.find(s => s.id === id);
+}
+
+function rectCorners(r) {
+  return [
+    {x: r.x, y: r.y},
+    {x: r.x+r.w, y: r.y},
+    {x: r.x+r.w, y: r.y+r.h},
+    {x: r.x, y: r.y+r.h},
+  ];
+}
+
+function cornerIndex(p, r) {
+  return rectCorners(r).findIndex(c => nearly(c.x,p.x) && nearly(c.y,p.y));
+}
+
+function pointOnRectEdge(p, r) {
+  const onLeft = nearly(p.x, r.x) && p.y >= r.y - EPS && p.y <= r.y + r.h + EPS;
+  const onRight = nearly(p.x, r.x + r.w) && p.y >= r.y - EPS && p.y <= r.y + r.h + EPS;
+  const onTop = nearly(p.y, r.y) && p.x >= r.x - EPS && p.x <= r.x + r.w + EPS;
+  const onBottom = nearly(p.y, r.y + r.h) && p.x >= r.x - EPS && p.x <= r.x + r.w + EPS;
+  return onLeft || onRight || onTop || onBottom;
+}
+
+function makeTri(p1,p2,p3){
+  return { type:'tri', p1: clonePoint(p1), p2: clonePoint(p2), p3: clonePoint(p3) };
+}
+function makePoly(points){
+  return { type:'poly', points: clonePoints(points) };
+}
+function shapeVertices(s){
+  if (s.type === 'rect') return rectCorners(s);
+  if (s.type === 'tri') return [s.p1, s.p2, s.p3];
+  return s.points;
+}
+function sameVertex(a,b){
+  return nearly(a.x,b.x) && nearly(a.y,b.y);
+}
+
+function polygonToRectIfAxisAligned(points) {
+  if (points.length !== 4) return null;
+  const xs = points.map(p => p.x);
+  const ys = points.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const corners = [
+    {x: minX, y: minY},
+    {x: maxX, y: minY},
+    {x: maxX, y: maxY},
+    {x: minX, y: maxY}
+  ];
+  const allMatch = corners.every(c => points.some(p => nearly(p.x, c.x) && nearly(p.y, c.y)));
+  if (!allMatch) return null;
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+function polyPointsToShape(pts) {
+  const rect = polygonToRectIfAxisAligned(pts);
+  if (rect) return { type:'rect', ...rect };
+  if (pts.length === 3) return { type:'tri', p1: clonePoint(pts[0]), p2: clonePoint(pts[1]), p3: clonePoint(pts[2]) };
+  return { type:'poly', points: clonePoints(pts) };
+}
+
+function combineSelected() {
+  if (!selectedId) return;
+  const base = getShapeById(selectedId);
+  if (!base) return;
+
+  const baseVerts = shapeVertices(base);
+  const toMerge = [base];
+  const remaining = [];
+
+  shapes.forEach(s => {
+    if (s.id === base.id) return;
+    const verts = shapeVertices(s);
+    const shares = verts.some(v => baseVerts.some(bv => sameVertex(v,bv)));
+    if (shares) toMerge.push(s);
+    else remaining.push(s);
+  });
+
+  if (toMerge.length === 1) return;
+
+  const pts = [];
+  toMerge.forEach(s => shapeVertices(s).forEach(p => {
+    if (!pts.some(q => sameVertex(p,q))) pts.push(clonePoint(p));
+  }));
+  const hull = convexHull(pts);
+
+  const combined = polyPointsToShape(hull);
+  combined.id = crypto.randomUUID();
+  combined.color = hexToRgba(nextColor(), 0.3);
+
+  shapes = remaining.concat([combined]);
+
+  selectedId = combined.id;
+  resetPerimeterStep();
+  render();
+}
+
+function convexHull(points) {
+  if (points.length <= 3) return points.map(clonePoint);
+  const pts = points.slice().sort((a,b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+
+  const cross = (o,a,b) => (a.x-o.x)*(b.y-o.y) - (a.y-o.y)*(b.x-o.x);
+
+  const lower = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) {
+      lower.pop();
+    }
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+  upper.pop();
+  lower.pop();
+  return lower.concat(upper).map(clonePoint);
+}
+
+function splitRectangleByLine(rect, a, b) {
+  if (nearly(a.x, b.x)) {
+    const x = a.x;
+    if (x <= rect.x || x >= rect.x + rect.w) return null;
+    return [
+      { type:'rect', x: rect.x, y: rect.y, w: x-rect.x, h: rect.h },
+      { type:'rect', x: x, y: rect.y, w: rect.x+rect.w-x, h: rect.h }
+    ];
+  }
+  if (nearly(a.y, b.y)) {
+    const y = a.y;
+    if (y <= rect.y || y >= rect.y + rect.h) return null;
+    return [
+      { type:'rect', x: rect.x, y: rect.y, w: rect.w, h: y-rect.y },
+      { type:'rect', x: rect.x, y: y, w: rect.w, h: rect.y+rect.h-y }
+    ];
+  }
+
+  const ai = cornerIndex(a, rect);
+  const bi = cornerIndex(b, rect);
+  const opposite = (ai === 0 && bi === 2) || (ai === 2 && bi === 0) ||
+                   (ai === 1 && bi === 3) || (ai === 3 && bi === 1);
+  if (ai !== -1 && bi !== -1 && opposite) {
+    const other = rectCorners(rect).filter(c =>
+      !(nearly(c.x,a.x)&&nearly(c.y,a.y)) && !(nearly(c.x,b.x)&&nearly(c.y,b.y))
+    );
+    return [ makeTri(a, b, other[0]), makeTri(a, b, other[1]) ];
+  }
+
+  if (ai !== -1 && pointOnRectEdge(b, rect)) {
+    const corners = rectCorners(rect);
+    let cutTri, quad;
+
+    if (ai === 0 && nearly(b.x, rect.x + rect.w)) { cutTri=[corners[0],corners[1],b]; quad=[corners[0],b,corners[2],corners[3]]; }
+    else if (ai === 0 && nearly(b.y, rect.y + rect.h)) { cutTri=[corners[0],corners[3],b]; quad=[corners[0],corners[1],corners[2],b]; }
+    else if (ai === 1 && nearly(b.x, rect.x)) { cutTri=[corners[1],corners[0],b]; quad=[corners[1],b,corners[3],corners[2]]; }
+    else if (ai === 1 && nearly(b.y, rect.y + rect.h)) { cutTri=[corners[1],corners[2],b]; quad=[corners[1],corners[0],corners[3],b]; }
+    else if (ai === 2 && nearly(b.x, rect.x)) { cutTri=[corners[2],corners[3],b]; quad=[corners[2],corners[1],corners[0],b]; }
+    else if (ai === 2 && nearly(b.y, rect.y)) { cutTri=[corners[2],corners[1],b]; quad=[corners[2],corners[3],corners[0],b]; }
+    else if (ai === 3 && nearly(b.x, rect.x + rect.w)) { cutTri=[corners[3],corners[2],b]; quad=[corners[3],corners[0],corners[1],b]; }
+    else if (ai === 3 && nearly(b.y, rect.y)) { cutTri=[corners[3],corners[0],b]; quad=[corners[3],corners[2],corners[1],b]; }
+
+    if (cutTri && quad) return [ makeTri(...cutTri), makePoly(quad) ];
+  }
+  return null;
+}
+
+function cross(a,b){ return a.x*b.y - a.y*b.x; }
+
+function segmentIntersection(a,b,c,d) {
+  const r = {x: b.x - a.x, y: b.y - a.y};
+  const s = {x: d.x - c.x, y: d.y - c.y};
+  const rxs = cross(r, s);
+  const q_p = {x: c.x - a.x, y: c.y - a.y};
+
+  if (Math.abs(rxs) < 1e-9) return null;
+  const t = cross(q_p, s) / rxs;
+  const u = cross(q_p, r) / rxs;
+  if (t >= -0.001 && t <= 1.001 && u >= -0.001 && u <= 1.001) {
+    return { x: a.x + t * r.x, y: a.y + t * r.y };
+  }
+  return null;
+}
+
+function splitConvexPolygon(points, a, b) {
+  const intersections = [];
+  const augmented = [];
+  const n = points.length;
+
+  const addUnique = (arr, p) => {
+    if (!arr.some(q => sameVertex(q, p))) arr.push(p);
+  };
+
+  for (let i = 0; i < n; i++) {
+    const p1 = points[i];
+    const p2 = points[(i + 1) % n];
+    augmented.push(clonePoint(p1));
+
+    const inter = segmentIntersection(a, b, p1, p2);
+    if (inter) {
+      addUnique(intersections, inter);
+      if (!sameVertex(inter, p1) && !sameVertex(inter, p2)) {
+        augmented.push(clonePoint(inter));
+      }
+    }
+  }
+
+  if (intersections.length !== 2) return null;
+
+  const idxOf = (p) => augmented.findIndex(q => sameVertex(q, p));
+  const i1 = idxOf(intersections[0]);
+  const i2 = idxOf(intersections[1]);
+  if (i1 === -1 || i2 === -1 || i1 === i2) return null;
+
+  const buildPath = (start, end) => {
+    const path = [];
+    let i = start;
+    while (true) {
+      path.push(clonePoint(augmented[i]));
+      if (i === end) break;
+      i = (i + 1) % augmented.length;
+    }
+    return dedupeConsecutive(path);
+  };
+
+  const poly1 = buildPath(i1, i2);
+  const poly2 = buildPath(i2, i1);
+
+  if (poly1.length < 3 || poly2.length < 3) return null;
+  return [poly1, poly2];
+}
+
+function dedupeConsecutive(points) {
+  const out = [];
+  for (let i = 0; i < points.length; i++) {
+    if (i === 0 || !sameVertex(points[i], points[i-1])) out.push(points[i]);
+  }
+  if (out.length > 1 && sameVertex(out[0], out[out.length - 1])) out.pop();
+  return out.map(clonePoint);
+}
+
+function splitTriangleByLine(tri, a, b) {
+  const pts = [tri.p1, tri.p2, tri.p3];
+  const isVertex = p => pts.some(v => nearly(v.x,p.x) && nearly(v.y,p.y));
+  if (!isVertex(a)) return null;
+
+  const others = pts.filter(v => !(nearly(v.x,a.x) && nearly(v.y,a.y)));
+  const onSegment = (p, v1, v2) => {
+    const cross = (p.y - v1.y)*(v2.x - v1.x) - (p.x - v1.x)*(v2.y - v1.y);
+    if (Math.abs(cross) > 0.01) return false;
+    const dot = (p.x - v1.x)*(v2.x - v1.x) + (p.y - v1.y)*(v2.y - v1.y);
+    if (dot < 0) return false;
+    const lenSq = (v2.x - v1.x)**2 + (v2.y - v1.y)**2;
+    return dot <= lenSq;
+  };
+  if (!onSegment(b, others[0], others[1])) return null;
+
+  return [
+    makeTri(a, others[0], b),
+    makeTri(a, b, others[1])
+  ];
+}
+
+function addShape(s) {
+  s.id = crypto.randomUUID();
+  s.color = s.color || hexToRgba(nextColor(), 0.3);
+  shapes.push(s);
+}
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#','');
+  const bigint = parseInt(h, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function polygonArea(pts) {
+  let sum = 0;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    sum += (pts[j].x * pts[i].y) - (pts[i].x * pts[j].y);
+  }
+  return Math.abs(sum) / 2;
+}
+
+function polygonPerimeter(pts) {
+  let sum = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    sum += Math.hypot(b.x - a.x, b.y - a.y);
+  }
+  return sum;
+}
+
+function shapeToPolygon(s) {
+  if (s.type === 'rect') return rectCorners(s);
+  if (s.type === 'tri') return [s.p1, s.p2, s.p3];
+  return s.points;
+}
+
+function rotateToUpperLeftStart(pts) {
+  let idx = 0;
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i].y < pts[idx].y || (pts[i].y === pts[idx].y && pts[i].x < pts[idx].x)) {
+      idx = i;
+    }
+  }
+  return pts.slice(idx).concat(pts.slice(0, idx));
+}
+
+function showArea() {
+  if (!selectedId) { metricsEl.textContent = 'Select a shape first.'; return; }
+  const s = getShapeById(selectedId);
+  const pts = shapeToPolygon(s);
+  const areaPx = polygonArea(pts);
+  const areaGrid = areaPx / (gridSize * gridSize);
+  metricsEl.textContent = `Area: ${areaGrid.toFixed(2)} grid²`;
+}
+
+function showPerimeter() {
+  if (!selectedId) { metricsEl.textContent = 'Select a shape first.'; return; }
+  const s = getShapeById(selectedId);
+  const pts = shapeToPolygon(s);
+  const perPx = polygonPerimeter(pts);
+  const perGrid = perPx / gridSize;
+  metricsEl.textContent = `Perimeter: ${perGrid.toFixed(2)} grid units`;
+}
+
+function beep() {
+  const ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctxAudio.createOscillator();
+  const gain = ctxAudio.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = 880;
+  gain.gain.value = 0.15;
+  osc.connect(gain);
+  gain.connect(ctxAudio.destination);
+  osc.start();
+  osc.stop(ctxAudio.currentTime + 0.12);
+}
+
+function perimeterStep() {
+  if (!selectedId) { metricsEl.textContent = 'Select a shape first.'; return; }
+  const s = getShapeById(selectedId);
+  if (!s) return;
+
+  if (!stepActive || stepIndex >= stepSegments.length) {
+    const ordered = rotateToUpperLeftStart(shapeToPolygon(s));
+    stepSegments = ordered.map((p, i) => [p, ordered[(i + 1) % ordered.length]]);
+    stepIndex = 0;
+    stepTotal = 0;
+    stepHighlighted = [];
+    stepActive = true;
+  }
+
+  const seg = stepSegments[stepIndex];
+  stepHighlighted.push(seg);
+
+  const segLen = Math.hypot(seg[1].x - seg[0].x, seg[1].y - seg[0].y) / gridSize;
+  stepTotal += segLen;
+
+  metricsEl.textContent = `Perimeter Step ${stepIndex + 1}/${stepSegments.length}: +${segLen.toFixed(2)} (Total: ${stepTotal.toFixed(2)} grid units)`;
+
+  if (stepIndex === stepSegments.length - 1) {
+    beep();
+    if (stepClearTimer) clearTimeout(stepClearTimer);
+    stepClearTimer = setTimeout(() => {
+      resetPerimeterStep();
+      render();
+    }, 2000);
+  }
+
+  stepIndex += 1;
+  render();
+}
+
+function rotateSelected() {
+  if (!selectedId) { metricsEl.textContent = 'Select a shape first.'; return; }
+  const s = getShapeById(selectedId);
+  const pts = shapeToPolygon(s);
+
+  const cx = pts.reduce((sum,p) => sum + p.x, 0) / pts.length;
+  const cy = pts.reduce((sum,p) => sum + p.y, 0) / pts.length;
+
+  const rotated = pts.map(p => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    const rx = cx - dy;
+    const ry = cy + dx;
+    return snapPoint({ x: rx, y: ry });
+  });
+
+  if (s.type === 'rect') {
+    const xs = rotated.map(p => p.x);
+    const ys = rotated.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    s.x = minX; s.y = minY; s.w = maxX - minX; s.h = maxY - minY;
+  } else if (s.type === 'tri') {
+    s.p1 = rotated[0]; s.p2 = rotated[1]; s.p3 = rotated[2];
+  } else if (s.type === 'poly') {
+    s.points = rotated;
+  }
+  resetPerimeterStep();
+  render();
+}
+
+function copySelected() {
+  if (!selectedId) { metricsEl.textContent = 'Select a shape first.'; return; }
+  const s = getShapeById(selectedId);
+  const dx = gridSize * 2;
+  const dy = 0;
+
+  let copy;
+  if (s.type === 'rect') {
+    copy = { type:'rect', x: s.x + dx, y: s.y + dy, w: s.w, h: s.h };
+  } else if (s.type === 'tri') {
+    copy = {
+      type:'tri',
+      p1: { x: s.p1.x + dx, y: s.p1.y + dy },
+      p2: { x: s.p2.x + dx, y: s.p2.y + dy },
+      p3: { x: s.p3.x + dx, y: s.p3.y + dy }
+    };
+  } else if (s.type === 'poly') {
+    copy = {
+      type:'poly',
+      points: s.points.map(p => ({ x: p.x + dx, y: p.y + dy }))
+    };
+  }
+  addShape(copy);
+  selectedId = shapes[shapes.length - 1].id;
+  resetPerimeterStep();
+  render();
+}
+
+function mirrorSelected(horizontal) {
+  if (!selectedId) { metricsEl.textContent = 'Select a shape first.'; return; }
+  const s = getShapeById(selectedId);
+  const pts = shapeToPolygon(s);
+
+  const cx = pts.reduce((sum,p) => sum + p.x, 0) / pts.length;
+  const cy = pts.reduce((sum,p) => sum + p.y, 0) / pts.length;
+
+  const mirrored = pts.map(p => {
+    const x = horizontal ? (2 * cx - p.x) : p.x;
+    const y = horizontal ? p.y : (2 * cy - p.y);
+    return snapPoint({ x, y });
+  });
+
+  if (s.type === 'rect') {
+    const xs = mirrored.map(p => p.x);
+    const ys = mirrored.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    s.x = minX; s.y = minY; s.w = maxX - minX; s.h = maxY - minY;
+  } else if (s.type === 'tri') {
+    s.p1 = mirrored[0]; s.p2 = mirrored[1]; s.p3 = mirrored[2];
+  } else if (s.type === 'poly') {
+    s.points = mirrored;
+  }
+  resetPerimeterStep();
+  render();
+}
+
+function deleteSelected() {
+  if (!selectedId) { metricsEl.textContent = 'Select a shape first.'; return; }
+  shapes = shapes.filter(s => s.id !== selectedId);
+  selectedId = null;
+  resetPerimeterStep();
+  render();
+}
+
+function setMode(m) {
+  mode = m;
+  selectedId = null;
+  resetPerimeterStep();
+  document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  if (m === 'draw-square') document.getElementById('drawSquareBtn').classList.add('active');
+  if (m === 'cut') document.getElementById('cutBtn').classList.add('active');
+  if (m === 'select') document.getElementById('selectBtn').classList.add('active');
+  render();
+}
+
+function randomRect(w, h) {
+  const maxX = canvas.width - w;
+  const maxY = canvas.height - h;
+  const x = snap(randInt(0, Math.max(0, Math.floor(maxX / gridSize))) * gridSize);
+  const y = snap(randInt(0, Math.max(0, Math.floor(maxY / gridSize))) * gridSize);
+  return { x, y, w, h };
+}
+
+function addRandomShape(type) {
+  const minSize = 3;
+  const maxSize = 8;
+
+  if (type === 'square') {
+    const size = randInt(minSize, maxSize) * gridSize;
+    const r = randomRect(size, size);
+    addShape({ type:'rect', ...r });
+    return;
+  }
+
+  if (type === 'rectangle') {
+    const w = randInt(minSize, maxSize + 2) * gridSize;
+    const h = randInt(minSize, maxSize) * gridSize;
+    const r = randomRect(w, h);
+    addShape({ type:'rect', ...r });
+    return;
+  }
+
+  if (type === 'triangle') {
+    const w = randInt(minSize, maxSize) * gridSize;
+    const h = randInt(minSize, maxSize) * gridSize;
+    const r = randomRect(w, h);
+    const p1 = { x: r.x, y: r.y };
+    const p2 = { x: r.x + r.w, y: r.y };
+    const p3 = { x: r.x, y: r.y + r.h };
+    addShape({ type:'tri', p1, p2, p3 });
+    return;
+  }
+
+  if (type === 'trapezoid') {
+    const topW = randInt(minSize, maxSize - 1) * gridSize;
+    const bottomW = randInt(minSize + 1, maxSize + 2) * gridSize;
+    const h = randInt(minSize, maxSize) * gridSize;
+    const w = Math.max(topW, bottomW);
+    const r = randomRect(w, h);
+    const topOffset = Math.floor((bottomW - topW) / 2);
+    const p1 = { x: r.x + topOffset, y: r.y };
+    const p2 = { x: r.x + topOffset + topW, y: r.y };
+    const p3 = { x: r.x + bottomW, y: r.y + r.h };
+    const p4 = { x: r.x, y: r.y + r.h };
+    addShape({ type:'poly', points: [p1, p2, p3, p4] });
+    return;
+  }
+
+  if (type === 'parallelogram') {
+    const w = randInt(minSize + 1, maxSize + 2) * gridSize;
+    const h = randInt(minSize, maxSize) * gridSize;
+    const slant = randInt(1, 3) * gridSize;
+    const r = randomRect(w + slant, h);
+    const p1 = { x: r.x + slant, y: r.y };
+    const p2 = { x: r.x + slant + w, y: r.y };
+    const p3 = { x: r.x + w, y: r.y + r.h };
+    const p4 = { x: r.x, y: r.y + r.h };
+    addShape({ type:'poly', points: [p1, p2, p3, p4] });
+  }
+}
+
+document.getElementById('drawSquareBtn').onclick = () => setMode('draw-square');
+document.getElementById('cutBtn').onclick = () => setMode('cut');
+document.getElementById('selectBtn').onclick = () => setMode('select');
+document.getElementById('combineBtn').onclick = () => combineSelected();
+document.getElementById('areaBtn').onclick = () => showArea();
+document.getElementById('perimeterBtn').onclick = () => showPerimeter();
+document.getElementById('perimeterStepBtn').onclick = () => perimeterStep();
+document.getElementById('rotateBtn').onclick = () => rotateSelected();
+document.getElementById('copyBtn').onclick = () => copySelected();
+document.getElementById('mirrorHBtn').onclick = () => mirrorSelected(true);
+document.getElementById('mirrorVBtn').onclick = () => mirrorSelected(false);
+document.getElementById('deleteBtn').onclick = () => deleteSelected();
+document.getElementById('addShapeBtn').onclick = () => {
+  const type = document.getElementById('shapeSelect').value;
+  addRandomShape(type);
+  resetPerimeterStep();
+  render();
+};
+document.getElementById('resetBtn').onclick = () => {
+  shapes = [];
+  selectedId = null;
+  colorIndex = 0;
+  metricsEl.textContent = 'Select a shape to compute area or perimeter.';
+  resetPerimeterStep();
+  render();
+};
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const p = snapPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  dragStart = p;
+  dragEnd = p;
+  isDragging = true;
+
+  if (mode === 'select') {
+    const id = hitTest(p);
+    selectedId = id;
+    resetPerimeterStep();
+    if (id) {
+      const s = getShapeById(id);
+      moveOffset = { x: p.x, y: p.y, s };
+    }
+  }
+  render();
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const rect = canvas.getBoundingClientRect();
+  const p = snapPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  dragEnd = p;
+
+  if (mode === 'select' && selectedId && moveOffset) {
+    const s = moveOffset.s;
+    const dx = p.x - moveOffset.x;
+    const dy = p.y - moveOffset.y;
+
+    if (s.type === 'rect') {
+      s.x += dx; s.y += dy;
+    } else if (s.type === 'tri') {
+      s.p1.x += dx; s.p1.y += dy;
+      s.p2.x += dx; s.p2.y += dy;
+      s.p3.x += dx; s.p3.y += dy;
+    } else if (s.type === 'poly') {
+      s.points.forEach(pt => { pt.x += dx; pt.y += dy; });
+    }
+    moveOffset.x = p.x;
+    moveOffset.y = p.y;
+  }
+  render();
+});
+
+canvas.addEventListener('mouseup', () => {
+  isDragging = false;
+
+  if (mode === 'draw-square' && dragStart && dragEnd) {
+    const s = squareFromDrag(dragStart, dragEnd);
+    if (s && s.w > 0 && s.h > 0) addShape({ type:'rect', ...s });
+  }
+
+  if (mode === 'cut' && dragStart && dragEnd) {
+    const a = dragStart, b = dragEnd;
+
+    let cutDone = false;
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      const s = shapes[i];
+      let rect = null;
+      if (s.type === 'rect') rect = s;
+      if (s.type === 'poly') rect = polygonToRectIfAxisAligned(s.points);
+      if (rect) {
+        const parts = splitRectangleByLine(rect, a, b);
+        if (parts) {
+          shapes.splice(i, 1);
+          parts.forEach(p => addShape(p));
+          cutDone = true;
+          break;
+        }
+      }
+    }
+
+    if (!cutDone) {
+      const candidateId = hitTest(a) || hitTest(b) ||
+        hitTest({ x:(a.x+b.x)/2, y:(a.y+b.y)/2 });
+      if (candidateId) {
+        const s = getShapeById(candidateId);
+        let parts = null;
+
+        if (s.type === 'tri') parts = splitTriangleByLine(s, a, b);
+
+        if (!parts && s.type === 'poly') {
+          const split = splitConvexPolygon(s.points, a, b);
+          if (split) parts = split.map(polyPointsToShape);
+        }
+
+        if (parts) {
+          shapes = shapes.filter(x => x.id !== candidateId);
+          parts.forEach(p => addShape(p));
+        }
+      }
+    }
+  }
+
+  dragStart = dragEnd = null;
+  moveOffset = null;
+  resetPerimeterStep();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
