@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reflex Scenarios Sequencer</title>
+  <style>
+    html, body {
+      height: 100%;
+      background: #f1f8fc;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    #game-container {
+      background: #fff;
+      border-radius: 16px;
+      border: 2px solid #3670df;
+      box-shadow: 0 4px 28px #a8c5ebcc;
+      max-width: 1400px;
+      width: 98vw;
+      min-width: 600px;
+      margin-top: 24px;
+      padding: 16px 10px 12px 10px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    #instructions {
+      font-size: 1.08em;
+      color: #154990;
+      font-weight: 500;
+      text-align: center;
+      margin-bottom: 18px;
+      margin-top: 2px;
+      letter-spacing: .01em;
+      opacity: 0.93;
+      padding: 0 5vw;
+      background: none;
+      border: none;
+    }
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 5px;
+      flex-wrap: wrap;
+    }
+    .scenario-info {
+      font-size: 1.12em;
+      color: #2b3b51;
+      font-weight: bold;
+      letter-spacing: 0.01em;
+      margin: 0;
+      flex-shrink: 0;
+      flex-grow: 0;
+    }
+    #scenario-title {
+      font-size: 1em;
+      font-weight: bold;
+      color: #355097;
+      margin: 0 0 0 14px;
+      flex: 1 1 auto;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 60px;
+      max-width: 43vw;
+    }
+    #hint-btn {
+      padding: 9px 18px;
+      font-size: 1em;
+      background: #ffe273;
+      border: 1.4px solid #ddb91e;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #855d02;
+      box-shadow: 0 1px 4px #ffe27360;
+      display: none;
+      transition: background 0.17s;
+      margin-left: 8px;
+      margin-right: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #hint-btn:active {
+      background: #ffdd25;
+    }
+    #next-btn {
+      background: #a2b3cf;
+      color: #fff;
+      padding: 9px 28px;
+      border: none;
+      border-radius: 7px;
+      cursor: not-allowed;
+      font-size: 1.07em;
+      font-weight: bold;
+      opacity: 0.77;
+      pointer-events: none;
+      transition: background 0.2s, color 0.15s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 0 1px 4px #aacfff60;
+      top: 0;
+      display: block;
+      position: relative;
+      flex-shrink: 0;
+      margin-left: 8px;
+      margin-right: 0;
+    }
+    #next-btn.enabled {
+      background: #3670df;
+      cursor: pointer;
+      opacity: 1;
+      pointer-events: auto;
+      box-shadow: 0 3px 10px #79a0e2;
+    }
+    #correct-msg {
+      color: #20b447;
+      font-weight: bold;
+      text-align: center;
+      margin: 3px 0 8px 0;
+      display: none;
+      font-size: 1.08em;
+    }
+    .columns {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      align-items: flex-start;
+      margin-bottom: 0;
+      flex-wrap: nowrap;
+    }
+    .sort-area {
+      background: #f3f6fd;
+      border: 2px dashed #4870d0bb;
+      border-radius: 10px;
+      padding: 10px 2vw 12px 2vw;
+      width: 45vw;
+      min-width: 410px;
+      max-width: 48vw;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      flex: 0 1 auto;
+      align-items: stretch;
+    }
+    .sort-area-title {
+      text-align: center;
+      margin-bottom: 3px;
+      font-weight: bold;
+      color: #558;
+      font-size: 1em;
+      letter-spacing: 0.01em;
+    }
+    ol, ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex: 1 1 100%;
+      min-height: 30px;
+    }
+    .step {
+      background: #eafbff;
+      margin: 3px 0;
+      padding: 11px 12px;
+      border-radius: 6px;
+      cursor: grab;
+      user-select: none;
+      border: 1.2px solid #b9dafc;
+      font-size: 1em;
+      color: #234;
+      line-height: 1.5;
+      transition: background 0.18s;
+      box-shadow: 0 1px 4px #d7f2fc44;
+      width: 100%;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+      min-height: 1em;
+      box-sizing: border-box;
+      display: block;
+      max-width: 100%;
+      outline: none;
+    }
+    .step.selected {
+      background: #d9edff !important;
+      border-color: #387cdd !important;
+      color: #325083 !important;
+      box-shadow: 0 0 0 3px #4486eb33, 0 1px 4px #bfdfff77;
+    }
+    .step.dragging {
+      opacity: 0.43;
+      background: #bce3fc;
+    }
+    .step.drag-over {
+      border: 2px dashed #369afe;
+      background: #e6f0ff;
+    }
+    .step.hint-wrong {
+      background: #ffefb6 !important;
+      border-color: #f5d004 !important;
+      color: #a06a00 !important;
+      font-weight: bold !important;
+      box-shadow: 0 1px 6px #ffe273bc;
+    }
+    .step:last-child { margin-bottom: 0; }
+    @media (max-width: 1200px) {
+      .sort-area { width: 98vw; min-width: 0; max-width: 99vw; }
+      .columns { flex-direction: column; gap: 12px; }
+      #game-container { min-width: unset; }
+      #scenario-title { margin-left: 0; }
+    }
+    @media (max-width: 900px) {
+      #scenario-title { max-width: 99vw; }
+    }
+    @media (max-width: 650px) {
+      #game-container { padding: 7px 0 4px 0; }
+      .sort-area { width: 99vw; min-width: 80px; max-width: unset; padding: 4px 2vw 6px 2vw;}
+      .top-row { flex-direction: column; gap: 2px; }
+      #scenario-title { margin-bottom: 0;}
+      #hint-btn { padding: 7px 12vw;}
+      #instructions {padding: 0 2vw;}
+    }
+  </style>
+</head>
+<body>
+<div id="game-container">
+  <div id="instructions">
+    Drag &amp; drop, or select and use arrow keys to arrange the sequence.
+  </div>
+  <div class="top-row">
+    <div class="scenario-info"><span id="scenario-number"></span></div>
+    <div id="scenario-title"></div>
+    <button id="hint-btn" style="display:none;">Hint</button>
+    <button id="next-btn" disabled>Next</button>
+  </div>
+  <div id="correct-msg">Correct! <span style="font-size:1.15em;">✔️</span></div>
+  <div class="columns">
+    <div class="sort-area" id="pool-area" data-area="pool">
+      <div class="sort-area-title">Shuffled Pool</div>
+      <ol id="pool-list"></ol>
+    </div>
+    <div class="sort-area" id="answer-area" data-area="answer">
+      <div class="sort-area-title">Your Sequence</div>
+      <ol id="answer-list"></ol>
+    </div>
+  </div>
+</div>
+<script>
+const scenarios = [
+  {
+    number: 1,
+    title: 'Stepping on a Sharp Object (Foot Reflex)',
+    steps: [
+      "Sensory receptors in the foot detect sharp pain.",
+      "Sensory neuron fires a signal immediately.",
+      "Signal travels from foot toward spinal cord.",
+      "Signal enters spinal cord (no brain decision yet).",
+      "Spinal cord processes the signal instantly.",
+      "Motor neuron is activated.",
+      "Motor signal is sent back down to leg muscles.",
+      "Muscles in the foot contract.",
+      "Foot pulls away quickly from the object.",
+      "Pain signal is then sent up to the brain for awareness."
+    ]
+  },
+  {
+    number: 2,
+    title: 'Touching a Hot Surface (Hand Reflex)',
+    steps: [
+      "Heat receptors in skin detect high temperature.",
+      "Sensory neuron fires rapidly.",
+      "Signal travels to spinal cord.",
+      "Spinal cord receives and processes signal.",
+      "Immediate reflex response is triggered.",
+      "Motor neuron activates arm muscles.",
+      "Motor signal travels back to hand.",
+      "Hand muscles contract quickly.",
+      "Hand withdraws from heat source.",
+      "Brain receives signal after the reflex has already happened."
+    ]
+  },
+  {
+    number: 3,
+    title: 'Bright Flash in Eyes (Blink Reflex)',
+    steps: [
+      "Light receptors in the eyes detect sudden brightness.",
+      "Sensory neuron sends fast signal.",
+      "Signal travels toward brainstem/spinal relay.",
+      "Brainstem processes the stimulus instantly.",
+      "Motor neuron is activated.",
+      "Motor signal travels to eyelid muscles.",
+      "Eyelid muscles contract.",
+      "Eyes blink automatically.",
+      "Vision is briefly protected.",
+      "Brain becomes aware of the flash afterward."
+    ]
+  },
+  {
+    number: 4,
+    title: 'Loud Noise Startle (Jump Reflex)',
+    steps: [
+      "Ear receptors detect sudden loud sound.",
+      "Sensory neuron fires quickly.",
+      "Signal travels to brainstem.",
+      "Brainstem identifies potential danger.",
+      "Motor neuron is activated immediately.",
+      "Motor signal travels to body muscles.",
+      "Muscles contract suddenly.",
+      "Body jumps or flinches.",
+      "Heart rate may increase.",
+      "Brain processes sound after reaction."
+    ]
+  },
+  {
+    number: 5,
+    title: 'Object Approaching Face (Protective Blink/Flinch)',
+    steps: [
+      "Eye detects fast-moving object.",
+      "Sensory neuron fires.",
+      "Signal travels rapidly to brainstem.",
+      "Brainstem interprets possible danger.",
+      "Motor neuron is activated.",
+      "Motor signal goes to eyes and head muscles.",
+      "Eyes blink and head moves away.",
+      "Body protects face automatically.",
+      "Movement happens before conscious thought.",
+      "Brain confirms event after reflex."
+    ]
+  },
+  {
+    number: 6,
+    title: 'Knee Tap Reflex (Leg Kick)',
+    steps: [
+      "Receptors in tendon below knee are activated.",
+      "Sensory neuron fires signal.",
+      "Signal travels directly to spinal cord.",
+      "Spinal cord processes without brain input.",
+      "Motor neuron is activated immediately.",
+      "Motor signal travels to thigh muscle.",
+      "Muscle contracts.",
+      "Lower leg kicks forward.",
+      "Balance adjusts automatically.",
+      "Brain is informed after movement."
+    ]
+  },
+  {
+    number: 7,
+    title: 'Irritant in Nose (Sneezing Reflex)',
+    steps: [
+      "Irritant particles detected in nose lining.",
+      "Sensory neuron fires signal.",
+      "Signal travels to brainstem.",
+      "Brainstem processes irritation.",
+      "Motor neurons activated.",
+      "Signal sent to chest and face muscles.",
+      "Deep breath is taken automatically.",
+      "Forceful sneeze occurs.",
+      "Air clears nasal passage.",
+      "Brain becomes aware after sneeze."
+    ]
+  },
+  {
+    number: 8,
+    title: 'Water in Eyes (Protective Blink)',
+    steps: [
+      "Eyes detect foreign liquid.",
+      "Sensory neurons fire.",
+      "Signal travels to brainstem.",
+      "Brainstem triggers protection response.",
+      "Motor neurons activate eyelids.",
+      "Eyelids close rapidly.",
+      "Tears may increase.",
+      "Eye surface is protected.",
+      "Blink repeats if needed.",
+      "Brain processes event after."
+    ]
+  }
+];
+
+let current = 0;
+let beepPlayed = false;
+
+function shuffle(array) {
+  let arr = array.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function clearDraggables() {
+  document.querySelectorAll('.step').forEach(el => {
+    el.ondragstart = null;
+    el.ondragend = null;
+    el.ondragover = null;
+    el.ondragenter = null;
+    el.ondragleave = null;
+    el.ondrop = null;
+    el.onclick = null;
+    el.tabIndex = -1;
+    el.classList.remove('selected');
+  });
+  window.onkeydown = null;
+}
+
+function renderScenario(idx) {
+  beepPlayed = false;
+  const scenario = scenarios[idx];
+  document.getElementById('scenario-number').textContent = `Scenario ${scenario.number} of ${scenarios.length}`;
+  document.getElementById('scenario-title').textContent = scenario.title;
+  document.getElementById('correct-msg').style.display = "none";
+  document.getElementById('hint-btn').style.display = "none";
+  removeHintHighlights();
+
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.disabled = true;
+  nextBtn.classList.remove('enabled');
+
+  document.getElementById('answer-list').innerHTML = "";
+  document.getElementById('pool-list').innerHTML = "";
+
+  let shuffled = shuffle(scenario.steps);
+  for (let i = 0; i < shuffled.length; i++) {
+    let li = document.createElement('li');
+    li.className = 'step';
+    li.draggable = true;
+    li.textContent = shuffled[i];
+    document.getElementById('pool-list').appendChild(li);
+  }
+
+  setUpDragAndDrop();
+  setUpKeyboardControls();
+}
+
+function setUpDragAndDrop() {
+  clearDraggables();
+  let draggingEl = null, dragOverEl = null;
+
+  function handleDragStart(e) {
+    draggingEl = this;
+    this.classList.add('dragging');
+    setTimeout(() => this.style.display = 'none', 0);
+  }
+  function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    this.style.display = '';
+    draggingEl = null;
+    dragOverEl = null;
+    document.querySelectorAll('.step').forEach(el => el.classList.remove('drag-over'));
+    checkOrder();
+    setUpDragAndDrop();
+    setUpKeyboardControls();
+  }
+  function handleDragOver(e) { e.preventDefault(); return false; }
+  function handleDragEnter(e) {
+    if (this !== draggingEl) {
+      this.classList.add('drag-over');
+      dragOverEl = this;
+    }
+  }
+  function handleDragLeave(e) { if (this !== draggingEl) this.classList.remove('drag-over'); }
+  function handleDrop(e) {
+    e.stopPropagation();
+    this.classList.remove('drag-over');
+    if (draggingEl && draggingEl !== this) {
+      let parent = this.parentNode;
+      const mouseY = e.clientY;
+      const rect = this.getBoundingClientRect();
+      if (mouseY > rect.top + (rect.height / 2)) {
+        parent.insertBefore(draggingEl, this.nextSibling);
+      } else {
+        parent.insertBefore(draggingEl, this);
+      }
+    }
+    checkOrder();
+    setUpDragAndDrop();
+    setUpKeyboardControls();
+    return false;
+  }
+
+  document.querySelectorAll('.step').forEach(el => {
+    el.ondragstart = handleDragStart;
+    el.ondragend = handleDragEnd;
+    el.ondragover = handleDragOver;
+    el.ondragenter = handleDragEnter;
+    el.ondragleave = handleDragLeave;
+    el.ondrop = handleDrop;
+  });
+
+  ['pool-list', 'answer-list'].forEach(listId => {
+    let listEl = document.getElementById(listId);
+    let sortArea = listEl.parentNode;
+    sortArea.ondragover = function(e) { e.preventDefault(); this.classList.add('drag-over'); };
+    sortArea.ondragleave = function(e) { this.classList.remove('drag-over'); };
+    sortArea.ondrop = function(e) {
+      this.classList.remove('drag-over');
+      if (draggingEl) {
+        listEl.appendChild(draggingEl);
+        checkOrder();
+        setUpDragAndDrop();
+        setUpKeyboardControls();
+      }
+    };
+  });
+}
+
+function setUpKeyboardControls() {
+  clearSelection();
+  clearKeyboardHandlers();
+  document.querySelectorAll('.step').forEach(el => {
+    el.tabIndex = 0;
+    el.onclick = function(e) { selectStep(el); e.stopPropagation(); };
+    el.onfocus = function(e) { selectStep(el); };
+  });
+  window.onclick = function(e) {
+    if (!e.target.classList.contains('step')) { clearSelection(); }
+  };
+  window.onkeydown = function(e) {
+    let selected = getSelectedStep();
+    if (!selected) return;
+    let parent = selected.parentNode;
+    let steps = Array.from(parent.children);
+    let idx = steps.indexOf(selected);
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) { e.preventDefault(); }
+    if (e.key === "ArrowUp" && idx > 0) {
+      parent.insertBefore(selected, steps[idx - 1]);
+      checkOrder(); setUpDragAndDrop(); setUpKeyboardControls(); selectStep(selected);
+    }
+    if (e.key === "ArrowDown" && idx < steps.length - 1) {
+      parent.insertBefore(selected, steps[idx + 1].nextSibling);
+      checkOrder(); setUpDragAndDrop(); setUpKeyboardControls(); selectStep(selected);
+    }
+    if (e.key === "ArrowLeft") {
+      let targetList = parent.id === "answer-list"
+        ? document.getElementById("pool-list")
+        : null;
+      if (targetList) {
+        targetList.appendChild(selected);
+        checkOrder(); setUpDragAndDrop(); setUpKeyboardControls(); selectStep(selected);
+      }
+    }
+    if (e.key === "ArrowRight") {
+      let targetList = parent.id === "pool-list"
+        ? document.getElementById("answer-list")
+        : null;
+      if (targetList) {
+        targetList.appendChild(selected);
+        checkOrder(); setUpDragAndDrop(); setUpKeyboardControls(); selectStep(selected);
+      }
+    }
+    if (e.key === "Escape") { clearSelection(); }
+  };
+}
+
+function selectStep(el) { clearSelection(); el.classList.add('selected'); el.focus(); }
+function clearSelection() { document.querySelectorAll('.step.selected').forEach(sel => sel.classList.remove('selected')); }
+function getSelectedStep() { return document.querySelector('.step.selected'); }
+function clearKeyboardHandlers() { window.onkeydown = null; window.onclick = null; }
+
+function playBeep() {
+  try {
+    const ctx = new(window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    oscillator.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.15);
+    oscillator.onended = () => ctx.close();
+  } catch (e) {}
+}
+
+function removeHintHighlights() {
+  document.querySelectorAll('#answer-list .step.hint-wrong').forEach(li => li.classList.remove('hint-wrong'));
+}
+
+function showHint() {
+  const scenario = scenarios[current];
+  const answerListItems = Array.from(document.querySelectorAll('#answer-list .step'));
+  removeHintHighlights();
+  answerListItems.forEach((li, i) => {
+    if (li.textContent !== scenario.steps[i]) {
+      li.classList.add('hint-wrong');
+    }
+  });
+}
+
+function shouldShowHintBtn() {
+  const scenario = scenarios[current];
+  const answerListItems = Array.from(document.querySelectorAll('#answer-list .step'));
+  const poolCount = document.querySelectorAll('#pool-list .step').length;
+  const allPlaced = poolCount === 0 && answerListItems.length === scenario.steps.length;
+  const anyWrong = answerListItems.some((li, i) => li.textContent !== scenario.steps[i]);
+  return allPlaced && anyWrong;
+}
+
+function checkOrder() {
+  removeHintHighlights();
+  clearSelection();
+  const scenario = scenarios[current];
+  const answerListItems = Array.from(document.querySelectorAll('#answer-list .step'));
+  const userOrder = answerListItems.map(li => li.textContent);
+  const poolCount = document.querySelectorAll('#pool-list .step').length;
+  const isCorrect = poolCount === 0 && userOrder.length === scenario.steps.length &&
+    userOrder.every((step, i) => step === scenario.steps[i]);
+  const nextBtn = document.getElementById('next-btn');
+  const hintBtn = document.getElementById('hint-btn');
+  if (isCorrect) {
+    document.getElementById('correct-msg').style.display = "block";
+    nextBtn.disabled = false;
+    nextBtn.classList.add('enabled');
+    hintBtn.style.display = "none";
+    if (!beepPlayed) {
+      playBeep();
+      beepPlayed = true;
+    }
+  } else {
+    document.getElementById('correct-msg').style.display = "none";
+    nextBtn.disabled = true;
+    nextBtn.classList.remove('enabled');
+    beepPlayed = false;
+    if (shouldShowHintBtn()) {
+      hintBtn.style.display = "inline-block";
+    } else {
+      hintBtn.style.display = "none";
+    }
+  }
+}
+
+document.getElementById('hint-btn').onclick = function() {
+  showHint();
+};
+
+document.getElementById('next-btn').onclick = () => {
+  if (document.getElementById('next-btn').disabled) return;
+  document.getElementById('hint-btn').style.display = "none";
+  clearKeyboardHandlers();
+  if (current + 1 < scenarios.length) {
+    current++;
+    renderScenario(current);
+  } else {
+    document.getElementById('game-container').innerHTML =
+      "<h2>Great job!</h2><div style='text-align:center;font-size:1.3em;'>You finished all the scenarios!</div>";
+  }
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderScenario(current);
+});
+</script>
+</body>
+</html>
