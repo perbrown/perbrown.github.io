@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hearing Test Ramp</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    .card {
+      background: #111827;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      text-align: center;
+      width: min(520px, 92vw);
+    }
+    #freq {
+      font-size: 64px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin: 12px 0 24px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      font-size: 16px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+    button.stop {
+      background: #ef4444;
+    }
+    .note {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hearing Test (Frequency Ramp)</h1>
+    <div id="freq">— Hz</div>
+    <div class="controls">
+      <button id="start">Start</button>
+      <button id="stop" class="stop">Stop</button>
+    </div>
+    <div class="note">Starts at 20 Hz and ramps to 20,000 Hz. Slower above 10 kHz.</div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    let osc = null;
+    let gain = null;
+    let rafId = null;
+
+    const startFreq = 20;
+    const midFreq = 10000;
+    const endFreq = 20000;
+
+    // Two-stage timing: faster below 10k, slower above 10k
+    const durationLowSec = 20;  // 20 Hz -> 10k
+    const durationHighSec = 20; // 10k -> 20k (slower)
+    const totalDuration = durationLowSec + durationHighSec;
+
+    const freqEl = document.getElementById("freq");
+
+    function updateDisplay(freq) {
+      freqEl.textContent = `${Math.round(freq)} Hz`;
+    }
+
+    function startRamp() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (osc) stopRamp();
+
+      osc = audioCtx.createOscillator();
+      gain = audioCtx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+      // Stage 1: 20 -> 10k
+      osc.frequency.exponentialRampToValueAtTime(
+        midFreq, audioCtx.currentTime + durationLowSec
+      );
+      // Stage 2: 10k -> 20k (slower)
+      osc.frequency.exponentialRampToValueAtTime(
+        endFreq, audioCtx.currentTime + totalDuration
+      );
+
+      // keep volume safe
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+
+      const startTime = audioCtx.currentTime;
+
+      function tick() {
+        const t = audioCtx.currentTime - startTime;
+        if (t >= totalDuration) {
+          updateDisplay(endFreq);
+          return;
+        }
+
+        let freq;
+        if (t <= durationLowSec) {
+          const ratio = t / durationLowSec;
+          freq = startFreq * Math.pow(midFreq / startFreq, ratio);
+        } else {
+          const t2 = t - durationLowSec;
+          const ratio2 = t2 / durationHighSec;
+          freq = midFreq * Math.pow(endFreq / midFreq, ratio2);
+        }
+
+        updateDisplay(freq);
+        rafId = requestAnimationFrame(tick);
+      }
+
+      tick();
+    }
+
+    function stopRamp() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      if (osc) {
+        try { osc.stop(); } catch {}
+        osc.disconnect();
+        osc = null;
+      }
+      if (gain) {
+        gain.disconnect();
+        gain = null;
+      }
+      updateDisplay("—");
+    }
+
+    document.getElementById("start").addEventListener("click", () => {
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      startRamp();
+    });
+
+    document.getElementById("stop").addEventListener("click", stopRamp);
+  </script>
+</body>
+</html>
