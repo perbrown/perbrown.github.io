@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DC Motor Magnetic Field Demo</title>
+
+<style>
+body {
+    margin:0;
+    overflow:hidden;
+}
+
+#info {
+    position:absolute;
+    top:15px;
+    left:15px;
+    color:white;
+    font-family:Arial;
+    font-size:18px;
+    background:rgba(0,0,0,0.5);
+    padding:10px;
+    border-radius:8px;
+}
+</style>
+
+<script type="importmap">
+{
+ "imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js"
+ }
+}
+</script>
+
+</head>
+
+<body>
+
+<div id="info">
+Left mouse button: rotate view<br>
+Scroll wheel: zoom
+</div>
+
+
+<script type="module">
+
+import * as THREE from "three";
+
+import {OrbitControls} from
+"https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/controls/OrbitControls.js";
+
+
+// ----------------
+// Scene
+// ----------------
+
+const scene = new THREE.Scene();
+
+scene.background =
+new THREE.Color(0x202020);
+
+
+
+const camera = new THREE.PerspectiveCamera(
+45,
+innerWidth/innerHeight,
+0.1,
+100
+);
+
+camera.position.set(4,3,5);
+
+
+
+const renderer =
+new THREE.WebGLRenderer({
+antialias:true
+});
+
+renderer.setSize(
+innerWidth,
+innerHeight
+);
+
+document.body.appendChild(
+renderer.domElement
+);
+
+
+
+const controls =
+new OrbitControls(
+camera,
+renderer.domElement
+);
+
+controls.enableDamping=true;
+
+
+
+// ----------------
+// Materials
+// ----------------
+
+const whiteMat =
+new THREE.LineBasicMaterial({
+color:0xffffff
+});
+
+
+const redMat =
+new THREE.LineBasicMaterial({
+color:0xff0000
+});
+
+
+const greenMat =
+new THREE.LineBasicMaterial({
+color:0x00ff00
+});
+
+
+const yellowMat =
+new THREE.MeshBasicMaterial({
+color:0xffff00
+});
+
+
+const blueMat =
+new THREE.LineBasicMaterial({
+color:0x0088ff
+});
+
+
+
+// ----------------
+// Helper
+// ----------------
+
+function makeLine(a,b,mat)
+{
+    let g =
+    new THREE.BufferGeometry();
+
+    g.setFromPoints([a,b]);
+
+    return new THREE.Line(
+        g,
+        mat
+    );
+}
+
+
+
+// ----------------
+// Rotor
+// ----------------
+
+const rotor =
+new THREE.Group();
+
+scene.add(rotor);
+
+
+const size=2;
+
+
+
+// ----------------
+// Yellow rotation axis
+// ----------------
+
+const axleGeometry =
+new THREE.CylinderGeometry(
+    0.015,
+    0.015,
+    8,
+    16
+);
+
+
+const axle =
+new THREE.Mesh(
+    axleGeometry,
+    yellowMat
+);
+
+
+axle.rotation.z =
+Math.PI/2;
+
+
+rotor.add(axle);
+
+
+
+// ----------------
+// White wires
+// ----------------
+
+rotor.add(
+makeLine(
+new THREE.Vector3(-size/2,-size/2,0),
+new THREE.Vector3(-size/2,size/2,0),
+whiteMat
+)
+);
+
+
+rotor.add(
+makeLine(
+new THREE.Vector3(size/2,-size/2,0),
+new THREE.Vector3(size/2,size/2,0),
+whiteMat
+)
+);
+
+
+
+// ----------------
+// Current wires
+// ----------------
+
+const redWire =
+makeLine(
+new THREE.Vector3(-size/2,size/2,0),
+new THREE.Vector3(size/2,size/2,0),
+redMat
+);
+
+
+const greenWire =
+makeLine(
+new THREE.Vector3(-size/2,-size/2,0),
+new THREE.Vector3(size/2,-size/2,0),
+greenMat
+);
+
+
+rotor.add(redWire);
+rotor.add(greenWire);
+
+
+
+// ----------------
+// Magnetic field (fixed)
+// ----------------
+
+const magneticField =
+makeLine(
+new THREE.Vector3(0,0,-1.5),
+new THREE.Vector3(0,0,1.5),
+blueMat
+);
+
+scene.add(magneticField);
+
+
+
+const fieldArrow =
+new THREE.ArrowHelper(
+new THREE.Vector3(0,0,1),
+new THREE.Vector3(0,0,1.1),
+0.5,
+0x0088ff,
+0.2,
+0.15
+);
+
+scene.add(fieldArrow);
+
+
+
+// ----------------
+// Force vectors
+// ----------------
+
+const redForce =
+new THREE.ArrowHelper(
+new THREE.Vector3(0,-1,0),
+new THREE.Vector3(0,size/2,0),
+0.9,
+0xff0000,
+0.2,
+0.15
+);
+
+
+const greenForce =
+new THREE.ArrowHelper(
+new THREE.Vector3(0,1,0),
+new THREE.Vector3(0,-size/2,0),
+0.9,
+0x00ff00,
+0.2,
+0.15
+);
+
+
+rotor.add(redForce);
+rotor.add(greenForce);
+
+
+
+// ----------------
+// Commutator switching
+// ----------------
+
+let lastSwitch=0;
+let reversed=false;
+
+
+function switchCurrent()
+{
+
+reversed=!reversed;
+
+
+if(reversed)
+{
+    redWire.material=greenMat;
+    greenWire.material=redMat;
+
+    redForce.setColor(0x00ff00);
+    greenForce.setColor(0xff0000);
+}
+else
+{
+    redWire.material=redMat;
+    greenWire.material=greenMat;
+
+    redForce.setColor(0xff0000);
+    greenForce.setColor(0x00ff00);
+}
+
+}
+
+
+
+// ----------------
+// Keep forces vertical
+// ----------------
+
+function updateForces()
+{
+
+let r;
+let g;
+
+
+if(reversed)
+{
+    r=new THREE.Vector3(0,1,0);
+    g=new THREE.Vector3(0,-1,0);
+}
+else
+{
+    r=new THREE.Vector3(0,-1,0);
+    g=new THREE.Vector3(0,1,0);
+}
+
+
+r.applyQuaternion(
+rotor.quaternion.clone().invert()
+);
+
+
+g.applyQuaternion(
+rotor.quaternion.clone().invert()
+);
+
+
+redForce.setDirection(r);
+greenForce.setDirection(g);
+
+}
+
+
+
+// ----------------
+// Animation
+// ----------------
+
+function animate()
+{
+
+requestAnimationFrame(animate);
+
+
+rotor.rotation.x +=0.015;
+
+
+let turns =
+Math.floor(
+rotor.rotation.x/Math.PI
+);
+
+
+if(turns!==lastSwitch)
+{
+    switchCurrent();
+    lastSwitch=turns;
+}
+
+
+updateForces();
+
+
+controls.update();
+
+
+renderer.render(
+scene,
+camera
+);
+
+}
+
+
+animate();
+
+
+
+// Resize
+
+window.addEventListener(
+"resize",
+()=>{
+
+camera.aspect =
+innerWidth/innerHeight;
+
+camera.updateProjectionMatrix();
+
+
+renderer.setSize(
+innerWidth,
+innerHeight
+);
+
+});
+
+
+</script>
+
+</body>
+</html>
