@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wire Current Magnetic Field Simulator</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #0f1118;
+      color: #e8e8e8;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px;
+      border-bottom: 1px solid #2b2f3a;
+      background: #171b25;
+    }
+
+    button {
+      border: 1px solid #4a5162;
+      background: #2a3140;
+      color: #f2f2f2;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: #333d51; }
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #d5dced;
+      user-select: none;
+    }
+
+    .hint { font-size: 13px; color: #b9c0cf; }
+
+    .legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 6px;
+      font-size: 13px;
+      color: #c8d0e0;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .in { background: #36d17a; }   /* into page = green */
+    .out { background: #f04c4c; }  /* out of page = red */
+
+    canvas {
+      flex: 1;
+      display: block;
+      background: radial-gradient(circle at 30% 20%, #111827 0%, #0b0f18 60%, #080b12 100%);
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="addInBtn">Add Wire (Into Page)</button>
+    <button id="addOutBtn">Add Wire (Out of Page)</button>
+    <button id="clearBtn">Clear</button>
+
+    <label>
+      <input type="checkbox" id="forcesCheckbox" />
+      Enable wire forces
+    </label>
+
+    <span class="legend">
+      <span><span class="dot in"></span> Into page (green)</span>
+      <span><span class="dot out"></span> Out of page (red)</span>
+    </span>
+
+    <span class="hint">Left-drag wire to move. Right-click wire to toggle current direction.</span>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const addInBtn = document.getElementById('addInBtn');
+    const addOutBtn = document.getElementById('addOutBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const forcesCheckbox = document.getElementById('forcesCheckbox');
+
+    // +1 = out of page (red), -1 = into page (green)
+    const wires = [];
+
+    let draggingWire = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    // Animation loop
+    let rafId = null;
+    let lastTime = performance.now();
+
+    // Visual / field
+    const WIRE_RADIUS = 14;
+    const CURRENT_STRENGTH = 1.0;
+    const GRID_SPACING = 34;
+    const LINE_STEP = 6;
+    const LINE_STEPS = 80;
+    const MIN_FIELD = 1e-6;
+
+    // Physics (for wire-wire forces)
+    // For parallel wires: same direction attract, opposite repel (F/L ~ I1*I2/r)
+    const FORCE_K = 22000;      // strength scaling
+    const MIN_DIST = 30;        // avoid singularity
+    const MAX_FORCE = 2800;     // clamp
+    const DAMPING = 0.992;      // velocity damping
+    const MAX_SPEED = 520;      // px/s
+    const BOUNCE = 0.45;        // wall bounce
+    const COLLISION_PAD = 2;    // small spacing
+
+    function resizeCanvas() {
+      const toolbarH = document.getElementById('toolbar').offsetHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - toolbarH;
+      draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function addWire(direction) {
+      const x = canvas.width * (0.25 + Math.random() * 0.5);
+      const y = canvas.height * (0.25 + Math.random() * 0.5);
+
+      wires.push({
+        id: crypto.randomUUID(),
+        x, y,
+        vx: 0, vy: 0,
+        dir: direction, // -1 into (green), +1 out (red)
+        I: CURRENT_STRENGTH
+      });
+
+      draw();
+    }
+
+    addInBtn.addEventListener('click', () => addWire(-1));
+    addOutBtn.addEventListener('click', () => addWire(+1));
+    clearBtn.addEventListener('click', () => {
+      wires.length = 0;
+      draggingWire = null;
+      draw();
+    });
+
+    // B field from long straight wire along z:
+    // B = k * dir * (-dy, dx)/r^2 (2D representation)
+    function fieldAt(x, y) {
+      let bx = 0, by = 0;
+
+      for (const w of wires) {
+        const dx = x - w.x;
+        const dy = y - w.y;
+        const r2 = dx * dx + dy * dy + 20; // soften near center
+        const scale = (w.I * w.dir) / r2;
+        bx += -dy * scale;
+        by +=  dx * scale;
+      }
+
+      return { bx, by };
+    }
+
+    function traceFieldLine(sx, sy, dirSign = 1, steps = LINE_STEPS) {
+      let x = sx;
+      let y = sy;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+
+      for (let i = 0; i < steps; i++) {
+        const { bx, by } = fieldAt(x, y);
+        const mag = Math.hypot(bx, by);
+        if (mag < MIN_FIELD) break;
+
+        x += (bx / mag) * LINE_STEP * dirSign;
+        y += (by / mag) * LINE_STEP * dirSign;
+
+        if (x < 0 || y < 0 || x > canvas.width || y > canvas.height) break;
+
+        let nearWire = false;
+        for (const w of wires) {
+          if (Math.hypot(x - w.x, y - w.y) < WIRE_RADIUS - 2) {
+            nearWire = true;
+            break;
+          }
+        }
+
+        ctx.lineTo(x, y);
+        if (nearWire) break;
+      }
+
+      ctx.stroke();
+    }
+
+    function drawFieldLines() {
+      if (!wires.length) return;
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(120, 190, 255, 0.58)';
+      ctx.lineWidth = 1.0;
+
+      for (const w of wires) {
+        const seeds = 20;
+        for (let i = 0; i < seeds; i++) {
+          const a = (i / seeds) * Math.PI * 2;
+          const sx = w.x + Math.cos(a) * (WIRE_RADIUS + 6);
+          const sy = w.y + Math.sin(a) * (WIRE_RADIUS + 6);
+
+          traceFieldLine(sx, sy, +1, LINE_STEPS);
+          traceFieldLine(sx, sy, -1, LINE_STEPS);
+        }
+      }
+
+      for (let gx = GRID_SPACING / 2; gx < canvas.width; gx += GRID_SPACING) {
+        for (let gy = GRID_SPACING / 2; gy < canvas.height; gy += GRID_SPACING) {
+          if (((gx + gy) / GRID_SPACING) % 2 < 1) continue;
+          traceFieldLine(gx, gy, +1, 36);
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function drawWire(w) {
+      ctx.save();
+      ctx.translate(w.x, w.y);
+
+      // color by direction
+      ctx.fillStyle = (w.dir === -1) ? '#36d17a' : '#f04c4c';
+      ctx.beginPath();
+      ctx.arc(0, 0, WIRE_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#f4f4f4';
+      ctx.stroke();
+
+      // symbol: into = X, out = dot
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 2.2;
+
+      if (w.dir === -1) {
+        ctx.beginPath();
+        ctx.moveTo(-5, -5);
+        ctx.lineTo(5, 5);
+        ctx.moveTo(5, -5);
+        ctx.lineTo(-5, 5);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      const step = 32;
+      for (let x = 0; x <= canvas.width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+      drawFieldLines();
+      for (const w of wires) drawWire(w);
+    }
+
+    function topWireAt(x, y) {
+      for (let i = wires.length - 1; i >= 0; i--) {
+        const w = wires[i];
+        if (Math.hypot(x - w.x, y - w.y) <= WIRE_RADIUS + 2) return w;
+      }
+      return null;
+    }
+
+    function bringWireToFront(w) {
+      const i = wires.indexOf(w);
+      if (i >= 0) {
+        wires.splice(i, 1);
+        wires.push(w);
+      }
+    }
+
+    function applyWireForces(dt) {
+      if (!forcesCheckbox.checked) {
+        // freeze residual motion when forces disabled
+        for (const w of wires) {
+          w.vx = 0;
+          w.vy = 0;
+        }
+        return;
+      }
+
+      // Pairwise force:
+      // same dir -> attract
+      // opposite dir -> repel
+      for (let i = 0; i < wires.length; i++) {
+        for (let j = i + 1; j < wires.length; j++) {
+          const a = wires[i];
+          const b = wires[j];
+
+          if (a === draggingWire || b === draggingWire) continue;
+
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let dist = Math.hypot(dx, dy);
+          if (dist < 1e-6) dist = 1e-6;
+
+          const safe = Math.max(dist, MIN_DIST);
+
+          // +1 if same direction (attract), -1 if opposite (repel)
+          const sameDirection = (a.dir === b.dir) ? 1 : -1;
+
+          let f = (FORCE_K * a.I * b.I / safe) * sameDirection; // ~1/r
+          f = Math.max(-MAX_FORCE, Math.min(MAX_FORCE, f));
+
+          const ux = dx / dist;
+          const uy = dy / dist;
+
+          // attraction: +f along ux,uy
+          // repulsion: -f automatically since f negative
+          const fx = f * ux;
+          const fy = f * uy;
+
+          a.vx += (fx) * dt;
+          a.vy += (fy) * dt;
+          b.vx -= (fx) * dt;
+          b.vy -= (fy) * dt;
+        }
+      }
+
+      // Integrate, damping, bounds
+      for (const w of wires) {
+        if (w === draggingWire) continue;
+
+        w.vx *= DAMPING;
+        w.vy *= DAMPING;
+
+        const speed = Math.hypot(w.vx, w.vy);
+        if (speed > MAX_SPEED) {
+          const s = MAX_SPEED / speed;
+          w.vx *= s;
+          w.vy *= s;
+        }
+
+        w.x += w.vx * dt;
+        w.y += w.vy * dt;
+
+        const r = WIRE_RADIUS;
+
+        if (w.x < r) { w.x = r; w.vx *= -BOUNCE; }
+        if (w.x > canvas.width - r) { w.x = canvas.width - r; w.vx *= -BOUNCE; }
+        if (w.y < r) { w.y = r; w.vy *= -BOUNCE; }
+        if (w.y > canvas.height - r) { w.y = canvas.height - r; w.vy *= -BOUNCE; }
+      }
+
+      // simple collision separation so wires don't overlap deeply
+      const minCenter = WIRE_RADIUS * 2 + COLLISION_PAD;
+      for (let i = 0; i < wires.length; i++) {
+        for (let j = i + 1; j < wires.length; j++) {
+          const a = wires[i];
+          const b = wires[j];
+
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let d = Math.hypot(dx, dy);
+          if (d < 1e-6) {
+            dx = 1; dy = 0; d = 1;
+          }
+
+          if (d < minCenter) {
+            const push = (minCenter - d) * 0.5;
+            const ux = dx / d;
+            const uy = dy / d;
+
+            if (a !== draggingWire) {
+              a.x -= ux * push;
+              a.y -= uy * push;
+            }
+            if (b !== draggingWire) {
+              b.x += ux * push;
+              b.y += uy * push;
+            }
+          }
+        }
+      }
+    }
+
+    function tick(now) {
+      const dt = Math.min(0.033, (now - lastTime) / 1000);
+      lastTime = now;
+
+      applyWireForces(dt);
+      draw();
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (e.button === 0) {
+        const w = topWireAt(x, y);
+        if (w) {
+          draggingWire = w;
+          dragOffsetX = x - w.x;
+          dragOffsetY = y - w.y;
+          w.vx = 0;
+          w.vy = 0;
+          bringWireToFront(w);
+        }
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!draggingWire) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      draggingWire.x = x - dragOffsetX;
+      draggingWire.y = y - dragOffsetY;
+    });
+
+    window.addEventListener('mouseup', () => {
+      draggingWire = null;
+    });
+
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const w = topWireAt(x, y);
+      if (w) {
+        w.dir *= -1; // toggle current direction
+        w.vx = 0;
+        w.vy = 0;
+      }
+    });
+
+    // Init
+    resizeCanvas();
+    addWire(-1);
+    addWire(+1);
+
+    if (!rafId) {
+      lastTime = performance.now();
+      rafId = requestAnimationFrame(tick);
+    }
+  </script>
+</body>
+</html>
