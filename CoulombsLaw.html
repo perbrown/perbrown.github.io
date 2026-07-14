@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Electric Charges Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e24;
+            color: #f5f5f7;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+            color: #00adb5;
+        }
+
+        #controls {
+            background-color: #2a2a35;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.9rem;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            cursor: pointer;
+            accent-color: #00adb5;
+        }
+
+        .btn-reset {
+            background-color: #ff4b5c;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .btn-reset:hover {
+            background-color: #e03e4d;
+        }
+
+        .btn-reset:active {
+            transform: scale(0.96);
+        }
+
+        canvas {
+            background-color: #111116;
+            border: 2px solid #393e46;
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .instructions {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #8c8c9e;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.4;
+        }
+
+        /* Color legend for the forces */
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+            font-size: 0.85rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Electric Charges Sandbox</h1>
+
+    <div id="controls">
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="showFieldLines" checked> Show Field Lines
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="enablePhysics"> Enable Physical Forces (Move)
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="showForceArrows" checked> Show Force Arrows
+            </label>
+        </div>
+
+        <div class="slider-container">
+            <label for="charge1Range">Charge 1 Magnitude: <span id="val1">10</span> μC</label>
+            <div class="slider-row">
+                <span>-20</span>
+                <input type="range" id="charge1Range" min="-20" max="20" step="1" value="10">
+                <span>+20</span>
+            </div>
+        </div>
+
+        <div class="slider-container">
+            <label for="charge2Range">Charge 2 Magnitude: <span id="val2">-10</span> μC</label>
+            <div class="slider-row">
+                <span>-20</span>
+                <input type="range" id="charge2Range" min="-20" max="20" step="1" value="-10">
+                <span>+20</span>
+            </div>
+        </div>
+
+        <div>
+            <button class="btn-reset" id="resetBtn">Reset Layout</button>
+        </div>
+    </div>
+
+    <canvas id="simCanvas" width="800" height="500"></canvas>
+
+    <div class="legend">
+        <div class="legend-item">
+            <span class="dot" style="background-color: #ff9f43;"></span>
+            <span>Force on Charge 1 (Orange)</span>
+        </div>
+        <div class="legend-item">
+            <span class="dot" style="background-color: #1dd1a1;"></span>
+            <span>Force on Charge 2 (Mint Green)</span>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <strong>Controls:</strong> Drag the charges to move them. <strong>Double-click</strong> on a charge to instantly flip its sign. Adjust the sliders to scale the physical size and strength of the charges. Turn on "Physical Forces" to watch Coulomb's Law actively push or pull them!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Elements
+        const showFieldLinesCheck = document.getElementById('showFieldLines');
+        const enablePhysicsCheck = document.getElementById('enablePhysics');
+        const showForceArrowsCheck = document.getElementById('showForceArrows');
+        
+        const slider1 = document.getElementById('charge1Range');
+        const slider2 = document.getElementById('charge2Range');
+        const val1Disp = document.getElementById('val1');
+        const val2Disp = document.getElementById('val2');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Physics Constants
+        const k = 150000; 
+        const dt = 0.15;  
+        const damping = 0.92; 
+
+        // Default Initial Values
+        const DEFAULT_X1 = 250, DEFAULT_Y1 = 250, DEFAULT_Q1 = 10;
+        const DEFAULT_X2 = 550, DEFAULT_Y2 = 250, DEFAULT_Q2 = -10;
+
+        // Charge Representation Class
+        class Charge {
+            constructor(x, y, q) {
+                this.x = x;
+                this.y = y;
+                this.q = q; 
+                this.vx = 0;
+                this.vy = 0;
+                this.isDragging = false;
+            }
+
+            // Dynamically calculate the visual radius based on charge magnitude
+            get radius() {
+                // Minimum fallback size is 5 pixels if q=0, up to a maximum radius of ~35 pixels
+                return Math.max(5, Math.abs(this.q) * 1.5 + 8);
+            }
+
+            draw() {
+                // If the charge magnitude is perfectly 0, make it look inactive
+                let color = '#7f7f8a'; 
+                if (this.q > 0) color = '#ff4b5c'; // Positive Red
+                if (this.q < 0) color = '#0071e3'; // Negative Blue
+
+                const r = this.radius;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.shadowBlur = Math.abs(this.q) * 1.5;
+                ctx.shadowColor = color;
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+                ctx.restore();
+
+                // Draw symbols only if size allows it
+                if (this.q !== 0 && r > 12) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${Math.max(14, r * 0.8)}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    let sign = this.q > 0 ? '+' : '-';
+                    ctx.fillText(sign, this.x, this.y + (sign === '+' ? 1 : 0));
+                }
+            }
+
+            contains(mx, my) {
+                const dist = Math.hypot(this.x - mx, this.y - my);
+                return dist < this.radius;
+            }
+        }
+
+        // Initialize Charges
+        const charges = [
+            new Charge(DEFAULT_X1, DEFAULT_Y1, DEFAULT_Q1),
+            new Charge(DEFAULT_X2, DEFAULT_Y2, DEFAULT_Q2)
+        ];
+
+        let draggedCharge = null;
+
+        // --- Interaction Event Listeners ---
+
+        // Sliders
+        slider1.addEventListener('input', (e) => {
+            charges[0].q = parseInt(e.target.value);
+            val1Disp.textContent = e.target.value;
+        });
+
+        slider2.addEventListener('input', (e) => {
+            charges[1].q = parseInt(e.target.value);
+            val2Disp.textContent = e.target.value;
+        });
+
+        // Reset Button Action
+        resetBtn.addEventListener('click', () => {
+            // Restore positions
+            charges[0].x = DEFAULT_X1;
+            charges[0].y = DEFAULT_Y1;
+            charges[0].q = DEFAULT_Q1;
+            charges[0].vx = 0;
+            charges[0].vy = 0;
+
+            charges[1].x = DEFAULT_X2;
+            charges[1].y = DEFAULT_Y2;
+            charges[1].q = DEFAULT_Q2;
+            charges[1].vx = 0;
+            charges[1].vy = 0;
+
+            // Reset Sliders UI
+            slider1.value = DEFAULT_Q1;
+            val1Disp.textContent = DEFAULT_Q1;
+            slider2.value = DEFAULT_Q2;
+            val2Disp.textContent = DEFAULT_Q2;
+        });
+
+        // Mouse Down for dragging
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            // Loop backwards to prioritize selecting top-most/larger charges if overlapping
+            for (let i = charges.length - 1; i >= 0; i--) {
+                if (charges[i].contains(mx, my)) {
+                    draggedCharge = charges[i];
+                    draggedCharge.isDragging = true;
+                    draggedCharge.vx = 0;
+                    draggedCharge.vy = 0;
+                    break;
+                }
+            }
+        });
+
+        // Mouse Move
+        canvas.addEventListener('mousemove', (e) => {
+            if (draggedCharge) {
+                const rect = canvas.getBoundingClientRect();
+                draggedCharge.x = e.clientX - rect.left;
+                draggedCharge.y = e.clientY - rect.top;
+                
+                // Keep inside canvas boundary safety cushions
+                draggedCharge.x = Math.max(draggedCharge.radius, Math.min(canvas.width - draggedCharge.radius, draggedCharge.x));
+                draggedCharge.y = Math.max(draggedCharge.radius, Math.min(canvas.height - draggedCharge.radius, draggedCharge.y));
+            }
+        });
+
+        // Mouse Up
+        window.addEventListener('mouseup', () => {
+            if (draggedCharge) {
+                draggedCharge.isDragging = false;
+                draggedCharge = null;
+            }
+        });
+
+        // Double Click to Toggle sign
+        canvas.addEventListener('dblclick', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            charges.forEach((charge, index) => {
+                if (charge.contains(mx, my)) {
+                    charge.q = -charge.q;
+                    if (index === 0) {
+                        slider1.value = charge.q;
+                        val1Disp.textContent = charge.q;
+                    } else {
+                        slider2.value = charge.q;
+                        val2Disp.textContent = charge.q;
+                    }
+                }
+            });
+        });
+
+        // --- Math & Physics Calculations ---
+
+        function getElectricFieldAt(x, y) {
+            let Ex = 0;
+            let Ey = 0;
+
+            for (let charge of charges) {
+                if (charge.q === 0) continue;
+                const dx = x - charge.x;
+                const dy = y - charge.y;
+                const distSq = dx * dx + dy * dy;
+                const dist = Math.sqrt(distSq);
+
+                if (dist < charge.radius) continue; 
+
+                const E_mag = (k * charge.q) / distSq;
+                Ex += E_mag * (dx / dist);
+                Ey += E_mag * (dy / dist);
+            }
+            return { x: Ex, y: Ey };
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, color = '#ffffff') {
+            const headLength = 10;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2.5;
+
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawFieldLine(startX, startY, directionSign) {
+            let x = startX;
+            let y = startY;
+            const stepSize = 4;
+            const maxSteps = 150;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            for (let i = 0; i < maxSteps; i++) {
+                const E = getElectricFieldAt(x, y);
+                const E_mag = Math.hypot(E.x, E.y);
+
+                if (E_mag === 0) break;
+
+                const dx = (E.x / E_mag) * stepSize * directionSign;
+                const dy = (E.y / E_mag) * stepSize * directionSign;
+
+                x += dx;
+                y += dy;
+
+                if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) break;
+
+                let hitCharge = false;
+                for (let charge of charges) {
+                    if (Math.hypot(x - charge.x, y - charge.y) < charge.radius - 2) {
+                        hitCharge = true;
+                        break;
+                    }
+                }
+                if (hitCharge) break;
+
+                ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        function renderFieldLines() {
+            charges.forEach(charge => {
+                if (charge.q === 0) return;
+                
+                const lineCount = Math.min(32, Math.abs(charge.q) * 1.5 + 4); 
+                const angleStep = (Math.PI * 2) / lineCount;
+
+                for (let i = 0; i < lineCount; i++) {
+                    const angle = i * angleStep;
+                    const startX = charge.x + Math.cos(angle) * (charge.radius + 2);
+                    const startY = charge.y + Math.sin(angle) * (charge.radius + 2);
+
+                    const sign = charge.q > 0 ? 1 : -1;
+                    drawFieldLine(startX, startY, sign);
+                }
+            });
+        }
+
+        // --- Main Simulation Loop ---
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const c1 = charges[0];
+            const c2 = charges[1];
+
+            const dx = c2.x - c1.x;
+            const dy = c2.y - c1.y;
+            const r2 = dx * dx + dy * dy;
+            const r = Math.sqrt(r2);
+
+            let forceMag = 0;
+            let fx = 0;
+            let fy = 0;
+
+            const minDistanceAllowed = c1.radius + c2.radius;
+
+            if (r > minDistanceAllowed && (c1.q !== 0 && c2.q !== 0)) {
+                forceMag = (k * Math.abs(c1.q * c2.q)) / r2;
+                
+                const ux = dx / r;
+                const uy = dy / r;
+
+                const sameSign = (c1.q * c2.q) > 0;
+                const forceDirection = sameSign ? -1 : 1; 
+
+                fx = ux * forceMag * forceDirection;
+                fy = uy * forceMag * forceDirection;
+            }
+
+            // Apply mechanics forces
+            if (enablePhysicsCheck.checked) {
+                const mass = 1500;
+
+                if (!c1.isDragging) {
+                    c1.vx += (fx / mass) * dt;
+                    c1.vy += (fy / mass) * dt;
+                    c1.vx *= damping;
+                    c1.vy *= damping;
+                    c1.x += c1.vx;
+                    c1.y += c1.vy;
+                }
+
+                if (!c2.isDragging) {
+                    c2.vx += (-fx / mass) * dt;
+                    c2.vy += (-fy / mass) * dt;
+                    c2.vx *= damping;
+                    c2.vy *= damping;
+                    c2.x += c2.vx;
+                    c2.y += c2.vy;
+                }
+
+                // Rigid collision bounds checks
+                charges.forEach(charge => {
+                    if (charge.x < charge.radius) { charge.x = charge.radius; charge.vx *= -0.5; }
+                    if (charge.x > canvas.width - charge.radius) { charge.x = canvas.width - charge.radius; charge.vx *= -0.5; }
+                    if (charge.y < charge.radius) { charge.y = charge.radius; charge.vy *= -0.5; }
+                    if (charge.y > canvas.height - charge.radius) { charge.y = canvas.height - charge.radius; charge.vy *= -0.5; }
+                });
+            }
+
+            // Render Layering
+            if (showFieldLinesCheck.checked) {
+                renderFieldLines();
+            }
+
+            c1.draw();
+            c2.draw();
+
+            if (showForceArrowsCheck.checked && r > minDistanceAllowed && (c1.q !== 0 && c2.q !== 0)) {
+                const arrowScale = 0.2; 
+                const fLengthX = fx * arrowScale;
+                const fLengthY = fy * arrowScale;
+
+                if (Math.hypot(fLengthX, fLengthY) > 2) {
+                    // Draw Charge 1's Force Arrow in vibrant Orange
+                    drawArrow(c1.x, c1.y, c1.x + fLengthX, c1.y + fLengthY, '#ff9f43');
+                    // Draw Charge 2's Force Arrow in vibrant Mint Green
+                    drawArrow(c2.x, c2.y, c2.x - fLengthX, c2.y - fLengthY, '#1dd1a1');
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // Run Engine
+        update();
+    </script>
+</body>
+</html>
