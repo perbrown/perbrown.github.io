@@ -15,11 +15,25 @@ body {
     top:15px;
     left:15px;
     color:white;
-    font-family:Arial;
-    font-size:18px;
-    background:rgba(0,0,0,0.5);
-    padding:10px;
+    font-family:Arial, sans-serif;
+    font-size:16px;
+    background:rgba(0,0,0,0.7);
+    padding:15px;
     border-radius:8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    pointer-events: auto; /* Ensure we can click the slider */
+}
+
+.slider-container {
+    margin-top: 12px;
+    border-top: 1px solid #555;
+    padding-top: 10px;
+}
+
+#currentSlider {
+    width: 100%;
+    margin-top: 5px;
+    cursor: pointer;
 }
 </style>
 
@@ -36,8 +50,14 @@ body {
 <body>
 
 <div id="info">
-Left mouse button: rotate view<br>
-Scroll wheel: zoom
+  <strong>Controls:</strong><br>
+  Left mouse button: Rotate view<br>
+  Scroll wheel: Zoom
+  
+  <div class="slider-container">
+    <label for="currentSlider"><strong>Wire Current:</strong> <span id="currentVal">1.0</span> A</label><br>
+    <input type="range" id="currentSlider" min="0" max="3" step="0.1" value="1">
+  </div>
 </div>
 
 
@@ -130,6 +150,11 @@ new THREE.LineBasicMaterial({
 color:0x0088ff
 });
 
+// A solid white material for the white cylinder segment
+const solidWhiteMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff
+});
+
 
 
 // ----------------
@@ -166,35 +191,91 @@ const size=2;
 
 
 // ----------------
-// Yellow rotation axis
+// Two-Tone Axle (Split exactly at the right circuit boundary: x = 1.0)
 // ----------------
 
-const axleGeometry =
-new THREE.CylinderGeometry(
+const axleGroup = new THREE.Group();
+
+// Yellow segment: spans from x = -4 to x = 1 (length of 5)
+const yellowAxleGeometry = new THREE.CylinderGeometry(
     0.015,
     0.015,
-    8,
+    5,
     16
 );
 
-
-const axle =
-new THREE.Mesh(
-    axleGeometry,
-    yellowMat
+// White segment: spans from x = 1 to x = 4 (length of 3)
+const whiteAxleGeometry = new THREE.CylinderGeometry(
+    0.015,
+    0.015,
+    3,
+    16
 );
 
+// Under Z rotation of PI/2:
+// - Y position translates to negative X.
+// - To place yellow on the left (x: -4 to 1), we center it at local y = 1.5 (maps to x = -1.5)
+const axleYellow = new THREE.Mesh(
+    yellowAxleGeometry,
+    yellowMat
+);
+axleYellow.position.y = 1.5;
 
-axle.rotation.z =
-Math.PI/2;
+// To place white on the right (x: 1 to 4), we center it at local y = -2.5 (maps to x = 2.5)
+const axleWhite = new THREE.Mesh(
+    whiteAxleGeometry,
+    solidWhiteMat
+);
+axleWhite.position.y = -2.5;
 
+axleGroup.add(axleYellow);
+axleGroup.add(axleWhite);
 
-rotor.add(axle);
+// Rotate the combined group so Y maps to the X-axis
+axleGroup.rotation.z = Math.PI / 2;
+
+rotor.add(axleGroup);
 
 
 
 // ----------------
-// White wires
+// Wheel with Spokes (At end of axle)
+// ----------------
+
+const wheelGroup = new THREE.Group();
+
+// Place the wheel at the far yellow end (x = -4.0).
+wheelGroup.position.set(-4.0, 0, 0);
+wheelGroup.rotation.y = Math.PI / 2;
+
+// Create the wheel rim
+const wheelRadius = 0.8;
+const rimGeometry = new THREE.RingGeometry(wheelRadius - 0.04, wheelRadius, 32);
+const rim = new THREE.Mesh(rimGeometry, yellowMat);
+wheelGroup.add(rim);
+
+// Create spokes (8 spokes radiating from center)
+const numSpokes = 8;
+for (let i = 0; i < numSpokes; i++) {
+    const angle = (i / numSpokes) * Math.PI * 2;
+    const endX = Math.cos(angle) * wheelRadius;
+    const endY = Math.sin(angle) * wheelRadius;
+
+    const spoke = makeLine(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(endX, endY, 0),
+        yellowMat
+    );
+    wheelGroup.add(spoke);
+}
+
+// Add the entire wheel assembly to the rotor
+rotor.add(wheelGroup);
+
+
+
+// ----------------
+// White wires (The circuit boundaries are at x = -1.0 and x = 1.0)
 // ----------------
 
 rotor.add(
@@ -300,6 +381,40 @@ rotor.add(redForce);
 rotor.add(greenForce);
 
 
+// ----------------
+// Interactive Current Logic
+// ----------------
+
+let currentVal = 1.0;
+const slider = document.getElementById("currentSlider");
+const displayVal = document.getElementById("currentVal");
+
+// Adjust vector sizes dynamically when slider moves
+function updateForceScale() {
+    const baseLength = 0.9;
+    const targetLength = baseLength * currentVal;
+    
+    // Prevent ArrowHelper from breaking if current is 0
+    const safeLength = Math.max(0.001, targetLength);
+    
+    // Scale head size alongside arrow length
+    const headLength = Math.min(0.2, safeLength * 0.25);
+    const headWidth = Math.min(0.15, safeLength * 0.2);
+
+    redForce.setLength(safeLength, headLength, headWidth);
+    greenForce.setLength(safeLength, headLength, headWidth);
+    
+    // Hide forces entirely if current is 0
+    redForce.visible = currentVal > 0;
+    greenForce.visible = currentVal > 0;
+}
+
+slider.addEventListener("input", (e) => {
+    currentVal = parseFloat(e.target.value);
+    displayVal.textContent = currentVal.toFixed(1);
+    updateForceScale();
+});
+
 
 // ----------------
 // Commutator switching
@@ -385,8 +500,9 @@ function animate()
 
 requestAnimationFrame(animate);
 
-
-rotor.rotation.x +=0.015;
+// Base speed increased to 0.04 and scales dynamically with current selection
+const baseSpeed = 0.04; 
+rotor.rotation.x += baseSpeed * currentVal;
 
 
 let turns =
