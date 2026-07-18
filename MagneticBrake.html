@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lenz's Law Simulation: Magnetic Braking</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #controls {
+            margin-bottom: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        button {
+            background-color: #0088ff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #0077e6;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        canvas {
+            background-color: #222222;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+    <h2 style="margin: 0 0 10px 0;">Lenz's Law: Magnetic Braking Demo</h2>
+    <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px;">Observe how eddy currents slow down the magnet in the conductive copper tube.</p>
+    <button id="dropBtn">Drop Magnets</button>
+</div>
+
+<canvas id="simCanvas" width="600" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+const dropBtn = document.getElementById('dropBtn');
+
+// Physics constants
+const GRAVITY = 0.25;         // Acceleration due to gravity
+const COPPER_DRAG = 0.12;      // Magnetic braking coefficient (Lenz's Law damping)
+const TUBE_TOP = 80;
+const TUBE_BOTTOM = 460;
+const TUBE_WIDTH = 50;
+
+// Magnet template object
+class Magnet {
+    constructor(x) {
+        this.startX = x;
+        this.reset();
+    }
+
+    reset() {
+        this.x = this.startX;
+        this.y = TUBE_TOP - 30; // Start just above the tube top
+        this.vy = 0;            // Vertical velocity
+        this.isFalling = false;
+        this.hasExited = false;
+    }
+
+    update(isConductive) {
+        if (!this.isFalling) return;
+
+        // Apply forces
+        let acceleration = GRAVITY;
+
+        // Lenz's Law: opposing force is directly proportional to speed inside the tube
+        if (isConductive && this.y >= TUBE_TOP && this.y <= TUBE_BOTTOM - 30) {
+            const brakingForce = this.vy * COPPER_DRAG;
+            acceleration -= brakingForce;
+        }
+
+        this.vy += acceleration;
+        this.y += this.vy;
+
+        // Check if it has fully cleared the tube
+        if (this.y > TUBE_BOTTOM) {
+            this.hasExited = true;
+        }
+
+        // Stop at the bottom edge of the screen canvas
+        if (this.y > canvas.height - 35) {
+            this.y = canvas.height - 35;
+            this.vy = 0;
+            this.isFalling = false;
+        }
+    }
+
+    draw(isConductive) {
+        ctx.save();
+        
+        // Draw physical magnet body (North/South split dipole)
+        const w = 30;
+        const h = 30;
+        const mx = this.x - w / 2;
+        const my = this.y;
+
+        // North pole (Red)
+        ctx.fillStyle = '#ff3333';
+        ctx.fillRect(mx, my, w, h / 2);
+        
+        // South pole (Blue)
+        ctx.fillStyle = '#3333ff';
+        ctx.fillRect(mx, my + h / 2, w, h / 2);
+
+        // N and S Text labels
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('N', this.x, my + 11);
+        ctx.fillText('S', this.x, my + 23);
+
+        // Draw induced eddy field lines dynamically inside the copper tube
+        if (isConductive && this.isFalling && this.y >= TUBE_TOP - 15 && this.y <= TUBE_BOTTOM) {
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            
+            // Draw simulated circular magnetic field rings pushing back
+            ctx.beginPath();
+            ctx.arc(this.x, my + h/2, 35, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(this.x, my + h/2, 45, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+}
+
+// Instantiate our two magnets centered inside their respective tubes
+const plasticMagnet = new Magnet(175);
+const copperMagnet = new Magnet(425);
+
+function drawTube(x, label, color, isConductive) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+
+    // Draw the 2 vertical structural lines defining the tube walls
+    ctx.beginPath();
+    ctx.moveTo(x - TUBE_WIDTH / 2, TUBE_TOP);
+    ctx.lineTo(x - TUBE_WIDTH / 2, TUBE_BOTTOM);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x + TUBE_WIDTH / 2, TUBE_TOP);
+    ctx.lineTo(x + TUBE_WIDTH / 2, TUBE_BOTTOM);
+    ctx.stroke();
+
+    // Render tube text headers
+    ctx.fillStyle = color;
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, TUBE_TOP - 45);
+
+    // Render underlying physics subtitle notes
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Arial';
+    if (isConductive) {
+        ctx.fillText('(Eddy Currents Slow it Down)', x, TUBE_TOP - 25);
+    } else {
+        ctx.fillText('(Freefall Acceleration)', x, TUBE_TOP - 25);
+    }
+
+    ctx.restore();
+}
+
+function animate() {
+    // Clear canvas frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Tubes (2 parallel vertical bounding lines each)
+    drawTube(175, 'Plastic Tube (Non-Conductive)', '#aaaaaa', false);
+    drawTube(425, 'Copper Tube (Conductive)', '#d77a4a', true); // Copper/orange tone
+
+    // Step physics forward
+    plasticMagnet.update(false);
+    copperMagnet.update(true);
+
+    // Render magnets
+    plasticMagnet.draw(false);
+    copperMagnet.draw(true);
+
+    requestAnimationFrame(animate);
+}
+
+// Button trigger event interaction
+dropBtn.addEventListener('click', () => {
+    plasticMagnet.reset();
+    copperMagnet.reset();
+    
+    plasticMagnet.isFalling = true;
+    copperMagnet.isFalling = true;
+});
+
+// Kick off global animation loop
+animate();
+</script>
+
+</body>
+</html>
