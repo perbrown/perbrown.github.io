@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faraday's Law - Perfect Textbook Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        #container {
+            position: relative;
+            background-color: #222222;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 30px;
+        }
+
+        #info-overlay {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(0,0,0,0.85);
+            padding: 12px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            pointer-events: none;
+            line-height: 1.5;
+            border: 1px solid #444;
+            z-index: 10;
+        }
+
+        canvas {
+            background-color: #111111;
+            border-radius: 6px;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        #meter-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+
+        .meter-label {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #00ffff;
+            text-align: center;
+        }
+
+        #emf-track {
+            position: relative;
+            width: 24px;
+            height: 300px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            border: 2px solid #444;
+            overflow: hidden;
+        }
+
+        #emf-center-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #666;
+            z-index: 1;
+        }
+
+        #emf-bar {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 0px;
+            top: 50%;
+        }
+
+        #emf-value {
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <div id="info-overlay">
+        <strong>Faraday's Law (Ideal Textbook Behavior)</strong><br>
+        • <strong>Entering:</strong> Scale goes positive (+)<br>
+        • <strong>Completely Inside:</strong> Flashes straight to **0.00 V**<br>
+        • <strong>Emerging:</strong> Scale goes negative (-)<br>
+        <span style="color: #aaa; font-size: 12px;">Right-click magnet to flip poles</span>
+    </div>
+
+    <canvas id="simCanvas" width="950" height="450"></canvas>
+
+    <div id="meter-container">
+        <div class="meter-label">Induced<br>EMF (&Epsilon;)</div>
+        <div id="emf-track">
+            <div id="emf-center-line"></div>
+            <div id="emf-bar"></div>
+        </div>
+        <div id="emf-value">0.00 V</div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+const emfBar = document.getElementById('emf-bar');
+const emfValueText = document.getElementById('emf-value');
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+const coil = {
+    x: 475,
+    y: 225,
+    width: 440,       
+    turns: 30,         
+    radiusY: 90       
+};
+
+const magnet = {
+    x: 120,
+    y: 225,
+    w: 110, 
+    h: 46,
+    angle: 0, 
+    isDragging: false,
+    offsetX: 0,
+    offsetY: 0
+};
+
+let lastFlux = 0;
+let currentEMF = 0;
+
+// Idealized textbook spatial flux plateau generator
+function calculateFlux() {
+    const coilLeft = coil.x - coil.width / 2;
+    const coilRight = coil.x + coil.width / 2;
+    
+    const magnetLeft = magnet.x - magnet.w / 2;
+    const magnetRight = magnet.x + magnet.w / 2;
+    
+    // Smooth transition profiles using hyperbolic tangents across the boundaries
+    // This creates a perfect flat top curve when the magnet is completely inside the volume
+    const entryFlux = 0.5 + 0.5 * Math.tanh((magnetRight - coilLeft) / 25);
+    const exitFlux = 0.5 + 0.5 * Math.tanh((coilRight - magnetLeft) / 25);
+    
+    let totalFlux = entryFlux * exitFlux;
+    
+    // Reverse flux vector if polarity is flipped
+    if (magnet.angle === Math.PI) {
+        totalFlux = -totalFlux;
+    }
+    
+    return totalFlux * 3200;
+}
+
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    const pos = getMousePos(e);
+    const dx = pos.x - magnet.x;
+    const db = pos.y - magnet.y;
+    
+    if (Math.abs(dx) < magnet.w / 2 && Math.abs(db) < magnet.h / 2) {
+        if (e.button === 0) { 
+            magnet.isDragging = true;
+            magnet.offsetX = dx;
+            magnet.offsetY = db;
+        } else if (e.button === 2) { 
+            magnet.angle = magnet.angle === 0 ? Math.PI : 0;
+        }
+    }
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!magnet.isDragging) return;
+    const pos = getMousePos(e);
+    magnet.x = Math.max(magnet.w/2, Math.min(canvas.width - magnet.w/2, pos.x - magnet.offsetX));
+    magnet.y = coil.y; 
+});
+
+window.addEventListener('mouseup', () => { magnet.isDragging = false; });
+
+function drawCoil() {
+    ctx.save();
+    ctx.lineWidth = 3.5;
+    ctx.shadowBlur = 4;
+    
+    const startX = coil.x - coil.width / 2;
+    const spacing = coil.width / (coil.turns - 1);
+
+    for (let i = 0; i < coil.turns; i++) {
+        const loopX = startX + (i * spacing);
+        ctx.strokeStyle = 'rgba(215, 122, 74, 0.85)'; 
+        ctx.shadowColor = '#d77a4a';
+        
+        ctx.beginPath();
+        ctx.ellipse(loopX, coil.y, 16, coil.radiusY, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawFieldLines() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 255, 242, 0.22)';
+    ctx.lineWidth = 2;
+
+    const isFlipped = magnet.angle === Math.PI;
+    const extX = isFlipped ? -magnet.w/2 : magnet.w/2;
+    const startX = magnet.x + extX;
+    const endX = magnet.x - extX;
+    
+    for (let i = -4; i <= 4; i++) {
+        if (i === 0) continue;
+        ctx.beginPath();
+        const heightMultiplier = Math.abs(i) * 30;
+        const weightMultiplier = Math.abs(i) * 35;
+
+        ctx.moveTo(startX, magnet.y + i * 3);
+        ctx.bezierCurveTo(
+            magnet.x + extX * (1 + weightMultiplier/60), magnet.y + i * heightMultiplier,
+            magnet.x - extX * (1 + weightMultiplier/60), magnet.y + i * heightMultiplier,
+            endX, magnet.y + i * 3
+        );
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawMagnet() {
+    ctx.save();
+    ctx.translate(magnet.x, magnet.y);
+    ctx.rotate(magnet.angle);
+
+    ctx.fillStyle = '#ff3333';
+    ctx.fillRect(0, -magnet.h / 2, magnet.w / 2, magnet.h);
+
+    ctx.fillStyle = '#3333ff';
+    ctx.fillRect(-magnet.w / 2, -magnet.h / 2, magnet.w / 2, magnet.h);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('N', magnet.w / 4, 0);
+    ctx.fillText('S', -magnet.w / 4, 0);
+
+    ctx.restore();
+}
+
+function updateUIAndMeter() {
+    const maxEMFValue = 12.0;
+    
+    // Clean dead-band threshold cutoff to lock resting state values cleanly to absolute zero
+    if (Math.abs(currentEMF) < 0.05) {
+        currentEMF = 0;
+    }
+
+    let clampedEMF = Math.max(-maxEMFValue, Math.min(maxEMFValue, currentEMF));
+    let displayPercentage = Math.abs(clampedEMF) / maxEMFValue;
+    const barHeight = displayPercentage * 150; 
+
+    if (clampedEMF >= 0) {
+        emfBar.style.height = `${barHeight}px`;
+        emfBar.style.top = `${150 - barHeight}px`;
+        emfBar.style.background = '#33ff33'; 
+    } else {
+        emfBar.style.height = `${barHeight}px`;
+        emfBar.style.top = `150px`;
+        emfBar.style.background = '#ff3333'; 
+    }
+
+    const sign = clampedEMF > 0 ? '+' : '';
+    emfValueText.textContent = `${sign}${clampedEMF.toFixed(2)} V`;
+}
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const targetFlux = calculateFlux();
+    // EMF = -dPhi/dt
+    const rawEMF = -(targetFlux - lastFlux) * 2.5; 
+    lastFlux = targetFlux;
+
+    // Fast response tracking captures quick changes cleanly without filtering out structural zeros
+    currentEMF = currentEMF * 0.1 + rawEMF * 0.9;
+
+    drawFieldLines();
+    drawCoil();
+    drawMagnet();
+    updateUIAndMeter();
+
+    requestAnimationFrame(loop);
+}
+
+lastFlux = calculateFlux();
+loop();
+</script>
+
+</body>
+</html>
