@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Block on Inclined Plane Physics Simulator</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-mg: #ef4444;      /* Gravity (Red) */
+      --accent-mg-par: #f59e0b;  /* Parallel Gravity (Yellow) */
+      --accent-mg-perp: #8b5cf6; /* Perpendicular Gravity (Purple) */
+      --accent-fn: #3b82f6;      /* Normal Force (Blue) */
+      --accent-ff: #10b981;      /* Friction Force (Green) */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-color);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text-main);
+      user-select: none;
+      display: flex;
+    }
+
+    #canvas {
+      flex: 1;
+      height: 100%;
+      display: block;
+    }
+
+    .sidebar {
+      width: 360px;
+      height: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: -10px 0 25px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      overflow-y: auto;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .control-header span.val {
+      font-family: 'Courier New', Courier, monospace;
+      color: #38bdf8;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      background: rgba(51, 65, 85, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(71, 85, 105, 0.9);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-release {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+
+    .btn-release:hover {
+      background: #0369a1;
+    }
+
+    .telemetry {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+
+    .telemetry-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .telemetry-label {
+      color: var(--text-muted);
+    }
+
+    .telemetry-val {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 700;
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <div class="sidebar">
+    <div>
+      <h2>Inclined Plane Physics</h2>
+      <div class="subtitle">Free-body Diagram & Kinetics Simulation</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="control-group">
+      <div class="control-header">
+        <span>Incline Angle (θ)</span>
+        <span id="val-angle" class="val">30°</span>
+      </div>
+      <input type="range" id="slider-angle" min="5" max="60" value="30" step="1">
+    </div>
+
+    <div class="control-group">
+      <div class="control-header">
+        <span>Mass of Block (m)</span>
+        <span id="val-mass" class="val">5.0 kg</span>
+      </div>
+      <input type="range" id="slider-mass" min="1" max="20" value="5" step="0.5">
+    </div>
+
+    <div class="control-group">
+      <div class="control-header">
+        <span>Coeff. of Friction (μ)</span>
+        <span id="val-mu" class="val">0.30</span>
+      </div>
+      <input type="range" id="slider-mu" min="0" max="1" value="0.3" step="0.02">
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-group">
+      <button id="btn-release" class="btn btn-release">▶ Release</button>
+      <button id="btn-reset" class="btn">↺ Reset</button>
+    </div>
+
+    <!-- Live Telemetry -->
+    <div class="telemetry">
+      <div class="telemetry-row">
+        <span class="telemetry-label">Status:</span>
+        <span id="tel-status" class="telemetry-val" style="color: #f59e0b;">At Rest</span>
+      </div>
+      <div class="telemetry-row">
+        <span class="telemetry-label">Acceleration (a):</span>
+        <span id="tel-acc" class="telemetry-val">0.00 m/s²</span>
+      </div>
+      <div class="telemetry-row">
+        <span class="telemetry-label">Velocity (v):</span>
+        <span id="tel-vel" class="telemetry-val">0.00 m/s</span>
+      </div>
+      <div class="telemetry-row">
+        <span class="telemetry-label">Distance (d):</span>
+        <span id="tel-dist" class="telemetry-val">0.00 m</span>
+      </div>
+    </div>
+
+    <!-- Color Legend -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--accent-mg);"></div>
+        <span>Gravity (F<sub>g</sub> = mg)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--accent-mg-par);"></div>
+        <span>Gravity Parallel (mg sinθ)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--accent-mg-perp);"></div>
+        <span>Gravity Perpendicular (mg cosθ)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--accent-fn);"></div>
+        <span>Normal Force (F<sub>N</sub>)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--accent-ff);"></div>
+        <span>Friction Force (F<sub>f</sub>)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Get exact color values from CSS
+    const styles = getComputedStyle(document.documentElement);
+    const COLOR_MG = styles.getPropertyValue('--accent-mg').trim() || '#ef4444';
+    const COLOR_MG_PAR = styles.getPropertyValue('--accent-mg-par').trim() || '#f59e0b';
+    const COLOR_MG_PERP = styles.getPropertyValue('--accent-mg-perp').trim() || '#8b5cf6';
+    const COLOR_FN = styles.getPropertyValue('--accent-fn').trim() || '#3b82f6';
+    const COLOR_FF = styles.getPropertyValue('--accent-ff').trim() || '#10b981';
+
+    // Controls DOM
+    const sliderAngle = document.getElementById('slider-angle');
+    const sliderMass = document.getElementById('slider-mass');
+    const sliderMu = document.getElementById('slider-mu');
+
+    const valAngle = document.getElementById('val-angle');
+    const valMass = document.getElementById('val-mass');
+    const valMu = document.getElementById('val-mu');
+
+    const btnRelease = document.getElementById('btn-release');
+    const btnReset = document.getElementById('btn-reset');
+
+    const telStatus = document.getElementById('tel-status');
+    const telAcc = document.getElementById('tel-acc');
+    const telVel = document.getElementById('tel-vel');
+    const telDist = document.getElementById('tel-dist');
+
+    // Constants
+    const G = 9.81;
+    const PIXELS_PER_METER = 80;
+    const VECTOR_SCALE = 2.2;
+
+    // Dynamic Variables
+    let angleDeg = parseFloat(sliderAngle.value);
+    let mass = parseFloat(sliderMass.value);
+    let mu = parseFloat(sliderMu.value);
+
+    let isMoving = false;
+    let distanceOnRamp = 0;
+    let velocity = 0;
+    let acceleration = 0;
+
+    let width, height;
+    let rampStartX, rampStartY, rampEndX, rampEndY;
+    let rampLengthMeters = 5.0;
+
+    function resize() {
+      width = canvas.width = window.innerWidth - 360;
+      height = canvas.height = window.innerHeight;
+      calculateRampGeometry();
+    }
+    window.addEventListener('resize', resize);
+
+    function calculateRampGeometry() {
+      const angleRad = (angleDeg * Math.PI) / 180;
+      
+      const maxRampWidth = width * 0.7;
+      const maxRampHeight = height * 0.65;
+      
+      let rampW = maxRampWidth;
+      let rampH = rampW * Math.tan(angleRad);
+
+      if (rampH > maxRampHeight) {
+        rampH = maxRampHeight;
+        rampW = rampH / Math.tan(angleRad);
+      }
+
+      // Left-facing incline: High point at top-right, low point at bottom-left
+      rampStartX = width * 0.85;           // High Point X
+      rampStartY = height * 0.85 - rampH;  // High Point Y
+      rampEndX = rampStartX - rampW;       // Low Point X (Left)
+      rampEndY = height * 0.85;            // Low Point Y (Bottom)
+
+      const pxLength = Math.hypot(rampEndX - rampStartX, rampEndY - rampStartY);
+      rampLengthMeters = pxLength / PIXELS_PER_METER;
+    }
+
+    function resetSimulation() {
+      isMoving = false;
+      distanceOnRamp = 0;
+      velocity = 0;
+      acceleration = 0;
+      btnRelease.textContent = "▶ Release";
+      btnRelease.style.background = "#0284c7";
+      telStatus.textContent = "At Rest";
+      telStatus.style.color = "#f59e0b";
+      updateTelemetry();
+    }
+
+    sliderAngle.addEventListener('input', () => {
+      angleDeg = parseFloat(sliderAngle.value);
+      valAngle.textContent = `${angleDeg}°`;
+      calculateRampGeometry();
+      resetSimulation();
+    });
+
+    sliderMass.addEventListener('input', () => {
+      mass = parseFloat(sliderMass.value);
+      valMass.textContent = `${mass.toFixed(1)} kg`;
+      resetSimulation();
+    });
+
+    sliderMu.addEventListener('input', () => {
+      mu = parseFloat(sliderMu.value);
+      valMu.textContent = mu.toFixed(2);
+      resetSimulation();
+    });
+
+    btnRelease.addEventListener('click', () => {
+      if (!isMoving && distanceOnRamp < rampLengthMeters - 0.6) {
+        const angleRad = (angleDeg * Math.PI) / 180;
+        const fgPar = mass * G * Math.sin(angleRad);
+        const fn = mass * G * Math.cos(angleRad);
+        const maxStaticFriction = mu * fn;
+
+        if (fgPar > maxStaticFriction) {
+          isMoving = true;
+          btnRelease.textContent = "⏸ Pause";
+          btnRelease.style.background = "#d97706";
+          telStatus.textContent = "In Motion";
+          telStatus.style.color = "#10b981";
+        } else {
+          telStatus.textContent = "Stuck (Static Friction)";
+          telStatus.style.color = "#ef4444";
+        }
+      } else if (isMoving) {
+        isMoving = false;
+        btnRelease.textContent = "▶ Resume";
+        btnRelease.style.background = "#0284c7";
+        telStatus.textContent = "Paused";
+        telStatus.style.color = "#f59e0b";
+      }
+    });
+
+    btnReset.addEventListener('click', resetSimulation);
+
+    function drawArrow(ctx, fromX, fromY, toX, toY, color, label) {
+      const headLen = 10;
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const angle = Math.atan2(dy, dx);
+
+      if (Math.hypot(dx, dy) < 3) return;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2.5;
+
+      // Shaft
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+
+      // Arrow Head
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      // Label Text
+      if (label) {
+        ctx.font = '600 13px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const labelX = toX + 18 * Math.cos(angle);
+        const labelY = toY + 18 * Math.sin(angle);
+        
+        ctx.fillText(label, labelX, labelY);
+      }
+      ctx.restore();
+    }
+
+    function updateTelemetry() {
+      telAcc.textContent = `${acceleration.toFixed(2)} m/s²`;
+      telVel.textContent = `${velocity.toFixed(2)} m/s`;
+      telDist.textContent = `${distanceOnRamp.toFixed(2)} m`;
+    }
+
+    let lastTime = performance.now();
+
+    function animate(currentTime) {
+      const dt = Math.min((currentTime - lastTime) / 1000, 0.033);
+      lastTime = currentTime;
+
+      const angleRad = (angleDeg * Math.PI) / 180;
+
+      // Physics Equations
+      const Fg = mass * G;
+      const Fg_par = Fg * Math.sin(angleRad);
+      const Fg_perp = Fg * Math.cos(angleRad);
+      const Fn = Fg_perp;
+      
+      let Ff = mu * Fn;
+      if (Ff > Fg_par) Ff = Fg_par;
+
+      if (isMoving) {
+        const netForce = Fg_par - (mu * Fn);
+        if (netForce > 0) {
+          acceleration = netForce / mass;
+          velocity += acceleration * dt;
+          distanceOnRamp += velocity * dt;
+
+          const maxDist = rampLengthMeters - 0.6;
+          if (distanceOnRamp >= maxDist) {
+            distanceOnRamp = maxDist;
+            isMoving = false;
+            btnRelease.textContent = "▶ Release";
+            btnRelease.style.background = "#0284c7";
+            telStatus.textContent = "Reached Bottom";
+            telStatus.style.color = "#38bdf8";
+          }
+        } else {
+          acceleration = 0;
+          velocity = 0;
+          isMoving = false;
+        }
+        updateTelemetry();
+      } else {
+        acceleration = Fg_par > (mu * Fn) ? (Fg_par - mu * Fn) / mass : 0;
+        updateTelemetry();
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      // --- 1. Draw Left-Facing Inclined Ramp ---
+      ctx.save();
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(rampStartX, rampStartY);
+      ctx.lineTo(rampEndX, rampEndY);
+      ctx.lineTo(rampStartX, rampEndY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Incline Angle Arc (Bottom-left corner)
+      const arcRadius = 45;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(rampEndX, rampEndY, arcRadius, 0, -angleRad, true);
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '600 13px system-ui';
+      ctx.fillText(`${angleDeg}°`, rampEndX + arcRadius + 15, rampEndY - 12);
+      ctx.restore();
+
+      // --- 2. Calculate Block Center of Mass ---
+      const blockWidth = 40 + mass * 1.5;
+      const blockHeight = blockWidth * 0.6;
+
+      const currentDistPx = distanceOnRamp * PIXELS_PER_METER + blockWidth;
+      
+      // Direction vector down left slope: dx = -cos(theta), dy = +sin(theta)
+      const blockBaseX = rampStartX - currentDistPx * Math.cos(angleRad);
+      const blockBaseY = rampStartY + currentDistPx * Math.sin(angleRad);
+
+      // Center of mass offset perpendicularly upwards from ramp surface
+      const comX = blockBaseX + (blockHeight / 2) * Math.sin(angleRad);
+      const comY = blockBaseY - (blockHeight / 2) * Math.cos(angleRad);
+
+      // --- 3. Draw Block ---
+      ctx.save();
+      ctx.translate(blockBaseX, blockBaseY);
+      ctx.rotate(-angleRad); // Rotate to match left slope
+
+      ctx.fillStyle = '#0284c7';
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-blockWidth / 2, -blockHeight, blockWidth, blockHeight, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // --- 4. Precise Vector Calculations ---
+
+      // Gravity (mg) -> Purely vertical (downwards)
+      const mgLen = Fg * VECTOR_SCALE;
+      drawArrow(ctx, comX, comY, comX, comY + mgLen, COLOR_MG, 'Fg');
+
+      // Perpendicular Gravity (mg cos θ) -> Pushes into incline at 90 deg angle
+      const perpX = comX + Fg_perp * VECTOR_SCALE * Math.sin(angleRad);
+      const perpY = comY + Fg_perp * VECTOR_SCALE * Math.cos(angleRad);
+      drawArrow(ctx, comX, comY, perpX, perpY, COLOR_MG_PERP, 'mg cosθ');
+
+      // Parallel Gravity (mg sin θ) -> Pulls down incline towards bottom-left
+      const parX = comX - Fg_par * VECTOR_SCALE * Math.cos(angleRad);
+      const parY = comY + Fg_par * VECTOR_SCALE * Math.sin(angleRad);
+      drawArrow(ctx, comX, comY, parX, parY, COLOR_MG_PAR, 'mg sinθ');
+
+      // Vector Component Parallelogram Guidance Box
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.beginPath();
+      ctx.moveTo(parX, parY);
+      ctx.lineTo(comX + (parX - comX) + (perpX - comX), comY + (parY - comY) + (perpY - comY));
+      ctx.lineTo(perpX, perpY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Normal Force (Fn) -> Perpendicular OUT of incline (Upwards and Left)
+      const fnX = comX - Fn * VECTOR_SCALE * Math.sin(angleRad);
+      const fnY = comY - Fn * VECTOR_SCALE * Math.cos(angleRad);
+      drawArrow(ctx, comX, comY, fnX, fnY, COLOR_FN, 'FN');
+
+      // Friction Force (Ff) -> Parallel UP incline (Upwards and Right)
+      const ffX = comX + Ff * VECTOR_SCALE * Math.cos(angleRad);
+      const ffY = comY - Ff * VECTOR_SCALE * Math.sin(angleRad);
+      drawArrow(ctx, comX, comY, ffX, ffY, COLOR_FF, 'Ff');
+
+      requestAnimationFrame(animate);
+    }
+
+    // Run
+    resize();
+    resetSimulation();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
