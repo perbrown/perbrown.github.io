@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Projectile Motion Launcher</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-x: #ef4444;
+      --accent-y: #3b82f6;
+      --accent-v: #10b981;
+      --accent-t: #f59e0b;
+      --accent-h: #8b5cf6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-color);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text-main);
+      user-select: none;
+    }
+
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* HUD Header Panel */
+    .hud {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: flex;
+      gap: 18px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 52px;
+    }
+
+    .hud-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .hud-value {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .value-x { color: var(--accent-x); }
+    .value-y { color: var(--accent-y); }
+    .value-t { color: var(--accent-t); }
+    .value-h { color: var(--accent-h); }
+
+    /* Action Controls Panel */
+    .controls-panel {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(51, 65, 85, 0.95);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-reset {
+      border-left: 3px solid #38bdf8;
+    }
+
+    .btn-clear {
+      border-left: 3px solid #ef4444;
+    }
+
+    /* Instructions */
+    .instructions {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      pointer-events: none;
+      line-height: 1.5;
+      background: var(--card-bg);
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      text-align: right;
+    }
+
+    .instructions span {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hud">
+    <div class="hud-item">
+      <span class="hud-label">t (s)</span>
+      <span id="val-t" class="hud-value value-t">0.00</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">dx</span>
+      <span id="val-dx" class="hud-value value-x">0.0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">dy</span>
+      <span id="val-dy" class="hud-value value-y">0.0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">vx</span>
+      <span id="val-vx" class="hud-value value-x">0.0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">vy</span>
+      <span id="val-vy" class="hud-value value-y">0.0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">ax</span>
+      <span class="hud-value">0.0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">ay</span>
+      <span class="hud-value">-9.8</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">h_max</span>
+      <span id="val-hmax" class="hud-value value-h">0.0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">t_peak</span>
+      <span id="val-tpeak" class="hud-value value-h">0.00</span>
+    </div>
+  </div>
+
+  <div class="controls-panel">
+    <button id="btn-reset" class="btn btn-reset">↺ Reset Ball</button>
+    <button id="btn-clear" class="btn btn-clear">✕ Clear Targets</button>
+  </div>
+
+  <div class="instructions">
+    Click <span>anywhere</span> to add targets.<br>
+    Drag <span>targets</span> to move them.<br>
+    Drag the <span>ball</span> (bottom left) to launch!
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Telemetry DOM elements
+    const elT = document.getElementById('val-t');
+    const elDx = document.getElementById('val-dx');
+    const elDy = document.getElementById('val-dy');
+    const elVx = document.getElementById('val-vx');
+    const elVy = document.getElementById('val-vy');
+    const elHmax = document.getElementById('val-hmax');
+    const elTpeak = document.getElementById('val-tpeak');
+
+    // Buttons
+    const btnReset = document.getElementById('btn-reset');
+    const btnClear = document.getElementById('btn-clear');
+
+    // Canvas sizing
+    let width, height;
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      if (!isDraggingBall && !isLaunched) {
+        resetBallToOrigin(false);
+      }
+    }
+    window.addEventListener('resize', resize);
+
+    // Simulation Constants
+    const GRAVITY = 9.8 * 60; // Scaled gravity for pixels/sec^2
+    const RADIUS = 16;
+    const VELOCITY_SCALE = 2.5; // Scale drawn vector length to launch velocity
+    const GROUND_PADDING = 20;
+    const TARGET_RADIUS = 14;
+
+    // Ball & Flight State Variables
+    let originX = 0;
+    let originY = 0;
+    let ballX = 0;
+    let ballY = 0;
+    let vx = 0; // px/sec
+    let vy = 0; // px/sec (Canvas coords: +Y is down)
+
+    let flightTime = 0;
+    let maxHeight = 0;
+    let timeAtMaxHeight = 0;
+    let hasReachedPeak = false;
+
+    let isDraggingBall = false;
+    let activeTargetIndex = -1; // -1 when no target is being dragged
+    let isLaunched = false;
+    let dragCurrentX = 0;
+    let dragCurrentY = 0;
+
+    // Targets Array
+    let targets = [];
+
+    // Explosion Particle System
+    let particles = [];
+
+    function createExplosion(x, y) {
+      const count = 40;
+      const colors = ['#f97316', '#ef4444', '#eab308', '#38bdf8', '#ffffff'];
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 100 + Math.random() * 300;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 3 + Math.random() * 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1.0,
+          life: 0.6 + Math.random() * 0.4
+        });
+      }
+    }
+
+    function updateAndDrawParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.alpha = Math.max(0, p.life / 1.0);
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Return ball back to launchpad. resetHeader controls whether HUD clears.
+    function resetBallToOrigin(resetHeader = false) {
+      originX = 80;
+      originY = height - 80;
+      ballX = originX;
+      ballY = originY;
+      vx = 0;
+      vy = 0;
+      isLaunched = false;
+      isDraggingBall = false;
+
+      if (resetHeader) {
+        flightTime = 0;
+        maxHeight = 0;
+        timeAtMaxHeight = 0;
+        hasReachedPeak = false;
+        updateHUD(0, 0, 0, 0, 0, 0, 0);
+      }
+    }
+
+    // Helper to format telemetry for HUD
+    function updateHUD(t, dx, dy, velX, velY, hMax, tPeak) {
+      elT.textContent = t.toFixed(2);
+      elDx.textContent = dx.toFixed(1);
+      elDy.textContent = dy.toFixed(1);
+      elVx.textContent = velX.toFixed(1);
+      elVy.textContent = velY.toFixed(1);
+      elHmax.textContent = hMax.toFixed(1);
+      elTpeak.textContent = tPeak.toFixed(2);
+    }
+
+    // Mouse & Touch Input Processing
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function isPointInBall(x, y) {
+      const dx = x - ballX;
+      const dy = y - ballY;
+      return (dx * dx + dy * dy) <= RADIUS * RADIUS;
+    }
+
+    function getTargetAtPoint(x, y) {
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        const dx = x - t.x;
+        const dy = y - t.y;
+        if (dx * dx + dy * dy <= (TARGET_RADIUS + 6) * (TARGET_RADIUS + 6)) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function handleStart(x, y) {
+      // 1. Check Ball Interaction first
+      if (isPointInBall(x, y)) {
+        isDraggingBall = true;
+        isLaunched = false;
+        ballX = originX;
+        ballY = originY;
+        dragCurrentX = x;
+        dragCurrentY = y;
+        flightTime = 0;
+        maxHeight = 0;
+        timeAtMaxHeight = 0;
+        hasReachedPeak = false;
+        updateHUD(0, 0, 0, 0, 0, 0, 0);
+        return;
+      }
+
+      // 2. Check Target Interaction second
+      const clickedTargetIdx = getTargetAtPoint(x, y);
+      if (clickedTargetIdx !== -1) {
+        activeTargetIndex = clickedTargetIdx;
+        return;
+      }
+
+      // 3. Otherwise, create a new target
+      targets.push({
+        x: x,
+        y: y,
+        dx: x - originX,
+        dy: -(y - originY)
+      });
+    }
+
+    function handleMove(x, y) {
+      if (isDraggingBall) {
+        dragCurrentX = x;
+        dragCurrentY = y;
+      } else if (activeTargetIndex !== -1) {
+        // Move active target
+        const t = targets[activeTargetIndex];
+        t.x = x;
+        t.y = y;
+        t.dx = x - originX;
+        t.dy = -(y - originY);
+      } else {
+        // Dynamic Cursor updates
+        if (isPointInBall(x, y)) {
+          canvas.style.cursor = 'grab';
+        } else if (getTargetAtPoint(x, y) !== -1) {
+          canvas.style.cursor = 'move';
+        } else {
+          canvas.style.cursor = 'crosshair';
+        }
+      }
+    }
+
+    function handleEnd() {
+      if (isDraggingBall) {
+        isDraggingBall = false;
+        isLaunched = true;
+
+        const vectorX = dragCurrentX - originX;
+        const vectorY = dragCurrentY - originY;
+
+        vx = vectorX * VELOCITY_SCALE;
+        vy = vectorY * VELOCITY_SCALE;
+
+        flightTime = 0;
+        maxHeight = 0;
+        timeAtMaxHeight = 0;
+        hasReachedPeak = false;
+      }
+
+      activeTargetIndex = -1;
+      canvas.style.cursor = 'crosshair';
+    }
+
+    // UI Controls Event Listeners
+    btnReset.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetBallToOrigin(true); // Explicit reset clears header
+    });
+
+    btnClear.addEventListener('click', (e) => {
+      e.stopPropagation();
+      targets = [];
+    });
+
+    // Event Listeners
+    canvas.addEventListener('mousedown', (e) => {
+      const pos = getMousePos(e);
+      handleStart(pos.x, pos.y);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      const pos = getMousePos(e);
+      handleMove(pos.x, pos.y);
+    });
+
+    window.addEventListener('mouseup', handleEnd);
+
+    // Touch Support
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      e.preventDefault();
+      const pos = getMousePos(e.touches[0]);
+      handleStart(pos.x, pos.y);
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      if (isDraggingBall || activeTargetIndex !== -1) e.preventDefault();
+      if (e.touches.length > 0) {
+        const pos = getMousePos(e.touches[0]);
+        handleMove(pos.x, pos.y);
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', handleEnd);
+
+    // Helper: Draw Arrow Heads for Vectors
+    function drawArrowHead(ctx, fromX, fromY, toX, toY, color) {
+      const headLength = 8;
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const angle = Math.atan2(dy, dx);
+
+      if (Math.hypot(dx, dy) < 5) return;
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle - Math.PI / 6),
+        toY - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle + Math.PI / 6),
+        toY - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Helper: Draw text label with dark background pill
+    function drawLabel(ctx, text, x, y, color) {
+      ctx.font = '600 12px system-ui, sans-serif';
+      const padding = 4;
+      const metrics = ctx.measureText(text);
+      const textWidth = metrics.width;
+      const textHeight = 12;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(
+        x - textWidth / 2 - padding,
+        y - textHeight / 2 - padding,
+        textWidth + padding * 2,
+        textHeight + padding * 2,
+        4
+      );
+      ctx.fill();
+
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y);
+    }
+
+    // Render loop
+    let lastTime = performance.now();
+
+    function animate(currentTime) {
+      const dt = Math.min((currentTime - lastTime) / 1000, 0.033);
+      lastTime = currentTime;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // --- Draw Targets ---
+      for (let i = 0; i < targets.length; i++) {
+        const target = targets[i];
+        const isBeingDragged = (i === activeTargetIndex);
+
+        ctx.save();
+        ctx.strokeStyle = isBeingDragged ? '#f59e0b' : '#ef4444';
+        ctx.lineWidth = isBeingDragged ? 3 : 2;
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, TARGET_RADIUS, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, TARGET_RADIUS / 2, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = isBeingDragged ? '#f59e0b' : '#ef4444';
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = isBeingDragged ? 'rgba(245, 158, 11, 0.6)' : 'rgba(239, 68, 68, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(target.x - TARGET_RADIUS - 6, target.y);
+        ctx.lineTo(target.x + TARGET_RADIUS + 6, target.y);
+        ctx.moveTo(target.x, target.y - TARGET_RADIUS - 6);
+        ctx.lineTo(target.x, target.y + TARGET_RADIUS + 6);
+        ctx.stroke();
+
+        const coordText = `Target ${i + 1}: (${target.dx.toFixed(1)}, ${target.dy.toFixed(1)})`;
+        drawLabel(ctx, coordText, target.x, target.y - TARGET_RADIUS - 14, '#f8fafc');
+        ctx.restore();
+      }
+
+      // --- State 1: User Drawing Vector ---
+      if (isDraggingBall) {
+        const vectorX = dragCurrentX - originX;
+        const vectorY = dragCurrentY - originY;
+
+        const calcVx = vectorX * VELOCITY_SCALE;
+        const calcVy = -vectorY * VELOCITY_SCALE;
+        const vTot = Math.hypot(calcVx, calcVy);
+
+        const angleRad = Math.atan2(calcVy, calcVx);
+        let angleDeg = angleRad * (180 / Math.PI);
+
+        updateHUD(0, 0, 0, calcVx, calcVy, 0, 0);
+
+        // 1. Horizontal Vector Component
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(dragCurrentX, originY);
+        ctx.stroke();
+        drawArrowHead(ctx, originX, originY, dragCurrentX, originY, '#ef4444');
+
+        // 2. Vertical Vector Component
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(dragCurrentX, originY);
+        ctx.lineTo(dragCurrentX, dragCurrentY);
+        ctx.stroke();
+        drawArrowHead(ctx, dragCurrentX, originY, dragCurrentX, dragCurrentY, '#3b82f6');
+
+        // 3. Resultant Velocity Vector
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(dragCurrentX, dragCurrentY);
+        ctx.stroke();
+        drawArrowHead(ctx, originX, originY, dragCurrentX, dragCurrentY, '#10b981');
+
+        if (Math.hypot(vectorX, vectorY) > 10) {
+          const labelX_x = originX + vectorX / 2;
+          const labelX_y = originY + (vectorY < 0 ? 16 : -16);
+          drawLabel(ctx, `vx: ${calcVx.toFixed(1)}`, labelX_x, labelX_y, '#ef4444');
+
+          const labelY_x = dragCurrentX + (vectorX >= 0 ? 32 : -32);
+          const labelY_y = originY + vectorY / 2;
+          drawLabel(ctx, `vy: ${calcVy.toFixed(1)}`, labelY_x, labelY_y, '#3b82f6');
+
+          const labelV_x = dragCurrentX + (vectorX >= 0 ? 25 : -25);
+          const labelV_y = dragCurrentY + (vectorY >= 0 ? 20 : -20);
+          drawLabel(ctx, `v: ${vTot.toFixed(1)}`, labelV_x, labelV_y, '#10b981');
+
+          const arcRadius = 38;
+          const canvasAngleRad = Math.atan2(vectorY, vectorX);
+
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(originX, originY, arcRadius, 0, canvasAngleRad, canvasAngleRad < 0);
+          ctx.stroke();
+
+          const midAngle = canvasAngleRad / 2;
+          const angleLabelX = originX + (arcRadius + 18) * Math.cos(midAngle);
+          const angleLabelY = originY + (arcRadius + 18) * Math.sin(midAngle);
+          drawLabel(ctx, `${angleDeg.toFixed(1)}°`, angleLabelX, angleLabelY, '#f59e0b');
+        }
+      }
+
+      // --- State 2: Flight Simulation ---
+      if (isLaunched) {
+        flightTime += dt;
+
+        const prevVy = vy;
+
+        vy += GRAVITY * dt;
+
+        ballX += vx * dt;
+        ballY += vy * dt;
+
+        const dx = ballX - originX;
+        const currentDy = -(ballY - originY);
+
+        if (currentDy > maxHeight) {
+          maxHeight = currentDy;
+        }
+
+        if (prevVy < 0 && vy >= 0 && !hasReachedPeak) {
+          hasReachedPeak = true;
+          timeAtMaxHeight = flightTime;
+        }
+
+        updateHUD(flightTime, dx, currentDy, vx, -vy, maxHeight, timeAtMaxHeight);
+
+        // Check Target Collisions
+        for (let i = targets.length - 1; i >= 0; i--) {
+          const t = targets[i];
+          const distToTarget = Math.hypot(ballX - t.x, ballY - t.y);
+          if (distToTarget <= RADIUS + TARGET_RADIUS) {
+            createExplosion(t.x, t.y);
+            targets.splice(i, 1);
+            resetBallToOrigin(false); // Keeps final flight telemetry in HUD
+            break;
+          }
+        }
+
+        // Ground Collision Check -> Return ball without resetting header
+        if (ballY + RADIUS >= height - GROUND_PADDING) {
+          resetBallToOrigin(false); // Keeps final landing telemetry in HUD
+        }
+
+        // Wall Bounce
+        if (ballX - RADIUS < 0 || ballX + RADIUS > width) {
+          vx = -vx * 0.5;
+        }
+      }
+
+      // Draw Launch Pad Base (Bottom Left)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.beginPath();
+      ctx.arc(originX, originY, RADIUS + 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Draw Main Ball
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = isDraggingBall ? '#38bdf8' : '#6366f1';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      // Update & Draw Explosions
+      updateAndDrawParticles(dt);
+
+      requestAnimationFrame(animate);
+    }
+
+    // Initialize Canvas & Run
+    resize();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
