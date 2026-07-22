@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transformer Solenoid Simulator</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --card-bg: #f8fafc;
+      --card-border: #e2e8f0;
+      --primary: #2563eb;
+      --secondary: #059669;
+      --accent: #d97706;
+      --text: #0f172a;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Core Visual Section */
+    .viewport {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    svg {
+      width: 100%;
+      max-width: 600px;
+      height: 260px;
+    }
+
+    /* Controls & Readouts Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 640px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      border-top: 4px solid var(--primary);
+    }
+
+    .panel.secondary {
+      border-top-color: var(--secondary);
+    }
+
+    .panel h2 {
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 500;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .panel.secondary input[type="range"] {
+      accent-color: var(--secondary);
+    }
+
+    /* Meters */
+    .meters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .meter {
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .meter-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .meter-value {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    /* Status Bar */
+    .status-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+    }
+
+    .status-highlight {
+      font-weight: bold;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Transformer Solenoid Simulator</h1>
+    <p>Demonstrating Voltage (V) and Current (I) scaling based on turn count (N)</p>
+  </header>
+
+  <!-- Visual Representation -->
+  <div class="viewport">
+    <svg viewBox="0 0 500 220" id="transformer-svg">
+      <!-- Iron Core -->
+      <path d="M 100 30 L 400 30 L 400 190 L 100 190 Z M 160 80 L 340 80 L 340 140 L 160 140 Z" 
+            fill="#cbd5e1" stroke="#94a3b8" stroke-width="3" fill-rule="evenodd"/>
+      
+      <!-- Magnetic Flux Path -->
+      <path id="flux-path" d="M 130 55 L 370 55 L 370 165 L 130 165 Z" 
+            fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="6 6" opacity="0.5"/>
+
+      <!-- Primary Solenoid Group -->
+      <g id="primary-coil"></g>
+      
+      <!-- Secondary Solenoid Group -->
+      <g id="secondary-coil"></g>
+
+      <!-- Labels on SVG -->
+      <text x="130" y="22" fill="#2563eb" font-size="12" text-anchor="middle" font-weight="bold">Primary Side</text>
+      <text x="370" y="22" fill="#059669" font-size="12" text-anchor="middle" font-weight="bold">Secondary Side</text>
+    </svg>
+  </div>
+
+  <!-- Interactive Controls -->
+  <div class="grid">
+    <!-- Primary Panel -->
+    <div class="panel">
+      <h2>Primary Solenoid <span class="badge">Constant Input</span></h2>
+      
+      <div class="control-group">
+        <label>Primary Turns (Np): <b id="np-val">100</b></label>
+        <input type="range" id="np-slider" min="20" max="300" value="100" step="5">
+      </div>
+
+      <div class="meters">
+        <div class="meter">
+          <div class="meter-label">Voltmeter (Vp)</div>
+          <div class="meter-value" id="vp-display" style="color: #2563eb;">120.0 V</div>
+        </div>
+        <div class="meter">
+          <div class="meter-label">Ammeter (Ip)</div>
+          <div class="meter-value" id="ip-display" style="color: #d97706;">2.00 A</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Panel -->
+    <div class="panel secondary">
+      <h2>Secondary Solenoid <span class="badge">Fluctuating Output</span></h2>
+      
+      <div class="control-group">
+        <label>Secondary Turns (Ns): <b id="ns-val">200</b></label>
+        <input type="range" id="ns-slider" min="20" max="300" value="200" step="5">
+      </div>
+
+      <div class="meters">
+        <div class="meter">
+          <div class="meter-label">Voltmeter (Vs)</div>
+          <div class="meter-value" id="vs-display" style="color: #059669;">240.0 V</div>
+        </div>
+        <div class="meter">
+          <div class="meter-label">Ammeter (Is)</div>
+          <div class="meter-value" id="is-display" style="color: #d97706;">1.00 A</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span>Turns Ratio (Np : Ns):</span>
+      <span class="status-highlight" id="ratio-display">1 : 2.00</span>
+    </div>
+    <div class="status-item">
+      <span>Mode:</span>
+      <span class="status-highlight" id="mode-display">Step-Up Transformer</span>
+    </div>
+    <div class="status-item">
+      <span>Total Power (P):</span>
+      <span class="status-highlight" id="power-display">240 W</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Fixed Constants
+  const Vp = 120; // 120 Volts AC constant input
+  const ApparentPower = 240; // 240 Watts constant total power
+
+  // DOM Elements
+  const npSlider = document.getElementById('np-slider');
+  const nsSlider = document.getElementById('ns-slider');
+  const npVal = document.getElementById('np-val');
+  const nsVal = document.getElementById('ns-val');
+  
+  const vpDisplay = document.getElementById('vp-display');
+  const ipDisplay = document.getElementById('ip-display');
+  const vsDisplay = document.getElementById('vs-display');
+  const isDisplay = document.getElementById('is-display');
+  
+  const ratioDisplay = document.getElementById('ratio-display');
+  const modeDisplay = document.getElementById('mode-display');
+  const primaryCoil = document.getElementById('primary-coil');
+  const secondaryCoil = document.getElementById('secondary-coil');
+
+  function drawCoil(element, x, turns, color) {
+    element.innerHTML = '';
+    const startY = 50;
+    const endY = 170;
+    const height = endY - startY;
+    
+    // Scale visual loops for rendering clarity
+    const visualLoops = Math.min(25, Math.max(5, Math.floor(turns / 12)));
+    const step = height / visualLoops;
+
+    for (let i = 0; i < visualLoops; i++) {
+      const y = startY + i * step;
+      const ellipse = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      ellipse.setAttribute('cx', x);
+      ellipse.setAttribute('cy', y + step / 2);
+      ellipse.setAttribute('rx', 25);
+      ellipse.setAttribute('ry', step / 2.2);
+      ellipse.setAttribute('fill', 'none');
+      ellipse.setAttribute('stroke', color);
+      ellipse.setAttribute('stroke-width', '4');
+      element.appendChild(ellipse);
+    }
+  }
+
+  function updateSimulation() {
+    const Np = parseInt(npSlider.value);
+    const Ns = parseInt(nsSlider.value);
+
+    // Dynamic Calculations
+    const Vs = Vp * (Ns / Np);
+    const Ip = ApparentPower / Vp;
+    const Is = ApparentPower / Vs;
+    const ratio = (Ns / Np).toFixed(2);
+
+    // Update Label UI
+    npVal.textContent = Np;
+    nsVal.textContent = Ns;
+    
+    // Update Meter Displays
+    vpDisplay.textContent = `${Vp.toFixed(1)} V`;
+    ipDisplay.textContent = `${Ip.toFixed(2)} A`;
+    vsDisplay.textContent = `${Vs.toFixed(1)} V`;
+    isDisplay.textContent = `${Is.toFixed(2)} A`;
+
+    ratioDisplay.textContent = `1 : ${ratio}`;
+
+    // Mode Text
+    if (Ns > Np) {
+      modeDisplay.textContent = 'Step-Up Transformer';
+      modeDisplay.style.color = '#059669';
+    } else if (Ns < Np) {
+      modeDisplay.textContent = 'Step-Down Transformer';
+      modeDisplay.style.color = '#d97706';
+    } else {
+      modeDisplay.textContent = '1:1 Isolation Transformer';
+      modeDisplay.style.color = '#2563eb';
+    }
+
+    // Redraw Coil Solenoid Graphics
+    drawCoil(primaryCoil, 130, Np, '#2563eb');
+    drawCoil(secondaryCoil, 370, Ns, '#059669');
+  }
+
+  // Event Listeners
+  npSlider.addEventListener('input', updateSimulation);
+  nsSlider.addEventListener('input', updateSimulation);
+
+  // Initial Run
+  updateSimulation();
+</script>
+
+</body>
+</html>
+
+```
