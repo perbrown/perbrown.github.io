@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Faraday's Law</title>
+    <title>Faraday's Law & Lenz's Law Demo</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #1a1a1a;
-            color: #ffffff;
+            background-color: #ffffff;
+            color: #0f172a;
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
@@ -18,32 +18,51 @@
             user-select: none;
         }
 
+        #wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Moved entirely outside of the canvas box into a clean top header */
+        #info-bar {
+            background: #f8fafc;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+            border: 1px solid #e2e8f0;
+            color: #0f172a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        #info-bar .title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        #info-bar .hint {
+            color: #64748b;
+            font-size: 12px;
+        }
+
         #container {
-            position: relative;
-            background-color: #222222;
+            background-color: #f8fafc;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
             display: flex;
             gap: 30px;
         }
 
-        #info-overlay {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            background: rgba(0,0,0,0.85);
-            padding: 12px 18px;
-            border-radius: 6px;
-            font-size: 14px;
-            pointer-events: none;
-            line-height: 1.5;
-            border: 1px solid #444;
-            z-index: 10;
-        }
-
         canvas {
-            background-color: #111111;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
             border-radius: 6px;
             cursor: grab;
         }
@@ -57,18 +76,19 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 100px;
-            background: rgba(255,255,255,0.03);
+            width: 110px;
+            background: #ffffff;
             border-radius: 8px;
             padding: 10px;
-            border: 1px solid #333;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
 
         .meter-label {
             font-weight: bold;
             font-size: 14px;
             margin-bottom: 10px;
-            color: #00ffff;
+            color: #2563eb;
             text-align: center;
         }
 
@@ -76,9 +96,9 @@
             position: relative;
             width: 24px;
             height: 300px;
-            background: #2a2a2a;
+            background: #f1f5f9;
             border-radius: 12px;
-            border: 2px solid #444;
+            border: 2px solid #cbd5e1;
             overflow: hidden;
         }
 
@@ -88,7 +108,7 @@
             left: 0;
             width: 100%;
             height: 2px;
-            background: #666;
+            background: #94a3b8;
             z-index: 1;
         }
 
@@ -105,29 +125,34 @@
             font-family: monospace;
             font-size: 16px;
             font-weight: bold;
+            color: #0f172a;
         }
     </style>
 </head>
 <body>
 
-<div id="container">
-    <div id="info-overlay">
-        <strong>Faraday's Law</strong><br>
-        • <strong>Entering:</strong> Scale goes positive (+)<br>
-        • <strong>Completely Inside:</strong> Flashes straight to **0.00 V**<br>
-        • <strong>Emerging:</strong> Scale goes negative (-)<br>
-        <span style="color: #aaa; font-size: 12px;">Right-click magnet to flip poles</span>
+<div id="wrapper">
+    <div id="info-bar">
+        <div>
+            <span class="title">Faraday's & Lenz's Law:</span> 
+            <span><strong>Entering:</strong> Opposing field (repulsion)</span> | 
+            <span><strong>Stationary:</strong> EMF = 0.00 V</span> | 
+            <span><strong>Leaving:</strong> Aligned field (attraction)</span>
+        </div>
+        <div class="hint">Right-click magnet to flip poles</div>
     </div>
 
-    <canvas id="simCanvas" width="950" height="450"></canvas>
+    <div id="container">
+        <canvas id="simCanvas" width="950" height="450"></canvas>
 
-    <div id="meter-container">
-        <div class="meter-label">Induced<br>EMF (&Epsilon;)</div>
-        <div id="emf-track">
-            <div id="emf-center-line"></div>
-            <div id="emf-bar"></div>
+        <div id="meter-container">
+            <div class="meter-label">Induced<br>EMF (&Epsilon;)</div>
+            <div id="emf-track">
+                <div id="emf-center-line"></div>
+                <div id="emf-bar"></div>
+            </div>
+            <div id="emf-value">0.00 V</div>
         </div>
-        <div id="emf-value">0.00 V</div>
     </div>
 </div>
 
@@ -141,15 +166,15 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 const coil = {
     x: 475,
-    y: 225,
+    y: 200,
     width: 440,       
     turns: 30,         
-    radiusY: 90       
+    radiusY: 80       
 };
 
 const magnet = {
     x: 120,
-    y: 225,
+    y: 200,
     w: 110, 
     h: 46,
     angle: 0, 
@@ -161,7 +186,6 @@ const magnet = {
 let lastFlux = 0;
 let currentEMF = 0;
 
-// Idealized textbook spatial flux plateau generator
 function calculateFlux() {
     const coilLeft = coil.x - coil.width / 2;
     const coilRight = coil.x + coil.width / 2;
@@ -169,14 +193,11 @@ function calculateFlux() {
     const magnetLeft = magnet.x - magnet.w / 2;
     const magnetRight = magnet.x + magnet.w / 2;
     
-    // Smooth transition profiles using hyperbolic tangents across the boundaries
-    // This creates a perfect flat top curve when the magnet is completely inside the volume
     const entryFlux = 0.5 + 0.5 * Math.tanh((magnetRight - coilLeft) / 25);
     const exitFlux = 0.5 + 0.5 * Math.tanh((coilRight - magnetLeft) / 25);
     
     let totalFlux = entryFlux * exitFlux;
     
-    // Reverse flux vector if polarity is flipped
     if (magnet.angle === Math.PI) {
         totalFlux = -totalFlux;
     }
@@ -220,15 +241,13 @@ window.addEventListener('mouseup', () => { magnet.isDragging = false; });
 function drawCoil() {
     ctx.save();
     ctx.lineWidth = 3.5;
-    ctx.shadowBlur = 4;
     
     const startX = coil.x - coil.width / 2;
     const spacing = coil.width / (coil.turns - 1);
 
     for (let i = 0; i < coil.turns; i++) {
         const loopX = startX + (i * spacing);
-        ctx.strokeStyle = 'rgba(215, 122, 74, 0.85)'; 
-        ctx.shadowColor = '#d77a4a';
+        ctx.strokeStyle = '#d97706'; 
         
         ctx.beginPath();
         ctx.ellipse(loopX, coil.y, 16, coil.radiusY, 0, 0, Math.PI * 2);
@@ -239,8 +258,8 @@ function drawCoil() {
 
 function drawFieldLines() {
     ctx.save();
-    ctx.strokeStyle = 'rgba(0, 255, 242, 0.22)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
 
     const isFlipped = magnet.angle === Math.PI;
     const extX = isFlipped ? -magnet.w/2 : magnet.w/2;
@@ -249,10 +268,11 @@ function drawFieldLines() {
     
     for (let i = -4; i <= 4; i++) {
         if (i === 0) continue;
-        ctx.beginPath();
+
         const heightMultiplier = Math.abs(i) * 30;
         const weightMultiplier = Math.abs(i) * 35;
 
+        ctx.beginPath();
         ctx.moveTo(startX, magnet.y + i * 3);
         ctx.bezierCurveTo(
             magnet.x + extX * (1 + weightMultiplier/60), magnet.y + i * heightMultiplier,
@@ -269,10 +289,12 @@ function drawMagnet() {
     ctx.translate(magnet.x, magnet.y);
     ctx.rotate(magnet.angle);
 
-    ctx.fillStyle = '#ff3333';
+    // North Pole (Red)
+    ctx.fillStyle = '#ef4444';
     ctx.fillRect(0, -magnet.h / 2, magnet.w / 2, magnet.h);
 
-    ctx.fillStyle = '#3333ff';
+    // South Pole (Blue)
+    ctx.fillStyle = '#3b82f6';
     ctx.fillRect(-magnet.w / 2, -magnet.h / 2, magnet.w / 2, magnet.h);
 
     ctx.fillStyle = '#ffffff';
@@ -285,10 +307,68 @@ function drawMagnet() {
     ctx.restore();
 }
 
+function drawInducedMagneticPoles() {
+    ctx.save();
+    const coilLeft = coil.x - coil.width / 2;
+    const coilRight = coil.x + coil.width / 2;
+    const labelY = coil.y + coil.radiusY + 45;
+
+    let leftPole = "";
+    let rightPole = "";
+
+    if (currentEMF > 0.05) {
+        leftPole = "S";
+        rightPole = "N";
+    } else if (currentEMF < -0.05) {
+        leftPole = "N";
+        rightPole = "S";
+    }
+
+    if (leftPole) {
+        const isNorth = leftPole === "N";
+        
+        // Left Badge
+        ctx.fillStyle = isNorth ? '#ef4444' : '#3b82f6';
+        ctx.beginPath();
+        ctx.roundRect(coilLeft - 20, labelY - 16, 40, 32, 6);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(leftPole, coilLeft, labelY);
+
+        // Right Badge
+        const isRightNorth = rightPole === "N";
+        ctx.fillStyle = isRightNorth ? '#ef4444' : '#3b82f6';
+        ctx.beginPath();
+        ctx.roundRect(coilRight - 20, labelY - 16, 40, 32, 6);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(rightPole, coilRight, labelY);
+
+        // Connecting Line & Label
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(coilLeft + 25, labelY);
+        ctx.lineTo(coilRight - 25, labelY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText("INDUCED B-FIELD (LENZ'S LAW)", coil.x, labelY + 22);
+    }
+
+    ctx.restore();
+}
+
 function updateUIAndMeter() {
     const maxEMFValue = 12.0;
     
-    // Clean dead-band threshold cutoff to lock resting state values cleanly to absolute zero
     if (Math.abs(currentEMF) < 0.05) {
         currentEMF = 0;
     }
@@ -300,11 +380,11 @@ function updateUIAndMeter() {
     if (clampedEMF >= 0) {
         emfBar.style.height = `${barHeight}px`;
         emfBar.style.top = `${150 - barHeight}px`;
-        emfBar.style.background = '#33ff33'; 
+        emfBar.style.background = '#10b981';
     } else {
         emfBar.style.height = `${barHeight}px`;
         emfBar.style.top = `150px`;
-        emfBar.style.background = '#ff3333'; 
+        emfBar.style.background = '#ef4444';
     }
 
     const sign = clampedEMF > 0 ? '+' : '';
@@ -315,16 +395,15 @@ function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const targetFlux = calculateFlux();
-    // EMF = -dPhi/dt
     const rawEMF = -(targetFlux - lastFlux) * 2.5; 
     lastFlux = targetFlux;
 
-    // Fast response tracking captures quick changes cleanly without filtering out structural zeros
     currentEMF = currentEMF * 0.1 + rawEMF * 0.9;
 
     drawFieldLines();
     drawCoil();
     drawMagnet();
+    drawInducedMagneticPoles();
     updateUIAndMeter();
 
     requestAnimationFrame(loop);
