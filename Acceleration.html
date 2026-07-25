@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1D Kinematics Motion Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f6f8;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    h1 {
+      margin: 0 0 5px 0;
+      font-size: 22px;
+      text-align: center;
+    }
+
+    /* Track / Particle Viewport */
+    .sim-wrapper {
+      position: relative;
+      width: 100%;
+      height: 120px;
+      background: #0f172a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #simCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Live Telemetry Display */
+    .readout-bar {
+      display: flex;
+      justify-content: space-around;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    /* Controls Section */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      background: #f8fafc;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-group label {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+    .control-group input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      grid-column: 1 / -1;
+      justify-content: center;
+      margin-top: 5px;
+    }
+    button {
+      padding: 10px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    #startBtn {
+      background: #2563eb;
+      color: white;
+    }
+    #startBtn:hover {
+      background: #1d4ed8;
+    }
+    #resetBtn {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    #resetBtn:hover {
+      background: #cbd5e1;
+    }
+
+    /* Graphs Layout */
+    .graphs-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    .graph-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .graph-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .graph-card canvas {
+      width: 100%;
+      height: 160px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>1D Kinematics Motion Lab</h1>
+
+  <!-- Particle Simulation Track -->
+  <div class="sim-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <!-- Real-Time Telemetry Bar -->
+  <div class="readout-bar">
+    <span>Time (t): <span id="timeVal">0.00</span> s</span>
+    <span>Displacement (x): <span id="dispVal">0.00</span> m</span>
+    <span>Velocity (v): <span id="velVal">0.00</span> m/s</span>
+    <span>Acceleration (a): <span id="accVal">0.00</span> m/s²</span>
+  </div>
+
+  <!-- Interactive Sliders and Controls -->
+  <div class="controls">
+    <div class="control-group">
+      <label for="v0Slider">Initial Velocity (v₀): <span id="v0Display">5 m/s</span></label>
+      <input type="range" id="v0Slider" min="-20" max="20" value="5" step="1">
+    </div>
+    <div class="control-group">
+      <label for="aSlider">Acceleration (a): <span id="aDisplay">-2 m/s²</span></label>
+      <input type="range" id="aSlider" min="-10" max="10" value="-2" step="0.5">
+    </div>
+    <div class="btn-group">
+      <button id="startBtn">Start</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <!-- Real-Time Graphs -->
+  <div class="graphs-container">
+    <div class="graph-card">
+      <h3 style="color: #2563eb;">Displacement vs Time (x vs t)</h3>
+      <canvas id="xGraph"></canvas>
+    </div>
+    <div class="graph-card">
+      <h3 style="color: #059669;">Velocity vs Time (v vs t)</h3>
+      <canvas id="vGraph"></canvas>
+    </div>
+    <div class="graph-card">
+      <h3 style="color: #d97706;">Acceleration vs Time (a vs t)</h3>
+      <canvas id="aGraph"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Canvas Elements
+  const simCanvas = document.getElementById('simCanvas');
+  const simCtx = simCanvas.getContext('2d');
+
+  const xCanvas = document.getElementById('xGraph');
+  const xCtx = xCanvas.getContext('2d');
+
+  const vCanvas = document.getElementById('vGraph');
+  const vCtx = vCanvas.getContext('2d');
+
+  const aCanvas = document.getElementById('aGraph');
+  const aCtx = aCanvas.getContext('2d');
+
+  // Control Elements
+  const v0Slider = document.getElementById('v0Slider');
+  const aSlider = document.getElementById('aSlider');
+  const v0Display = document.getElementById('v0Display');
+  const aDisplay = document.getElementById('aDisplay');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  // Telemetry Labels
+  const timeVal = document.getElementById('timeVal');
+  const dispVal = document.getElementById('dispVal');
+  const velVal = document.getElementById('velVal');
+  const accVal = document.getElementById('accVal');
+
+  // Physical Constants & System State
+  const SCALE = 10; // 1 meter = 10 pixels
+  const TOTAL_TIME = 10; // Fixed max duration in seconds
+  let v0 = parseFloat(v0Slider.value);
+  let a = parseFloat(aSlider.value);
+
+  let isRunning = false;
+  let startTime = null;
+  let elapsedTime = 0;
+  let animationFrameId = null;
+
+  // Recorded motion data: array of { t, x, v, a }
+  let dataHistory = [];
+
+  function resizeCanvases() {
+    [simCanvas, xCanvas, vCanvas, aCanvas].forEach(c => {
+      const rect = c.getBoundingClientRect();
+      c.width = rect.width;
+      c.height = rect.height;
+    });
+    drawAll();
+  }
+  window.addEventListener('resize', resizeCanvases);
+
+  // Slider Listeners
+  v0Slider.addEventListener('input', (e) => {
+    v0 = parseFloat(e.target.value);
+    v0Display.textContent = `${v0} m/s`;
+    if (!isRunning) resetSimulation();
+  });
+
+  aSlider.addEventListener('input', (e) => {
+    a = parseFloat(e.target.value);
+    aDisplay.textContent = `${a} m/s²`;
+    if (!isRunning) resetSimulation();
+  });
+
+  // Control Buttons
+  startBtn.addEventListener('click', () => {
+    if (!isRunning) {
+      if (elapsedTime >= TOTAL_TIME) resetSimulation();
+      isRunning = true;
+      startBtn.textContent = 'Pause';
+      startBtn.style.background = '#e11d48';
+      startTime = performance.now() - (elapsedTime * 1000);
+      animate();
+    } else {
+      isRunning = false;
+      startBtn.textContent = 'Resume';
+      startBtn.style.background = '#2563eb';
+      cancelAnimationFrame(animationFrameId);
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    resetSimulation();
+  });
+
+  function resetSimulation() {
+    isRunning = false;
+    cancelAnimationFrame(animationFrameId);
+    elapsedTime = 0;
+    dataHistory = [];
+    startBtn.textContent = 'Start';
+    startBtn.style.background = '#2563eb';
+
+    // Initial baseline data point
+    dataHistory.push({ t: 0, x: 0, v: v0, a: a });
+    updateReadouts(0, 0, v0, a);
+    drawAll();
+  }
+
+  function updateReadouts(t, x, v, a) {
+    timeVal.textContent = t.toFixed(2);
+    dispVal.textContent = x.toFixed(2);
+    velVal.textContent = v.toFixed(2);
+    accVal.textContent = a.toFixed(2);
+  }
+
+  function animate() {
+    if (!isRunning) return;
+
+    const now = performance.now();
+    elapsedTime = (now - startTime) / 1000;
+
+    // Hard stop when hitting 10 seconds
+    if (elapsedTime >= TOTAL_TIME) {
+      elapsedTime = TOTAL_TIME;
+      isRunning = false;
+      startBtn.textContent = 'Start';
+      startBtn.style.background = '#2563eb';
+    }
+
+    // Kinematic equations
+    const currentX = v0 * elapsedTime + 0.5 * a * elapsedTime * elapsedTime;
+    const currentV = v0 + a * elapsedTime;
+
+    dataHistory.push({ t: elapsedTime, x: currentX, v: currentV, a: a });
+    updateReadouts(elapsedTime, currentX, currentV, a);
+
+    drawAll();
+
+    if (isRunning) {
+      animationFrameId = requestAnimationFrame(animate);
+    }
+  }
+
+  // --- Drawing Logic ---
+  function drawAll() {
+    drawSimulationTrack();
+
+    // 1. Calculate fixed displacement Y-axis bounds based on t = 10s
+    const xAt10 = v0 * TOTAL_TIME + 0.5 * a * TOTAL_TIME * TOTAL_TIME;
+    
+    // Check for turning point (vertex) where velocity = 0 (t = -v0/a)
+    let peakX = 0;
+    if (a !== 0) {
+      const turnTime = -v0 / a;
+      if (turnTime > 0 && turnTime < TOTAL_TIME) {
+        peakX = v0 * turnTime + 0.5 * a * turnTime * turnTime;
+      }
+    }
+
+    // Determine max absolute displacement reached anywhere in 0..10s
+    const maxDisplacement = Math.max(Math.abs(xAt10), Math.abs(peakX), 5); // minimum range of 5m
+    let xMin, xMax;
+
+    if (xAt10 >= 0 && peakX >= 0) {
+      xMin = 0;
+      xMax = maxDisplacement;
+    } else if (xAt10 <= 0 && peakX <= 0) {
+      xMin = -maxDisplacement;
+      xMax = 0;
+    } else {
+      // If motion crosses origin or direction reverses across 0
+      xMin = -maxDisplacement;
+      xMax = maxDisplacement;
+    }
+
+    // 2. Dynamic bounds for Velocity and Acceleration graphs
+    const vMax = Math.max(10, Math.abs(v0), Math.abs(v0 + a * TOTAL_TIME));
+    const aMax = Math.max(5, Math.abs(a));
+
+    // Draw graphs with fixed 10-second X-axis limit
+    drawGraph(xCtx, xCanvas, dataHistory, d => d.x, xMin, xMax, '#2563eb');
+    drawGraph(vCtx, vCanvas, dataHistory, d => d.v, -vMax, vMax, '#059669');
+    drawGraph(aCtx, aCanvas, dataHistory, d => d.a, -aMax, aMax, '#d97706');
+  }
+
+  function drawSimulationTrack() {
+    const w = simCanvas.width;
+    const h = simCanvas.height;
+    const centerX = w / 2;
+    const centerY = h / 2;
+
+    simCtx.clearRect(0, 0, w, h);
+
+    // Track axis line
+    simCtx.strokeStyle = '#475569';
+    simCtx.lineWidth = 2;
+    simCtx.beginPath();
+    simCtx.moveTo(0, centerY);
+    simCtx.lineTo(w, centerY);
+    simCtx.stroke();
+
+    // Axis tick marks & meters labels
+    simCtx.fillStyle = '#94a3b8';
+    simCtx.font = '11px sans-serif';
+    simCtx.textAlign = 'center';
+
+    for (let m = -50; m <= 50; m += 5) {
+      const px = centerX + m * SCALE;
+      if (px >= 0 && px <= w) {
+        simCtx.beginPath();
+        simCtx.moveTo(px, centerY - 5);
+        simCtx.lineTo(px, centerY + 5);
+        simCtx.stroke();
+        simCtx.fillText(`${m}m`, px, centerY + 20);
+      }
+    }
+
+    // Center origin indicator
+    simCtx.fillStyle = '#ef4444';
+    simCtx.beginPath();
+    simCtx.arc(centerX, centerY, 3, 0, Math.PI * 2);
+    simCtx.fill();
+
+    // Particle
+    const currentData = dataHistory[dataHistory.length - 1] || { x: 0 };
+    const particleX = centerX + currentData.x * SCALE;
+
+    simCtx.fillStyle = '#38bdf8';
+    simCtx.strokeStyle = '#0284c7';
+    simCtx.lineWidth = 3;
+    simCtx.beginPath();
+    simCtx.arc(particleX, centerY, 12, 0, Math.PI * 2);
+    simCtx.fill();
+    simCtx.stroke();
+  }
+
+  function drawGraph(ctx, canvas, data, valueExtractor, yMin, yMax, color) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const padding = 35;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Zero-Y coordinate
+    const zeroY = h - padding - ((0 - yMin) / (yMax - yMin)) * (h - 2 * padding);
+
+    // Time (X) Axis
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, zeroY);
+    ctx.lineTo(w - padding, zeroY);
+    ctx.stroke();
+
+    // Y Axis
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, h - padding);
+    ctx.stroke();
+
+    // Labels & Scale Numbers
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+
+    ctx.fillText(yMax.toFixed(0), padding - 5, padding + 8);
+    ctx.fillText(yMin.toFixed(0), padding - 5, h - padding);
+    if (zeroY > padding && zeroY < h - padding) {
+      ctx.fillText('0', padding - 5, zeroY + 3);
+    }
+
+    // Fixed X Axis Time Scale Labels (0s to 10s)
+    ctx.textAlign = 'center';
+    ctx.fillText('0s', padding, zeroY + 15);
+    ctx.fillText('10s', w - padding, zeroY + 15);
+
+    if (data.length < 2) return;
+
+    // Map time across the fixed TOTAL_TIME (10 seconds) width
+    function mapT(t) {
+      return padding + (t / TOTAL_TIME) * (w - 2 * padding);
+    }
+    function mapVal(val) {
+      return h - padding - ((val - yMin) / (yMax - yMin)) * (h - 2 * padding);
+    }
+
+    // Graph Line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    data.forEach((pt, i) => {
+      const px = mapT(pt.t);
+      const py = mapVal(valueExtractor(pt));
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+
+    // Active particle tracker dot on graph
+    const lastPt = data[data.length - 1];
+    const dotX = mapT(lastPt.t);
+    const dotY = mapVal(valueExtractor(lastPt));
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Initial Boot
+  resizeCanvases();
+  resetSimulation();
+</script>
+</body>
+</html>
