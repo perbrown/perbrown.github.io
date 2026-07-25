@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Spring Physics Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      text-align: center;
+      color: #38bdf8;
+    }
+    .sim-container {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      background: #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      border: 1px solid #334155;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    canvas:active {
+      cursor: grabbing;
+    }
+    
+    /* Telemetry Panel Overlay */
+    .telemetry-overlay {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid #334155;
+      padding: 12px 18px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .data-label { color: #94a3b8; }
+    .data-val { font-family: monospace; font-weight: 700; }
+    .val-disp { color: #38bdf8; }
+    .val-force { color: #f43f5e; }
+
+    /* Controls Bar */
+    .controls-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-group label {
+      font-size: 14px;
+      color: #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+    }
+    .control-group input[type="range"] {
+      width: 100%;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+    .btn-reset {
+      grid-column: 1 / -1;
+      justify-self: center;
+      padding: 8px 24px;
+      background: #334155;
+      color: #f8fafc;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-reset:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Interactive 2D Spring Simulator</h1>
+
+  <div class="sim-container">
+    <canvas id="springCanvas"></canvas>
+    
+    <!-- Real-Time Telemetry Bar -->
+    <div class="telemetry-overlay">
+      <div class="data-row">
+        <span class="data-label">Displacement (|x|):</span>
+        <span class="data-val val-disp" id="dispVal">0.00 px</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Spring Force (|F|):</span>
+        <span class="data-val val-force" id="forceVal">0.0 N</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Controls -->
+  <div class="controls-card">
+    <div class="control-group">
+      <label for="kSlider">Spring Constant (k): <span id="kDisplay">0.15</span> N/m</label>
+      <input type="range" id="kSlider" min="0.01" max="0.50" value="0.15" step="0.01">
+    </div>
+    <div class="control-group">
+      <label for="bSlider">Damping (b): <span id="bDisplay">0.05</span></label>
+      <input type="range" id="bSlider" min="0.00" max="0.20" value="0.05" step="0.005">
+    </div>
+    <div class="control-group">
+      <label for="mSlider">Mass (m): <span id="mDisplay">2.0</span> kg</label>
+      <input type="range" id="mSlider" min="0.5" max="10.0" value="2.0" step="0.5">
+    </div>
+    <button class="btn-reset" id="resetBtn">Reset Position</button>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('springCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Telemetry DOM
+  const dispVal = document.getElementById('dispVal');
+  const forceVal = document.getElementById('forceVal');
+
+  // Sliders DOM
+  const kSlider = document.getElementById('kSlider');
+  const bSlider = document.getElementById('bSlider');
+  const mSlider = document.getElementById('mSlider');
+  const kDisplay = document.getElementById('kDisplay');
+  const bDisplay = document.getElementById('bDisplay');
+  const mDisplay = document.getElementById('mDisplay');
+  const resetBtn = document.getElementById('resetBtn');
+
+  // Simulation Parameters
+  let k = parseFloat(kSlider.value);     // Spring constant
+  let b = parseFloat(bSlider.value);     // Damping coefficient
+  let mass = parseFloat(mSlider.value);  // Mass of end object
+  const REST_LENGTH = 0;                 // Equilibrium length at center point
+
+  // Center Anchor Point
+  let anchor = { x: 0, y: 0 };
+
+  // Mass Position & Velocity State
+  let bob = { x: 0, y: 0, vx: 0, vy: 0, radius: 20 };
+
+  // Interaction State
+  let isDragging = false;
+  let mouse = { x: 0, y: 0 };
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    
+    // Set anchor point strictly to the center of canvas
+    anchor.x = canvas.width / 2;
+    anchor.y = canvas.height / 2;
+
+    if (!isDragging && bob.vx === 0 && bob.vy === 0 && (bob.x === 0 && bob.y === 0)) {
+      resetToAnchor();
+    }
+  }
+
+  function resetToAnchor() {
+    bob.x = anchor.x;
+    bob.y = anchor.y;
+    bob.vx = 0;
+    bob.vy = 0;
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+
+  // --- Controls Event Listeners ---
+  kSlider.addEventListener('input', (e) => {
+    k = parseFloat(e.target.value);
+    kDisplay.textContent = k.toFixed(2);
+  });
+  bSlider.addEventListener('input', (e) => {
+    b = parseFloat(e.target.value);
+    bDisplay.textContent = b.toFixed(3);
+  });
+  mSlider.addEventListener('input', (e) => {
+    mass = parseFloat(e.target.value);
+    mDisplay.textContent = mass.toFixed(1);
+  });
+  resetBtn.addEventListener('click', resetToAnchor);
+
+  // --- Mouse / Touch Interactivity ---
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function onPointerDown(e) {
+    const pos = getPos(e);
+    const dist = Math.hypot(pos.x - bob.x, pos.y - bob.y);
+    
+    // Hit region check around mass bob
+    if (dist <= bob.radius + 15) {
+      isDragging = true;
+      mouse = pos;
+      bob.vx = 0;
+      bob.vy = 0;
+    }
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    mouse = getPos(e);
+    bob.x = mouse.x;
+    bob.y = mouse.y;
+  }
+
+  function onPointerUp() {
+    if (isDragging) {
+      isDragging = false;
+    }
+  }
+
+  canvas.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+
+  canvas.addEventListener('touchstart', onPointerDown, { passive: true });
+  window.addEventListener('touchmove', onPointerMove, { passive: true });
+  window.addEventListener('touchend', onPointerUp);
+
+  // --- Physics & Drawing Loop ---
+  function updatePhysics() {
+    // Displacement vector from anchor
+    const dx = bob.x - anchor.x;
+    const dy = bob.y - anchor.y;
+    const currentDist = Math.hypot(dx, dy);
+
+    // Magnitude calculations for telemetry
+    const displacement = Math.max(0, currentDist - REST_LENGTH);
+    const forceMagnitude = k * displacement;
+
+    dispVal.textContent = `${displacement.toFixed(1)} px`;
+    forceVal.textContent = `${forceMagnitude.toFixed(2)} N`;
+
+    if (isDragging) {
+      // Velocity remains 0 while dragging
+      bob.vx = 0;
+      bob.vy = 0;
+      return;
+    }
+
+    // Hooke's Law: F_spring = -k * dx
+    const Fx_spring = -k * dx;
+    const Fy_spring = -k * dy;
+
+    // Damping Force: F_damping = -b * v
+    const Fx_damping = -b * bob.vx;
+    const Fy_damping = -b * bob.vy;
+
+    // Total Acceleration: a = F / m
+    const ax = (Fx_spring + Fx_damping) / mass;
+    const ay = (Fy_spring + Fy_damping) / mass;
+
+    // Euler Integration
+    bob.vx += ax;
+    bob.vy += ay;
+    bob.x += bob.vx;
+    bob.y += bob.vy;
+  }
+
+  function drawSpring(x1, y1, x2, y2, coils = 14, radius = 12) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+
+    const step = dist / coils;
+    ctx.lineTo(step * 0.5, 0);
+
+    for (let i = 1; i < coils - 1; i++) {
+      const x = (i + 0.5) * step;
+      const y = (i % 2 === 0 ? 1 : -1) * radius;
+      ctx.lineTo(x, y);
+    }
+
+    ctx.lineTo(dist - step * 0.5, 0);
+    ctx.lineTo(dist, 0);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. Draw Anchor Point (Middle of screen)
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath();
+    ctx.arc(anchor.x, anchor.y, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(anchor.x, anchor.y, 14, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 2. Draw Spring Coils
+    drawSpring(anchor.x, anchor.y, bob.x, bob.y);
+
+    // 3. Draw Mass Handle / Bob
+    ctx.fillStyle = isDragging ? '#38bdf8' : '#0284c7';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(bob.x, bob.y, bob.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Subtle inner highlight on bob
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(bob.x - 4, bob.y - 4, bob.radius * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function loop() {
+    updatePhysics();
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  // Initialization
+  resizeCanvas();
+  resetToAnchor();
+  loop();
+</script>
+</body>
+</html>
