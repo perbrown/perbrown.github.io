@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drop Tower — Freefall Lab</title>
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --panel:#F7F8FA;
+    --panel-2:#FFFFFF;
+    --grid:rgba(0,0,0,0.045);
+    --border:#DDE1E8;
+    --text:#1A1F29;
+    --dim:#6B7385;
+    --amber:#C97A00;
+    --cyan:#0E8FA3;
+    --ballA:#2F6FED;
+    --ballB:#E5522F;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+
+  .app{
+    max-width:1000px;
+    margin:0 auto;
+    padding:36px 20px 60px;
+  }
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:18px;
+    margin-bottom:28px;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--amber);
+    font-weight:700;
+    margin:0 0 6px;
+  }
+  h1{
+    margin:0;
+    font-size:26px;
+    letter-spacing:-.01em;
+    font-weight:800;
+  }
+  .clock{
+    text-align:right;
+  }
+  .clock .label{
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--dim);
+    margin-bottom:2px;
+  }
+  .clock .value{
+    font-size:22px;
+    font-weight:700;
+    color:var(--cyan);
+  }
+
+  .rig{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+
+  .lane{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+    width:280px;
+  }
+  .lane-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:10px;
+  }
+  .lane-head .name{
+    font-weight:700;
+    font-size:14px;
+  }
+  .lane-head .mass{
+    font-size:12px;
+    color:var(--dim);
+  }
+  .lane svg{
+    display:block;
+    width:100%;
+    height:auto;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+  }
+  .status{
+    margin-top:10px;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    padding:4px 8px;
+    border-radius:4px;
+    display:inline-block;
+    background:rgba(0,0,0,0.05);
+    color:var(--dim);
+  }
+  .status.falling{ color:var(--bg); background:var(--amber); }
+  .status.landed{ color:var(--bg); background:var(--cyan); }
+
+  .readout{
+    margin-top:10px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px 10px;
+    font-size:12px;
+  }
+  .readout div{ display:flex; justify-content:space-between; }
+  .readout .k{ color:var(--dim); }
+  .readout .v{ font-weight:600; }
+  .readout .v.g{ color:var(--amber); }
+  .readout .v.d{ color:var(--cyan); }
+
+  .slider-block{ margin-top:14px; }
+  .slider-block .row{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--dim);
+    margin-bottom:6px;
+  }
+  .slider-block .row .k-val{ color:var(--cyan); font-weight:700; }
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:2px;
+    background:linear-gradient(90deg, var(--cyan), var(--border));
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--cyan);
+    border:2px solid var(--panel-2);
+    box-shadow:0 0 0 1px var(--cyan);
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;
+    background:var(--cyan);
+    border:2px solid var(--panel-2);
+    cursor:pointer;
+  }
+  input[type=range]:disabled::-webkit-slider-thumb{ background:var(--dim); box-shadow:none; }
+  input[type=range]:disabled{ background:var(--border); }
+
+  .controls{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin-top:26px;
+    flex-wrap:wrap;
+  }
+  button{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    padding:12px 26px;
+    border-radius:7px;
+    border:1px solid var(--border);
+    cursor:pointer;
+    transition:transform .08s ease, opacity .15s ease;
+  }
+  button:active{ transform:scale(.97); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  #dropBtn{
+    background:var(--amber);
+    color:#231400;
+    border-color:var(--amber);
+  }
+  #resetBtn{
+    background:transparent;
+    color:var(--cyan);
+    border-color:var(--cyan);
+  }
+
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:22px;
+    margin-top:22px;
+    font-size:11px;
+    color:var(--dim);
+    flex-wrap:wrap;
+  }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:14px; height:3px; display:inline-block; border-radius:2px; }
+
+  .note{
+    text-align:center;
+    color:var(--dim);
+    font-size:12px;
+    margin-top:20px;
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div>
+      <p class="eyebrow">Drop Tower Lab · Experiment 04</p>
+      <h1>Does mass change how fast things fall?</h1>
+    </div>
+    <div class="clock">
+      <div class="label">Elapsed</div>
+      <div class="value mono" id="clockVal">0.00s</div>
+    </div>
+  </header>
+
+  <div class="rig">
+    <!-- LANE A -->
+    <div class="lane">
+      <div class="lane-head">
+        <span class="name" style="color:var(--ballA)">Object A</span>
+        <span class="mass mono">1 kg</span>
+      </div>
+      <svg id="svgA" viewBox="0 0 240 460"></svg>
+      <div class="status" id="statusA">Ready</div>
+      <div class="readout mono">
+        <div><span class="k">v</span><span class="v" id="velA">0.00 m/s</span></div>
+        <div><span class="k">t</span><span class="v" id="timeA">0.00 s</span></div>
+        <div><span class="k">Fg</span><span class="v g" id="fgA">9.80 N</span></div>
+        <div><span class="k">Fd</span><span class="v d" id="fdA">0.00 N</span></div>
+      </div>
+      <div class="slider-block">
+        <div class="row">
+          <span>Air resistance</span>
+          <span class="k-val mono" id="kLabelA">0.0 N</span>
+        </div>
+        <input type="range" id="sliderA" min="0" max="9.8" step="0.1" value="0">
+      </div>
+    </div>
+
+    <!-- LANE B -->
+    <div class="lane">
+      <div class="lane-head">
+        <span class="name" style="color:var(--ballB)">Object B</span>
+        <span class="mass mono">8 kg</span>
+      </div>
+      <svg id="svgB" viewBox="0 0 240 460"></svg>
+      <div class="status" id="statusB">Ready</div>
+      <div class="readout mono">
+        <div><span class="k">v</span><span class="v" id="velB">0.00 m/s</span></div>
+        <div><span class="k">t</span><span class="v" id="timeB">0.00 s</span></div>
+        <div><span class="k">Fg</span><span class="v g" id="fgB">78.40 N</span></div>
+        <div><span class="k">Fd</span><span class="v d" id="fdB">0.00 N</span></div>
+      </div>
+      <div class="slider-block">
+        <div class="row">
+          <span>Air resistance</span>
+          <span class="k-val mono" id="kLabelB">0.0 N</span>
+        </div>
+        <input type="range" id="sliderB" min="0" max="78.4" step="0.1" value="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="dropBtn">Drop objects</button>
+    <button id="resetBtn" style="display:none;">Reset</button>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--amber)"></span> Gravity (Fg)</span>
+    <span><span class="swatch" style="background:var(--cyan)"></span> Air resistance (Fd)</span>
+  </div>
+
+  <p class="note">With both sliders at 0 N, mass has no effect on fall time — a vacuum result Galileo predicted.<br>
+  Each slider caps out at that object's own weight (Fg = mg), so at full resistance the upward force exactly cancels gravity and the object hovers. Since a given force produces less deceleration on a larger mass, the same newtons of resistance always slow Object A more than Object B.</p>
+</div>
+
+<script>
+(function(){
+  const G = 9.8;              // m/s^2
+  const WORLD_H = 18;         // meters of drop height
+  const TOP_PX = 104, GROUND_PX = 385;
+  const GROUND_LINE_Y = 400;  // fixed pixel row for the ground line/label, same in both lanes
+  const BASE_RADIUS = 15;     // ball radius (px), same for both objects
+  const PX_PER_M = (GROUND_PX - TOP_PX) / WORLD_H;
+
+
+  function makeObject(cfg){
+    return {
+      mass: cfg.mass,
+      radius: BASE_RADIUS,
+      color: cfg.color,
+      svg: document.getElementById(cfg.svgId),
+      slider: document.getElementById(cfg.sliderId),
+      kLabel: document.getElementById(cfg.kLabelId),
+      statusEl: document.getElementById(cfg.statusId),
+      velEl: document.getElementById(cfg.velId),
+      timeEl: document.getElementById(cfg.timeId),
+      fgEl: document.getElementById(cfg.fgId),
+      fdEl: document.getElementById(cfg.fdId),
+      pos: 0, vel: 0, t: 0,
+      landed: false,
+      els: {}
+    };
+  }
+
+  const objA = makeObject({mass:1, color:'var(--ballA)', svgId:'svgA', sliderId:'sliderA', kLabelId:'kLabelA', statusId:'statusA', velId:'velA', timeId:'timeA', fgId:'fgA', fdId:'fdA'});
+  const objB = makeObject({mass:8, color:'var(--ballB)', svgId:'svgB', sliderId:'sliderB', kLabelId:'kLabelB', statusId:'statusB', velId:'velB', timeId:'timeB', fgId:'fgB', fdId:'fdB'});
+  const objects = [objA, objB];
+
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    for(const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function buildScene(o){
+    const svg = o.svg;
+    svg.innerHTML = '';
+
+    // guide track
+    svg.appendChild(el('line', {x1:120, y1:TOP_PX, x2:120, y2:GROUND_PX, stroke:'#232C3E', 'stroke-width':1, 'stroke-dasharray':'3,5'}));
+    // ground (fixed row, same across lanes regardless of ball radius)
+    svg.appendChild(el('line', {x1:10, y1:GROUND_LINE_Y, x2:230, y2:GROUND_LINE_Y, stroke:'#3A4358', 'stroke-width':2}));
+    const groundLabel = el('text', {x:120, y:GROUND_LINE_Y+16, 'text-anchor':'middle', fill:'#7C88A0', 'font-size':9, 'font-family':'ui-monospace,monospace'});
+    groundLabel.textContent = 'GROUND';
+    svg.appendChild(groundLabel);
+
+    const ball = el('circle', {cx:120, cy:TOP_PX, r:o.radius, fill:o.color, stroke:'#000', 'stroke-opacity':0.25});
+    svg.appendChild(ball);
+
+    // gravity arrow (down)
+    const gLine = el('line', {x1:120, y1:TOP_PX, x2:120, y2:TOP_PX, stroke:'#FFB238', 'stroke-width':2.5});
+    const gHead = el('polygon', {fill:'#FFB238'});
+    const gLabel = el('text', {fill:'#FFB238', 'font-size':10, 'font-family':'ui-monospace,monospace', 'font-weight':'bold'});
+    gLabel.textContent = 'Fg';
+    svg.appendChild(gLine); svg.appendChild(gHead); svg.appendChild(gLabel);
+
+    // drag arrow (up)
+    const dLine = el('line', {x1:120, y1:TOP_PX, x2:120, y2:TOP_PX, stroke:'#4FD9E8', 'stroke-width':2.5, opacity:0});
+    const dHead = el('polygon', {fill:'#4FD9E8', opacity:0});
+    const dLabel = el('text', {fill:'#4FD9E8', 'font-size':10, 'font-family':'ui-monospace,monospace', 'font-weight':'bold', opacity:0});
+    dLabel.textContent = 'Fd';
+    svg.appendChild(dLine); svg.appendChild(dHead); svg.appendChild(dLabel);
+
+    o.els = {ball, gLine, gHead, gLabel, dLine, dHead, dLabel};
+  }
+
+  function arrowHead(cx, tipY, up){
+    const s = 5;
+    const dir = up ? -1 : 1;
+    return `${cx-s},${tipY-dir*1} ${cx+s},${tipY-dir*1} ${cx},${tipY+dir*8}`;
+  }
+
+  function render(o){
+    const cy = TOP_PX + o.pos * PX_PER_M;
+    const {ball, gLine, gHead, gLabel, dLine, dHead, dLabel} = o.els;
+    ball.setAttribute('cy', cy);
+
+    // gravity vector: fixed visual length, always shown, points down from ball
+    const gLen = 34;
+    const gTipY = cy + o.radius + gLen;
+    gLine.setAttribute('x1',120); gLine.setAttribute('y1', cy+o.radius);
+    gLine.setAttribute('x2',120); gLine.setAttribute('y2', gTipY - 8);
+    gHead.setAttribute('points', arrowHead(120, gTipY, false));
+    gLabel.setAttribute('x', 128); gLabel.setAttribute('y', gTipY);
+
+    // drag vector: uses the same px-per-newton scale as the gravity vector,
+    // so a force equal to the object's weight produces a matching arrow length
+    const fd = parseFloat(o.slider.value);
+    const showDrag = fd > 0;
+    const dLen = gLen * (fd / (o.mass * G));
+    const dTipY = cy - o.radius - dLen;
+    dLine.setAttribute('x1',120); dLine.setAttribute('y1', cy-o.radius);
+    dLine.setAttribute('x2',120); dLine.setAttribute('y2', dTipY + 8);
+    dHead.setAttribute('points', arrowHead(120, dTipY, true));
+    dLabel.setAttribute('x', 128); dLabel.setAttribute('y', dTipY + 4);
+    const dOpacity = showDrag ? 1 : 0;
+    dLine.setAttribute('opacity', dOpacity);
+    dHead.setAttribute('opacity', dOpacity);
+    dLabel.setAttribute('opacity', dOpacity);
+
+    // readouts
+    o.velEl.textContent = o.vel.toFixed(2) + ' m/s';
+    o.timeEl.textContent = o.t.toFixed(2) + ' s';
+    o.fdEl.textContent = fd.toFixed(2) + ' N';
+  }
+
+  objects.forEach(o=>{
+    buildScene(o);
+    o.fgEl.textContent = (o.mass*G).toFixed(2) + ' N';
+    render(o);
+    o.slider.addEventListener('input', ()=>{
+      o.kLabel.textContent = parseFloat(o.slider.value).toFixed(1) + ' N';
+      render(o);
+    });
+  });
+
+  const dropBtn = document.getElementById('dropBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const clockVal = document.getElementById('clockVal');
+
+  let running = false;
+  let lastT = null;
+  let globalClock = 0;
+
+  function setStatus(o, text, cls){
+    o.statusEl.textContent = text;
+    o.statusEl.className = 'status' + (cls ? ' '+cls : '');
+  }
+
+  function step(now){
+    if(!running) return;
+    if(lastT === null) lastT = now;
+    let dt = (now - lastT)/1000;
+    lastT = now;
+    dt = Math.min(dt, 0.033);
+    globalClock += dt;
+    clockVal.textContent = globalClock.toFixed(2) + 's';
+
+    const SUB = 4;
+    const sdt = dt/SUB;
+
+    let allLanded = true;
+    objects.forEach(o=>{
+      if(!o.landed){
+        allLanded = false;
+        const fd = parseFloat(o.slider.value);
+        for(let i=0;i<SUB;i++){
+          const accel = G - (fd / o.mass);
+          o.vel += accel * sdt;
+          o.pos += o.vel * sdt;
+          o.t += sdt;
+          if(o.pos >= WORLD_H){
+            o.pos = WORLD_H;
+            o.vel = 0;
+            o.landed = true;
+            setStatus(o, 'Landed · ' + o.t.toFixed(2) + 's', 'landed');
+            break;
+          }
+        }
+      }
+      render(o);
+    });
+
+    if(allLanded){
+      running = false;
+      resetBtn.style.display = 'inline-block';
+      dropBtn.disabled = true;
+      return;
+    }
+    requestAnimationFrame(step);
+  }
+
+  dropBtn.addEventListener('click', ()=>{
+    if(running) return;
+    running = true;
+    lastT = null;
+    objects.forEach(o=> setStatus(o, 'Falling', 'falling'));
+    dropBtn.disabled = true;
+    resetBtn.style.display = 'inline-block';
+    requestAnimationFrame(step);
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    running = false;
+    lastT = null;
+    globalClock = 0;
+    clockVal.textContent = '0.00s';
+    objects.forEach(o=>{
+      o.pos = 0; o.vel = 0; o.t = 0; o.landed = false;
+      setStatus(o, 'Ready', '');
+      render(o);
+    });
+    dropBtn.disabled = false;
+    resetBtn.style.display = 'none';
+  });
+})();
+</script>
+
+</body>
+</html>
