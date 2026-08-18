@@ -81,7 +81,7 @@
   }
   .lane-head{
     display:flex;
-    justify-space-between;
+    justify-content:space-between;
     align-items:baseline;
     margin-bottom:8px;
   }
@@ -308,15 +308,15 @@
         <div class="readout mono">
           <div><span class="k">v</span><span class="v" id="velA">0.00 m/s</span></div>
           <div><span class="k">t</span><span class="v" id="timeA">0.00 s</span></div>
-          <div><span class="k">Fg</span><span class="v g" id="fgA">9.80 N</span></div>
-          <div><span class="k">Fd</span><span class="v d" id="fdA">0.00 N</span></div>
+          <div><span class="k">Fg</span><span class="v g" id="fgA">9.81 N</span></div>
+          <div><span class="k">Fd</span><span class="v d" id="fdA">5.00 N</span></div>
         </div>
         <div class="slider-block">
           <div class="row">
             <span>Air resistance</span>
-            <span class="k-val mono" id="kLabelA">0.0 N</span>
+            <span class="k-val mono" id="kLabelA">5.0 N</span>
           </div>
-          <input type="range" id="sliderA" min="0" max="9.8" step="0.1" value="0">
+          <input type="range" id="sliderA" min="0" max="9.81" step="0.1" value="5">
         </div>
       </div>
 
@@ -331,15 +331,15 @@
         <div class="readout mono">
           <div><span class="k">v</span><span class="v" id="velB">0.00 m/s</span></div>
           <div><span class="k">t</span><span class="v" id="timeB">0.00 s</span></div>
-          <div><span class="k">Fg</span><span class="v g" id="fgB">78.40 N</span></div>
-          <div><span class="k">Fd</span><span class="v d" id="fdB">0.00 N</span></div>
+          <div><span class="k">Fg</span><span class="v g" id="fgB">78.48 N</span></div>
+          <div><span class="k">Fd</span><span class="v d" id="fdB">5.00 N</span></div>
         </div>
         <div class="slider-block">
           <div class="row">
             <span>Air resistance</span>
-            <span class="k-val mono" id="kLabelB">0.0 N</span>
+            <span class="k-val mono" id="kLabelB">5.0 N</span>
           </div>
-          <input type="range" id="sliderB" min="0" max="78.4" step="0.1" value="0">
+          <input type="range" id="sliderB" min="0" max="78.48" step="0.1" value="5">
         </div>
       </div>
     </div>
@@ -382,10 +382,10 @@
 
 <script>
 (function(){
-  const G = 9.8;              // m/s^2
+  const G = 9.81;             // m/s^2 (Updated)
   
-  // Set WORLD_H to 44.1 meters so objects drop in exactly 3 seconds under gravity (d = 0.5 * g * t^2)
-  const WORLD_H = 44.1;         
+  // Set WORLD_H to 44.145 meters so objects in zero air-resistance drop in 3.0s (d = 0.5 * g * t^2)
+  const WORLD_H = 44.145;         
   
   const TOP_PX = 20;          
   const GROUND_PX = 460;
