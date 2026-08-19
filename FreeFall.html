@@ -382,9 +382,7 @@
 
 <script>
 (function(){
-  const G = 9.81;             // m/s^2 (Updated)
-  
-  // Set WORLD_H to 44.145 meters so objects in zero air-resistance drop in 3.0s (d = 0.5 * g * t^2)
+  const G = 9.81;             
   const WORLD_H = 44.145;         
   
   const TOP_PX = 20;          
@@ -532,24 +530,51 @@
     o.statusEl.className = 'status' + (cls ? ' '+cls : '');
   }
 
+  function advanceObject(o, stepDt) {
+    if (o.landed) return;
+    const fd = parseFloat(o.slider.value);
+    const accel = G - (fd / o.mass);
+    o.vel += accel * stepDt;
+    o.pos += o.vel * stepDt;
+    o.t += stepDt;
+    if(o.pos >= WORLD_H){
+      o.pos = WORLD_H;
+      o.vel = 0;
+      o.landed = true;
+      setStatus(o, 'Landed · ' + o.t.toFixed(2) + 's', 'landed');
+    }
+  }
+
   function step(now){
     if(!running) return;
     if(lastT === null) lastT = now;
     let dt = (now - lastT)/1000;
     lastT = now;
     dt = Math.min(dt, 0.033);
-    globalClock += dt;
 
     const pauseTarget = parseFloat(pauseSlider.value);
     
-    // Auto-Pause check
-    if (pauseCheck.checked && !hasAutoPaused && globalClock >= pauseTarget) {
+    // Check if step overshoots pause target
+    if (pauseCheck.checked && !hasAutoPaused && (globalClock + dt >= pauseTarget)) {
+      const remainingDt = pauseTarget - globalClock;
+      
+      // Step objects exactly to target time
+      if (remainingDt > 0) {
+        const SUB = 4;
+        const sdt = remainingDt / SUB;
+        for (let i = 0; i < SUB; i++) {
+          objects.forEach(o => advanceObject(o, sdt));
+        }
+      }
+
       globalClock = pauseTarget;
       clockVal.textContent = globalClock.toFixed(2) + 's';
       running = false;
       hasAutoPaused = true;
 
       objects.forEach(o => {
+        o.t = pauseTarget; // Sync object timers exactly
+        render(o);
         if (!o.landed) setStatus(o, 'Paused', 'paused');
       });
 
@@ -558,30 +583,19 @@
       return;
     }
 
+    globalClock += dt;
     clockVal.textContent = globalClock.toFixed(2) + 's';
 
     const SUB = 4;
     const sdt = dt/SUB;
 
     let allLanded = true;
-    objects.forEach(o=>{
-      if(!o.landed){
-        allLanded = false;
-        const fd = parseFloat(o.slider.value);
-        for(let i=0;i<SUB;i++){
-          const accel = G - (fd / o.mass);
-          o.vel += accel * sdt;
-          o.pos += o.vel * sdt;
-          o.t += sdt;
-          if(o.pos >= WORLD_H){
-            o.pos = WORLD_H;
-            o.vel = 0;
-            o.landed = true;
-            setStatus(o, 'Landed · ' + o.t.toFixed(2) + 's', 'landed');
-            break;
-          }
-        }
-      }
+    for (let i = 0; i < SUB; i++) {
+      objects.forEach(o => advanceObject(o, sdt));
+    }
+
+    objects.forEach(o => {
+      if (!o.landed) allLanded = false;
       render(o);
     });
 
