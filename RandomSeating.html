@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -135,6 +136,11 @@
     flex-wrap:wrap;
     gap:8px;
   }
+  .bmc-container{
+    display:flex;
+    align-items:center;
+    flex-shrink:0;
+  }
   button.tool{
     font-family: var(--font-body);
     font-weight:600;
@@ -166,7 +172,8 @@
   #canvasWrap{
     flex:1;
     position:relative;
-    overflow:auto;
+    overflow-x:hidden;
+    overflow-y:auto;
     background-color: var(--paper);
     background-image:
       linear-gradient(var(--paper-line) 1px, transparent 1px),
@@ -175,7 +182,7 @@
   }
   #canvas{
     position:relative;
-    width: 1600px;
+    width: 100%;
     height: 1100px;
   }
   #canvas.mode-table{ cursor: crosshair; }
@@ -201,7 +208,7 @@
 
   #trashCan{
     position: fixed;
-    right: 26px;
+    left: 26px;
     bottom: 26px;
     width: 58px;
     height: 58px;
@@ -237,6 +244,7 @@
     justify-content:flex-end;
     padding:6px 8px;
     user-select:none;
+    z-index: 1;
   }
   .table-el.grabbing{ cursor:grabbing; }
   .table-el .table-label{
@@ -288,6 +296,7 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.18);
     transition: background .12s ease, box-shadow .12s ease;
     line-height:1.15;
+    z-index: 2;
   }
   .chair-el.grabbing{ cursor:grabbing; }
   .chair-el.occupied{
@@ -494,6 +503,16 @@
     font-size: 0.82rem;
     color: var(--ink-soft);
   }
+  .help-list{
+    margin: 0 0 4px;
+    padding-left: 20px;
+    font-size: 0.82rem;
+    line-height:1.6;
+    color: var(--ink);
+  }
+  .help-list li{ margin-bottom:8px; }
+  .help-list strong{ color: var(--ink); }
+
   .modal textarea{
     width:100%;
     height: 220px;
@@ -531,16 +550,128 @@
 
   #fileInput{ display:none; }
 
+  .radio-grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:8px;
+    margin: 4px 0 6px;
+  }
+  .radio-option{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding: 10px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 0.85rem;
+    font-weight:600;
+    cursor:pointer;
+    user-select:none;
+  }
+  .radio-option input{
+    accent-color: var(--accent);
+    cursor:pointer;
+  }
+  .radio-option:has(input:checked){
+    border-color: var(--accent-dark);
+    background: rgba(201,122,43,0.15);
+  }
+
+  .privacy-note{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family: var(--font-body);
+    font-size:0.72rem;
+    font-weight:500;
+    color:#CFE0D6;
+    background: rgba(255,255,255,0.08);
+    padding:7px 12px;
+    border-radius:999px;
+    border: 1px solid transparent;
+    flex-shrink:0;
+    white-space:nowrap;
+    cursor:pointer;
+    transition: background .15s ease;
+  }
+  .privacy-note:hover{ background: rgba(255,255,255,0.18); }
+  .tool-with-icon{ display:inline-flex; align-items:center; gap:6px; }
+  .privacy-q{
+    width:16px;
+    height:16px;
+    flex-shrink:0;
+    border-radius:50%;
+    border:1px solid #CFE0D6;
+    background:transparent;
+    color:#F3EFE4;
+    font-size:0.65rem;
+    font-weight:700;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    pointer-events:none;
+  }
+
+  .modal textarea#privacyCheckText{
+    height: 90px;
+    font-size:0.78rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+  }
+
+  .text-input{
+    width:100%;
+    font-family: var(--font-body);
+    font-size:0.95rem;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+    margin-top:4px;
+  }
+
+  .grid-input-row{
+    display:flex;
+    gap:16px;
+    margin: 6px 0 4px;
+  }
+  .num-field{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    font-size:0.8rem;
+    font-weight:600;
+    color: var(--ink);
+  }
+  .num-field input{
+    font-family: var(--font-body);
+    font-size:0.95rem;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+  }
+
   @media (max-width: 720px){
     aside{ width: 180px; min-width:150px; }
     header h1{ font-size:1.05rem; }
     button.tool{ padding:7px 10px; font-size:0.78rem; }
   }
 
+  .print-pages{ display:none; }
+
   @media print{
     header, aside, #trashCan, #hint, .modal-overlay{ display:none !important; }
-    html, body{ height:auto !important; overflow:visible !important; background:#fff !important; }
-    main{ display:block !important; overflow:visible !important; }
+    html, body{ height:auto !important; overflow:visible !important; background:#fff !important; display:block !important; }
+    main{ display:block !important; overflow:visible !important; height:auto !important; }
     #canvasWrap{
       position:static !important;
       overflow:visible !important;
@@ -548,9 +679,88 @@
       background-image:none !important;
     }
     #canvas{ position:relative !important; }
-    .table-el{ box-shadow:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    .chair-el{ box-shadow:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .table-el{
+      background:#fff !important;
+      box-shadow:none !important;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      z-index:1;
+    }
+    .table-el .table-label{ color:#333 !important; }
+    /* Chairs print white so they read as sitting "on top of" the unshaded
+       tables, with dark text so names stay legible on white. */
+    .chair-el{
+      background:#fff !important;
+      color:#1B2E28 !important;
+      box-shadow:none !important;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      z-index:2;
+    }
+    .chair-el .chair-table-label{ color:#4C5F58 !important; }
     .resize-handle{ display:none !important; }
+
+    /* "Print Classroom": the whole floor plan, scaled by JS to fit one page */
+    body.print-fit-page #canvasWrap{
+      width: 940px;
+      height: 660px;
+      overflow:hidden !important;
+    }
+    body.print-fit-page #canvas{
+      transform: scale(var(--print-scale, 1)) translate(var(--print-tx, 0px), var(--print-ty, 0px));
+      transform-origin: 0 0;
+    }
+
+    /* "Print By Table": one page per table, built fresh right before printing */
+    body.print-by-table header,
+    body.print-by-table #canvasWrap{
+      display:none !important;
+    }
+    body.print-by-table .print-pages{ display:block !important; }
+  }
+
+  .print-page{
+    page-break-after: always;
+    padding: 20px 0;
+  }
+  .print-page:last-child{ page-break-after: auto; }
+  .print-page h2{
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    margin: 0 0 14px;
+    color: #1B2E28;
+  }
+  .print-page-canvas{
+    position: relative;
+    border: 1px solid #ccc;
+  }
+  .print-table-el{
+    position:absolute;
+    background: #fff;
+    border: 2px solid var(--wood-dark);
+    border-radius: 6px;
+    z-index:1;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .print-chair-el{
+    position:absolute;
+    border-radius:50%;
+    background: #fff;
+    border: 2px solid var(--deep);
+    color:#1B2E28;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:0.7rem;
+    font-weight:600;
+    padding:4px;
+    z-index:2;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .print-page ul{
+    margin:0;
+    padding-left: 20px;
+    font-size: 0.95rem;
+    line-height: 1.7;
   }
 </style>
 </head>
@@ -558,17 +768,30 @@
 
 <header>
   <h1>Classroom Seating Chart<span>Draw tables, add chairs, drag students to seats</span></h1>
+  <button type="button" id="btnPrivacyInfo" class="privacy-note" title="Privacy details">
+    <span>&#128274; Privacy - no data is saved</span>
+    <span class="privacy-q" aria-hidden="true">?</span>
+  </button>
   <div class="toolbar">
+    <button class="tool tool-with-icon" id="btnHelp"><span class="privacy-q" aria-hidden="true">?</span>Help</button>
     <button class="tool" id="btnAddTable">+ Table</button>
+    <button class="tool" id="btnAddTables">+ Tables</button>
     <button class="tool" id="btnAddChair">+ Chair</button>
     <button class="tool" id="btnImportStudents">Import Student List</button>
     <button class="tool primary" id="btnRandomize">Randomize</button>
     <button class="tool" id="btnUnseat">Unseat All</button>
     <button class="tool" id="btnExport">Export Classroom</button>
     <button class="tool" id="btnImportClassroom">Import Classroom</button>
+    <button class="tool" id="btnPrintClassroom" title="Toggle on, then print from your browser's Print menu if this button doesn't open it directly">Print Classroom</button>
+    <button class="tool" id="btnPrintByTable" title="Toggle on, then print from your browser's Print menu if this button doesn't open it directly">Print By Table</button>
     <input type="file" id="fileInput" accept=".txt">
   </div>
+  <div class="bmc-container">
+    <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="mr_b" data-color="#FFDD00" data-emoji="☕"  data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+  </div>
 </header>
+
+<div id="printPages" class="print-pages"></div>
 
 <main>
   <div id="canvasWrap">
@@ -579,7 +802,7 @@
 
   <aside>
     <div class="aside-header">
-      <h2>Student Roster</h2>
+      <h2 id="studentListHeading">Student Roster</h2>
       <p>Drag a name onto an empty chair</p>
     </div>
     <ul id="studentList"></ul>
@@ -622,15 +845,95 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="randomizeModal">
+  <div class="modal">
+    <h3>Randomize Seating</h3>
+    <p class="sub">How many students should sit at each table?</p>
+    <div class="radio-grid" id="seatsPerTableGrid"></div>
+    <div class="modal-actions">
+      <button id="randomizeCancel">Cancel</button>
+      <button class="ok" id="randomizeOk">Randomize</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="helpModal">
+  <div class="modal" style="width:520px;">
+    <h3>How This Works</h3>
+    <ul class="help-list">
+      <li><strong>+ Table</strong> draws one table — click and drag on the grid. <strong>+ Tables</strong> creates a whole grid of tables at once (pick rows &amp; columns).</li>
+      <li><strong>+ Chair</strong> — click the canvas to place a chair; it snaps to the nearest table edge.</li>
+      <li>Drag a chair to move it, drag a table to move it (its chairs come along), or drag a table's corner handle to resize it.</li>
+      <li>Double-click a chair or table to delete it, or drag either onto the trash can (bottom-left).</li>
+      <li><strong>Import Student List</strong> — paste your roster as <em>Last, First</em>, one per line.</li>
+      <li>Drag a name from the Student Roster onto an empty chair to seat that student.</li>
+      <li><strong>Randomize</strong> — choose how many students should sit at each table, and every table is filled automatically. Anyone left over is lined up at the bottom.</li>
+      <li><strong>Keep Apart Groups</strong> — drag students into a group; students in the same group will never be seated at the same table during Randomize.</li>
+      <li><strong>Unseat All</strong> clears every seat but keeps the tables and chairs in place.</li>
+      <li><strong>Export / Import Classroom</strong> saves your whole layout — tables, chairs, roster, and groups — to a file, or loads one back in.</li>
+      <li><strong>Print Classroom / Print By Table</strong> toggle a print-friendly layout; then print from your browser's own Print menu (Ctrl/Cmd+P).</li>
+    </ul>
+    <p class="sub">Everything runs locally in your browser — tap the &#128274; privacy button for details.</p>
+    <div class="modal-actions">
+      <button class="ok" id="helpOkBtn">Got it</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="privacyModal">
+  <div class="modal">
+    <h3>Your Privacy</h3>
+    <p class="sub">No data from this tool is ever saved or sent anywhere. Your tables, chairs, roster, and groups exist only in this browser tab's memory — nothing is uploaded to a server or stored in the cloud. Closing or reloading the page clears everything unless you use "Export Classroom" to save your own copy to a file.</p>
+    <p class="sub">Want to check for yourself? Copy the text below into any AI chatbot and ask it to verify:</p>
+    <textarea id="privacyCheckText" readonly></textarea>
+    <div class="modal-actions">
+      <button class="ok" id="privacyOkBtn">Got it</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <h3>Export Classroom</h3>
+    <p class="sub">Enter a name for this class — it will be used as the file name.</p>
+    <input type="text" id="exportFileName" class="text-input" value="classroom-seating">
+    <div class="modal-actions">
+      <button id="exportCancel">Cancel</button>
+      <button class="ok" id="exportOk">Export</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addTablesModal">
+  <div class="modal">
+    <h3>Add Tables</h3>
+    <p class="sub">Create a grid of tables — choose how many rows and columns (1-5 each).</p>
+    <div class="grid-input-row">
+      <label class="num-field">Rows
+        <input type="number" id="addTablesRows" min="1" max="5" value="2">
+      </label>
+      <label class="num-field">Columns
+        <input type="number" id="addTablesCols" min="1" max="5" value="3">
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button id="addTablesCancel">Cancel</button>
+      <button class="ok" id="addTablesOk">Add Tables</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
 
   const GRID_SIZE = 28;
   const CHAIR_RADIUS = 39;
-  const CHAIR_GAP = 6;
+  const CHAIR_TABLE_OVERLAP = 0; // chair center sits right on the table edge, so the circle overlaps the table by half
   const SNAP_THRESHOLD = 110; // how close a chair must be to a table to snap to its edge
   const DRAG_THRESHOLD = 4;   // px of movement before a mousedown counts as a drag
+  const PRINT_PAGE_W = 940;   // usable printable width per page, in px (must match the CSS below)
+  const PRINT_PAGE_H = 660;   // usable printable height per page, in px (must match the CSS below)
 
   // ---------- State ----------
   let students = [];   // {id, last, first}
@@ -651,6 +954,7 @@
   const hint = document.getElementById('hint');
   const studentListEl = document.getElementById('studentList');
   const rosterCount = document.getElementById('rosterCount');
+  const studentListHeading = document.getElementById('studentListHeading');
 
   const btnAddTable = document.getElementById('btnAddTable');
   const btnAddChair = document.getElementById('btnAddChair');
@@ -660,6 +964,9 @@
   const btnExport = document.getElementById('btnExport');
   const btnImportClassroom = document.getElementById('btnImportClassroom');
   const fileInput = document.getElementById('fileInput');
+  const btnPrintClassroom = document.getElementById('btnPrintClassroom');
+  const btnPrintByTable = document.getElementById('btnPrintByTable');
+  const printPagesEl = document.getElementById('printPages');
 
   const importModal = document.getElementById('importModal');
   const importTextarea = document.getElementById('importTextarea');
@@ -701,6 +1008,127 @@
     });
   }
 
+  // ---------- Seats-per-table prompt (shown before every Randomize) ----------
+  const randomizeModal = document.getElementById('randomizeModal');
+  const seatsPerTableGrid = document.getElementById('seatsPerTableGrid');
+  const randomizeOk = document.getElementById('randomizeOk');
+  const randomizeCancel = document.getElementById('randomizeCancel');
+  let seatsPerTable = 4; // remembers the last choice across randomizes
+  let randomizeResolve = null;
+
+  for(let n = 1; n <= 8; n++){
+    const label = document.createElement('label');
+    label.className = 'radio-option';
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'seatsPerTable';
+    input.value = String(n);
+    if(n === seatsPerTable) input.checked = true;
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(String(n)));
+    seatsPerTableGrid.appendChild(label);
+  }
+
+  function closeRandomizePrompt(result){
+    randomizeModal.classList.remove('show');
+    if(randomizeResolve) randomizeResolve(result);
+    randomizeResolve = null;
+  }
+  randomizeOk.addEventListener('click', ()=>{
+    const checked = seatsPerTableGrid.querySelector('input[name="seatsPerTable"]:checked');
+    seatsPerTable = checked ? parseInt(checked.value, 10) : seatsPerTable;
+    closeRandomizePrompt(seatsPerTable);
+  });
+  randomizeCancel.addEventListener('click', ()=> closeRandomizePrompt(null));
+  randomizeModal.addEventListener('click', (e)=>{ if(e.target === randomizeModal) closeRandomizePrompt(null); });
+
+  function showSeatsPerTablePrompt(){
+    return new Promise(resolve => {
+      randomizeResolve = resolve;
+      const input = seatsPerTableGrid.querySelector('input[value="' + seatsPerTable + '"]');
+      if(input) input.checked = true;
+      randomizeModal.classList.add('show');
+    });
+  }
+
+  // ---------- Help ----------
+  const helpModal = document.getElementById('helpModal');
+  const btnHelp = document.getElementById('btnHelp');
+  const helpOkBtn = document.getElementById('helpOkBtn');
+  btnHelp.addEventListener('click', ()=> helpModal.classList.add('show'));
+  helpOkBtn.addEventListener('click', ()=> helpModal.classList.remove('show'));
+  helpModal.addEventListener('click', (e)=>{ if(e.target === helpModal) helpModal.classList.remove('show'); });
+
+  // ---------- Privacy details ----------
+  const privacyModal = document.getElementById('privacyModal');
+  const btnPrivacyInfo = document.getElementById('btnPrivacyInfo');
+  const privacyOkBtn = document.getElementById('privacyOkBtn');
+  const privacyCheckText = document.getElementById('privacyCheckText');
+  privacyCheckText.value = 'Please fetch and read the page at https://randomseat.com/ and look at its HTML/JavaScript source. Confirm whether it sends, uploads, or stores any user data (such as student names or seating layouts) to a server or third party, or whether everything is processed entirely in the visitor\'s own browser with no such network calls. Report what you find.';
+
+  btnPrivacyInfo.addEventListener('click', ()=> privacyModal.classList.add('show'));
+  privacyOkBtn.addEventListener('click', ()=> privacyModal.classList.remove('show'));
+  privacyModal.addEventListener('click', (e)=>{ if(e.target === privacyModal) privacyModal.classList.remove('show'); });
+
+  // ---------- Add Tables (grid) ----------
+  const addTablesModal = document.getElementById('addTablesModal');
+  const btnAddTables = document.getElementById('btnAddTables');
+  const addTablesRows = document.getElementById('addTablesRows');
+  const addTablesCols = document.getElementById('addTablesCols');
+  const addTablesOk = document.getElementById('addTablesOk');
+  const addTablesCancel = document.getElementById('addTablesCancel');
+
+  btnAddTables.addEventListener('click', ()=>{
+    setMode('idle');
+    addTablesModal.classList.add('show');
+  });
+  addTablesCancel.addEventListener('click', ()=> addTablesModal.classList.remove('show'));
+  addTablesModal.addEventListener('click', (e)=>{ if(e.target === addTablesModal) addTablesModal.classList.remove('show'); });
+
+  function clampRowsCols(v){
+    v = parseInt(v, 10);
+    if(isNaN(v)) v = 1;
+    return Math.max(1, Math.min(5, v));
+  }
+
+  function addTableGrid(rows, cols){
+    // Table size and gap are fixed — never shrunk to squeeze more columns
+    // in. If the requested column count doesn't fit the canvas's current
+    // visible width (no horizontal scroll exists to reveal extra columns),
+    // fewer columns are placed per row and the rest wrap onto new rows,
+    // keeping the same total table count.
+    const tableW = 168, tableH = 112, gapX = 196, gapY = 196;
+    const marginX = 56;
+    const availableW = Math.max(200, canvas.clientWidth - marginX * 2);
+    const maxColsThatFit = Math.max(1, Math.floor((availableW + gapX) / (tableW + gapX)));
+    const colsPerRow = Math.min(cols, maxColsThatFit);
+    const totalTables = rows * cols;
+
+    const startX = 56;
+    let startY = 56;
+    tables.forEach(t => { startY = Math.max(startY, t.y + t.h + gapY); });
+
+    for(let i = 0; i < totalTables; i++){
+      const col = i % colsPerRow;
+      const rowIdx = Math.floor(i / colsPerRow);
+      const x = startX + col * (tableW + gapX);
+      const y = startY + rowIdx * (tableH + gapY);
+      tables.push({ id: nextId(), x, y, w: tableW, h: tableH, label: 'Table ' + (tableCounter++) });
+    }
+
+    const rowsUsed = Math.ceil(totalTables / colsPerRow);
+    const maxY = startY + rowsUsed * (tableH + gapY);
+    growCanvasForY(maxY);
+    renderTables();
+  }
+
+  addTablesOk.addEventListener('click', ()=>{
+    const rows = clampRowsCols(addTablesRows.value);
+    const cols = clampRowsCols(addTablesCols.value);
+    addTablesModal.classList.remove('show');
+    addTableGrid(rows, cols);
+  });
+
   const groupsListEl = document.getElementById('groupsList');
   const btnAddGroup = document.getElementById('btnAddGroup');
   const btnDeleteGroup = document.getElementById('btnDeleteGroup');
@@ -723,12 +1151,12 @@
     if(m === 'table'){
       canvas.classList.add('mode-table');
       btnAddTable.classList.add('active-mode');
-      hint.textContent = 'Click and drag on the floor plan to draw a table. Press Esc to cancel.';
+      hint.textContent = 'Click and drag to draw a table. Keep drawing more, or press Esc / click + Table again to stop.';
       hint.style.display = 'block';
     } else if(m === 'chair'){
       canvas.classList.add('mode-chair');
       btnAddChair.classList.add('active-mode');
-      hint.textContent = 'Click anywhere on the floor plan to place a chair. Press Esc to cancel.';
+      hint.textContent = 'Click to place a chair. Keep clicking to place more, or press Esc / click + Chair again to stop.';
       hint.style.display = 'block';
     } else {
       hint.style.display = 'none';
@@ -803,7 +1231,8 @@
       tables.push({ id: nextId(), x, y, w, h, label: 'Table ' + (tableCounter++) });
       renderTables();
     }
-    setMode('idle');
+    // Stay in table-drawing mode so the user can keep adding more tables;
+    // click + Table again or press Esc to stop.
   });
 
   // ---------- Chair placement ----------
@@ -815,7 +1244,8 @@
     snapChairToNearestTable(chair);
     chairs.push(chair);
     renderChairs();
-    setMode('idle');
+    // Stay in chair-placement mode so the user can keep adding more chairs;
+    // click + Chair again or press Esc to stop.
   });
 
   // ---------- Geometry: snap a chair to the nearest table edge ----------
@@ -846,7 +1276,7 @@
       });
     });
     if(best && best.dist <= SNAP_THRESHOLD){
-      const offset = CHAIR_RADIUS + CHAIR_GAP;
+      const offset = CHAIR_TABLE_OVERLAP;
       chair.x = snap(best.x + best.nx * offset);
       chair.y = snap(best.y + best.ny * offset);
       chair.tableId = best.tableId;
@@ -883,13 +1313,17 @@
       handle.addEventListener('mousedown', (e)=>{
         e.stopPropagation();
         e.preventDefault();
+        setMode('idle');
         const startClientX = e.clientX, startClientY = e.clientY;
         const origW = t.w, origH = t.h;
 
         function onMove(ev){
           const dx = ev.clientX - startClientX;
           const dy = ev.clientY - startClientY;
-          t.w = Math.max(GRID_SIZE, origW + dx);
+          // Never let a resize push the table's right edge past the
+          // visible width — there's no horizontal scroll to reveal it.
+          const maxW = Math.max(GRID_SIZE, canvas.clientWidth - t.x);
+          t.w = Math.min(maxW, Math.max(GRID_SIZE, origW + dx));
           t.h = Math.max(GRID_SIZE, origH + dy);
           el.style.width = t.w + 'px';
           el.style.height = t.h + 'px';
@@ -908,22 +1342,42 @@
       });
 
       el.addEventListener('mousedown', (e)=>{
-        if(mode !== 'idle') return;
+        setMode('idle');
         e.preventDefault();
         didDrag = false;
         const startClientX = e.clientX, startClientY = e.clientY;
         const origX = t.x, origY = t.y;
         el.classList.add('grabbing');
 
+        // Any chairs attached to this table move along with it.
+        const linkedChairOrigins = chairs
+          .filter(c => c.tableId === t.id)
+          .map(c => ({ chair: c, x: c.x, y: c.y }));
+
         function onMove(ev){
           const dx = ev.clientX - startClientX;
           const dy = ev.clientY - startClientY;
           if(Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) didDrag = true;
           if(didDrag){
-            t.x = origX + dx;
-            t.y = origY + dy;
+            // Clamp to the visible width — no horizontal scroll to chase a
+            // table off-screen. The top edge is clamped too; the bottom is
+            // left open since vertical scrolling is allowed.
+            const maxTableX = Math.max(0, canvas.clientWidth - t.w);
+            t.x = Math.min(maxTableX, Math.max(0, origX + dx));
+            t.y = Math.max(0, origY + dy);
+            const actualDx = t.x - origX;
+            const actualDy = t.y - origY;
             el.style.left = t.x + 'px';
             el.style.top = t.y + 'px';
+            linkedChairOrigins.forEach(o => {
+              o.chair.x = o.x + actualDx;
+              o.chair.y = o.y + actualDy;
+              const chairEl = canvas.querySelector('.chair-el[data-chair-id="' + o.chair.id + '"]');
+              if(chairEl){
+                chairEl.style.left = o.chair.x + 'px';
+                chairEl.style.top = o.chair.y + 'px';
+              }
+            });
             trashCan.classList.toggle('hover', isOverTrash(ev.clientX, ev.clientY));
           }
         }
@@ -940,10 +1394,20 @@
             return;
           }
           if(didDrag){
-            t.x = snap(t.x);
-            t.y = snap(t.y);
-            // re-evaluate chairs that reference this table, in case it moved away/closer
-            chairs.filter(c => c.tableId === t.id).forEach(c => snapChairToNearestTable(c));
+            const maxTableX = Math.max(0, canvas.clientWidth - t.w);
+            const finalX = Math.min(maxTableX, Math.max(0, snap(t.x)));
+            const finalY = Math.max(0, snap(t.y));
+            const snapDx = finalX - origX;
+            const snapDy = finalY - origY;
+            t.x = finalX;
+            t.y = finalY;
+            // Reapply the table's exact (snapped) movement to its chairs, so
+            // they land precisely where they started relative to the table —
+            // no re-searching for the nearest table needed.
+            linkedChairOrigins.forEach(o => {
+              o.chair.x = snap(o.x + snapDx);
+              o.chair.y = snap(o.y + snapDy);
+            });
             renderTables();
             renderChairs();
           }
@@ -994,7 +1458,7 @@
       let didDrag = false;
 
       el.addEventListener('mousedown', (e)=>{
-        if(mode !== 'idle') return;
+        setMode('idle');
         e.preventDefault();
         didDrag = false;
         const startClientX = e.clientX, startClientY = e.clientY;
@@ -1006,8 +1470,10 @@
           const dy = ev.clientY - startClientY;
           if(Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) didDrag = true;
           if(didDrag){
-            c.x = origX + dx;
-            c.y = origY + dy;
+            // Keep the chair within the visible width; no horizontal
+            // scroll exists to bring it back into view.
+            c.x = Math.min(canvas.clientWidth, Math.max(0, origX + dx));
+            c.y = Math.max(0, origY + dy);
             el.style.left = c.x + 'px';
             el.style.top = c.y + 'px';
             trashCan.classList.toggle('hover', isOverTrash(ev.clientX, ev.clientY));
@@ -1077,6 +1543,7 @@
 
   function renderStudentList(){
     studentListEl.innerHTML = '';
+    studentListHeading.textContent = 'Student Roster' + (students.length ? ' (' + students.length + ')' : '');
     const seatedIds = new Set(chairs.filter(c => c.studentId).map(c => c.studentId));
     const unseated = students.filter(s => !seatedIds.has(s.id));
 
@@ -1292,54 +1759,74 @@
     return a;
   }
 
-  // The four seat positions around a table — one per side — each offset
-  // outward from the table edge by a chair's radius plus a small gap.
-  function tableSideSeats(t){
-    const offset = CHAIR_RADIUS + CHAIR_GAP;
-    return [
-      { x: snap(t.x + t.w / 2), y: snap(t.y - offset) },        // top
-      { x: snap(t.x + t.w + offset), y: snap(t.y + t.h / 2) },  // right
-      { x: snap(t.x + t.w / 2), y: snap(t.y + t.h + offset) },  // bottom
-      { x: snap(t.x - offset), y: snap(t.y + t.h / 2) }         // left
+  // N seat positions around a table, distributed one edge at a time
+  // (top, right, bottom, left, then back to top for extras) so each edge
+  // gets as even a share as possible. Seats on a given edge are centered
+  // along it: a single seat sits at the midpoint; two seats sit at the
+  // 1/3 and 2/3 points; in general the k-th of n seats on an edge sits at
+  // the k/(n+1) fraction along it, so seats never crowd the corners.
+  function tableSideSeats(t, count){
+    const offset = CHAIR_TABLE_OVERLAP;
+    const w = t.w, h = t.h;
+    const edges = [
+      { len: w, point: (frac)=> ({ x: t.x + frac * w,       y: t.y,           nx: 0,  ny: -1 }) }, // top
+      { len: h, point: (frac)=> ({ x: t.x + w,               y: t.y + frac * h, nx: 1,  ny: 0  }) }, // right
+      { len: w, point: (frac)=> ({ x: t.x + w - frac * w,    y: t.y + h,       nx: 0,  ny: 1  }) }, // bottom
+      { len: h, point: (frac)=> ({ x: t.x,                   y: t.y + h - frac * h, nx: -1, ny: 0 }) } // left
     ];
+    const edgeCounts = [0, 0, 0, 0];
+    for(let i = 0; i < count; i++) edgeCounts[i % 4]++;
+
+    const seats = [];
+    edges.forEach((edge, idx) => {
+      const k = edgeCounts[idx];
+      for(let s = 0; s < k; s++){
+        const frac = (s + 1) / (k + 1);
+        const p = edge.point(frac);
+        // Round to the nearest pixel rather than snapping to the grid —
+        // grid-snapping here would shift the seat off true center/1-3/2-3
+        // whenever the table's width or height isn't a clean multiple of
+        // the grid, which is exactly what looked "off-center".
+        seats.push({ x: Math.round(p.x + p.nx * offset), y: Math.round(p.y + p.ny * offset) });
+      }
+    });
+    return seats;
   }
 
-  // One randomized pass: greedily seats students into the (up to 4) side
-  // seats of each table, never letting two students from the same "keep
-  // apart" group share a table. A table can never end up with more than 4
-  // seats since only 4 exist per table. Anyone who can't be placed
-  // conflict-free is left unplaced for now.
-  function attemptSeating(){
-    const shuffledStudents = shuffleArray(students);
-    let seatCounter = 0;
-    const seats = [];
-    tables.forEach(t => {
-      tableSideSeats(t).forEach(pos => {
-        seats.push({ seatKey: seatCounter++, tableId: t.id, x: pos.x, y: pos.y });
+  // The number embedded in a table's label ("Table 3" -> 3), used to fill
+  // tables in order; falls back to the table's id if the label was renamed
+  // to something without a trailing number.
+  function tableLabelNumber(t){
+    const m = t.label && String(t.label).match(/(\d+)\s*$/);
+    return m ? parseInt(m[1], 10) : t.id;
+  }
+
+  // One randomized pass: fills tables in order (lowest table number first,
+  // fully seating one before moving to the next) with a shuffled draw of
+  // students, never letting two students from the same "keep apart" group
+  // share a table. Anyone who can't be placed conflict-free by the time
+  // every table's seats are spoken for is left unplaced for now.
+  function attemptSeating(perTable){
+    const orderedTables = [...tables].sort((a, b) => tableLabelNumber(a) - tableLabelNumber(b));
+    const remaining = shuffleArray(students);
+    const assignment = []; // {tableId, x, y, studentId}
+
+    orderedTables.forEach(t => {
+      const occupants = [];
+      tableSideSeats(t, perTable).forEach(seatPos => {
+        let chosen = -1;
+        for(let i = 0; i < remaining.length; i++){
+          const hasConflict = occupants.some(sid => studentsConflict(sid, remaining[i].id));
+          if(!hasConflict){ chosen = i; break; }
+        }
+        if(chosen === -1) return; // no remaining student can sit here conflict-free
+        const student = remaining.splice(chosen, 1)[0];
+        occupants.push(student.id);
+        assignment.push({ tableId: t.id, x: seatPos.x, y: seatPos.y, studentId: student.id });
       });
     });
-    const seatsAvail = shuffleArray(seats);
-    const occupantsByTable = {};
-    const assignment = []; // {tableId, x, y, studentId}
-    const unplaced = [];
 
-    shuffledStudents.forEach(student => {
-      let chosen = -1;
-      for(let i = 0; i < seatsAvail.length; i++){
-        const occupants = occupantsByTable[seatsAvail[i].tableId] || [];
-        const hasConflict = occupants.some(sid => studentsConflict(sid, student.id));
-        if(!hasConflict){ chosen = i; break; }
-      }
-      if(chosen === -1){
-        unplaced.push(student.id);
-        return;
-      }
-      const seat = seatsAvail.splice(chosen, 1)[0];
-      if(!occupantsByTable[seat.tableId]) occupantsByTable[seat.tableId] = [];
-      occupantsByTable[seat.tableId].push(student.id);
-      assignment.push({ tableId: seat.tableId, x: seat.x, y: seat.y, studentId: student.id });
-    });
-
+    const unplaced = remaining.map(s => s.id);
     return { assignment, unplaced };
   }
 
@@ -1355,10 +1842,12 @@
     chairs.forEach(c => { if(c.tableId !== null) maxY = Math.max(maxY, c.y); });
 
     const startY = snap(maxY + 90);
-    const cols = 10;
     const spacingX = 90;
     const spacingY = 90;
     const startX = 70;
+    // As many columns as fit the visible width — there's no horizontal
+    // scroll to reveal a row that runs past the edge.
+    const cols = Math.max(1, Math.floor((canvas.clientWidth - startX) / spacingX) || 1);
 
     orphanChairs.forEach((c, i) => {
       const col = i % cols;
@@ -1374,11 +1863,23 @@
   btnRandomize.addEventListener('click', async ()=>{
     if(students.length === 0){ await showAlert('Import a student list first.'); return; }
 
+    const chosenSeatsPerTable = await showSeatsPerTablePrompt();
+    if(chosenSeatsPerTable === null) return; // cancelled
+
+    // Not enough seats for everyone at the current tables? Add just enough
+    // new tables (in a row below the existing ones) to cover the shortfall.
+    const capacity = tables.length * chosenSeatsPerTable;
+    if(capacity < students.length){
+      const shortfall = students.length - capacity;
+      const tablesNeeded = Math.ceil(shortfall / chosenSeatsPerTable);
+      addTableGrid(1, tablesNeeded);
+    }
+
     const hasGroups = groups.some(g => g.studentIds.length > 1);
     const attemptsToTry = hasGroups ? 60 : 1;
     let best = null;
     for(let i = 0; i < attemptsToTry; i++){
-      const result = attemptSeating();
+      const result = attemptSeating(chosenSeatsPerTable);
       if(!best || result.unplaced.length < best.unplaced.length) best = result;
       if(best.unplaced.length === 0) break;
     }
@@ -1410,8 +1911,180 @@
     renderStudentList();
   });
 
+  // ---------- Printing ----------
+  // window.print() may be blocked by this preview's sandbox, so these are
+  // toggle buttons rather than one-shot actions: turning one on sets a body
+  // class that the print stylesheet reacts to. Whichever mode is toggled on
+  // is what prints — whether triggered by our button (best-effort) or by the
+  // browser's own Print / Ctrl+P command. Layout is (re)computed fresh right
+  // before printing via 'beforeprint', so it's always up to date.
+  function computeContentBounds(tableList, chairList){
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    tableList.forEach(t => {
+      minX = Math.min(minX, t.x); minY = Math.min(minY, t.y);
+      maxX = Math.max(maxX, t.x + t.w); maxY = Math.max(maxY, t.y + t.h);
+    });
+    chairList.forEach(c => {
+      minX = Math.min(minX, c.x - CHAIR_RADIUS); minY = Math.min(minY, c.y - CHAIR_RADIUS);
+      maxX = Math.max(maxX, c.x + CHAIR_RADIUS); maxY = Math.max(maxY, c.y + CHAIR_RADIUS);
+    });
+    if(!isFinite(minX)){ minX = 0; minY = 0; maxX = PRINT_PAGE_W; maxY = PRINT_PAGE_H; }
+    return { minX, minY, maxX, maxY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+  }
+
+  function buildPrintTablePage(table){
+    const tableChairs = chairs.filter(c => c.tableId === table.id);
+    const b = computeContentBounds([table], tableChairs);
+    const scale = Math.min(PRINT_PAGE_W / b.w, PRINT_PAGE_H / b.h, 2.2);
+
+    const page = document.createElement('div');
+    page.className = 'print-page';
+
+    const heading = document.createElement('h2');
+    heading.textContent = table.label + ' (' + tableChairs.length + (tableChairs.length === 1 ? ' student' : ' students') + ')';
+    page.appendChild(heading);
+
+    const box = document.createElement('div');
+    box.className = 'print-page-canvas';
+    box.style.width = (b.w * scale) + 'px';
+    box.style.height = (b.h * scale) + 'px';
+
+    const tableEl = document.createElement('div');
+    tableEl.className = 'print-table-el';
+    tableEl.style.left = ((table.x - b.minX) * scale) + 'px';
+    tableEl.style.top = ((table.y - b.minY) * scale) + 'px';
+    tableEl.style.width = (table.w * scale) + 'px';
+    tableEl.style.height = (table.h * scale) + 'px';
+    box.appendChild(tableEl);
+
+    tableChairs.forEach(c => {
+      const chairSize = 78 * scale;
+      const chairEl = document.createElement('div');
+      chairEl.className = 'print-chair-el';
+      chairEl.style.width = chairSize + 'px';
+      chairEl.style.height = chairSize + 'px';
+      chairEl.style.left = (((c.x - b.minX) * scale) - chairSize / 2) + 'px';
+      chairEl.style.top = (((c.y - b.minY) * scale) - chairSize / 2) + 'px';
+      chairEl.style.fontSize = Math.max(9, 11 * scale) + 'px';
+      const student = students.find(s => s.id === c.studentId);
+      chairEl.textContent = student ? studentName(student) : 'empty';
+      box.appendChild(chairEl);
+    });
+
+    page.appendChild(box);
+    return page;
+  }
+
+  function refreshPrintClassroomLayout(){
+    const b = computeContentBounds(tables, chairs);
+    const scale = Math.min(PRINT_PAGE_W / b.w, PRINT_PAGE_H / b.h);
+    // These custom properties only take visual effect under the print media
+    // query (see body.print-fit-page #canvas in the stylesheet), so the
+    // on-screen view is never affected.
+    canvas.style.setProperty('--print-scale', String(scale));
+    canvas.style.setProperty('--print-tx', (-b.minX) + 'px');
+    canvas.style.setProperty('--print-ty', (-b.minY) + 'px');
+  }
+
+  function refreshPrintByTablePages(){
+    printPagesEl.innerHTML = '';
+    tables.forEach(t => printPagesEl.appendChild(buildPrintTablePage(t)));
+
+    const orphanChairs = chairs.filter(c => c.tableId === null && c.studentId !== null);
+    if(orphanChairs.length > 0){
+      const page = document.createElement('div');
+      page.className = 'print-page';
+      const heading = document.createElement('h2');
+      heading.textContent = 'Not Seated At A Table';
+      page.appendChild(heading);
+      const list = document.createElement('ul');
+      orphanChairs.forEach(c => {
+        const student = students.find(s => s.id === c.studentId);
+        const li = document.createElement('li');
+        li.textContent = student ? studentName(student) : '';
+        list.appendChild(li);
+      });
+      page.appendChild(list);
+      printPagesEl.appendChild(page);
+    }
+  }
+
+  window.addEventListener('beforeprint', ()=>{
+    if(document.body.classList.contains('print-fit-page')) refreshPrintClassroomLayout();
+    if(document.body.classList.contains('print-by-table')) refreshPrintByTablePages();
+  });
+
+  function setPrintMode(newMode){
+    // 'classroom' | 'byTable' | null — turning one on turns the other off,
+    // since only one print layout can be active at a time.
+    document.body.classList.remove('print-fit-page', 'print-by-table');
+    btnPrintClassroom.classList.remove('active-mode');
+    btnPrintByTable.classList.remove('active-mode');
+    if(newMode === 'classroom'){
+      document.body.classList.add('print-fit-page');
+      btnPrintClassroom.classList.add('active-mode');
+      refreshPrintClassroomLayout();
+    } else if(newMode === 'byTable'){
+      document.body.classList.add('print-by-table');
+      btnPrintByTable.classList.add('active-mode');
+      refreshPrintByTablePages();
+    } else {
+      printPagesEl.innerHTML = '';
+    }
+  }
+
+  btnPrintClassroom.addEventListener('click', async ()=>{
+    if(tables.length === 0 && chairs.length === 0){
+      await showAlert('Add at least one table before printing.');
+      return;
+    }
+    const turningOn = !document.body.classList.contains('print-fit-page');
+    setPrintMode(turningOn ? 'classroom' : null);
+    if(turningOn){
+      try{ window.print(); }catch(err){ /* blocked by sandbox — use the browser's Print menu */ }
+    }
+  });
+
+  btnPrintByTable.addEventListener('click', async ()=>{
+    const orphanChairs = chairs.filter(c => c.tableId === null && c.studentId !== null);
+    if(tables.length === 0 && orphanChairs.length === 0){
+      await showAlert('Add at least one table before printing.');
+      return;
+    }
+    const turningOn = !document.body.classList.contains('print-by-table');
+    setPrintMode(turningOn ? 'byTable' : null);
+    if(turningOn){
+      try{ window.print(); }catch(err){ /* blocked by sandbox — use the browser's Print menu */ }
+    }
+  });
+
   // ---------- Export classroom ----------
+  const exportModal = document.getElementById('exportModal');
+  const exportFileName = document.getElementById('exportFileName');
+  const exportOk = document.getElementById('exportOk');
+  const exportCancel = document.getElementById('exportCancel');
+
+  function sanitizeFileName(name){
+    const cleaned = (name || '').trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
+    return cleaned || 'classroom-seating';
+  }
+
   btnExport.addEventListener('click', ()=>{
+    exportFileName.value = 'classroom-seating';
+    exportModal.classList.add('show');
+    exportFileName.focus();
+    exportFileName.select();
+  });
+  exportCancel.addEventListener('click', ()=> exportModal.classList.remove('show'));
+  exportModal.addEventListener('click', (e)=>{ if(e.target === exportModal) exportModal.classList.remove('show'); });
+  exportFileName.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') exportOk.click();
+  });
+
+  exportOk.addEventListener('click', ()=>{
+    const fileBase = sanitizeFileName(exportFileName.value);
+    exportModal.classList.remove('show');
+
     const lines = [];
     lines.push('# Classroom Seating Export');
     tables.forEach(t => lines.push(['TABLE', t.x.toFixed(1), t.y.toFixed(1), t.w.toFixed(1), t.h.toFixed(1), t.label].join('|')));
@@ -1437,7 +2110,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'classroom-seating.txt';
+    a.download = fileBase + '.txt';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1549,7 +2222,5 @@
   renderGroups();
 })();
 </script>
-
-<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="mr_b" data-color="#FFDD00" data-emoji="☕"  data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
 </body>
 </html>
