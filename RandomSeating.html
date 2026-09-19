@@ -11,16 +11,24 @@
 <meta name="author" content="Classroom Seating Chart">
 <link rel="canonical" href="https://randomseat.com/">
 
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://randomseat.com/">
 <meta property="og:title" content="Free Classroom Seating Chart Maker | Randomize & Print Student Seating">
 <meta property="og:description" content="Draw tables, add chairs, import your roster, and randomize student seating in one click. Keep specific students apart, export your layout, and print a clean seating chart.">
 <meta property="og:site_name" content="Classroom Seating Chart Maker">
+<meta property="og:image" content="https://randomseat.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://randomseat.com/">
 <meta name="twitter:title" content="Free Classroom Seating Chart Maker">
 <meta name="twitter:description" content="Draw tables, add chairs, import your roster, and randomize student seating in one click — free and works right in your browser.">
+<meta name="twitter:image" content="https://randomseat.com/og-image.png">
 
 <script type="application/ld+json">
 {
@@ -617,13 +625,6 @@
     pointer-events:none;
   }
 
-  .modal textarea#privacyCheckText{
-    height: 90px;
-    font-size:0.78rem;
-    color: var(--ink-soft);
-    background: var(--paper);
-  }
-
   .text-input{
     width:100%;
     font-family: var(--font-body);
@@ -884,8 +885,6 @@
   <div class="modal">
     <h3>Your Privacy</h3>
     <p class="sub">No data from this tool is ever saved or sent anywhere. Your tables, chairs, roster, and groups exist only in this browser tab's memory — nothing is uploaded to a server or stored in the cloud. Closing or reloading the page clears everything unless you use "Export Classroom" to save your own copy to a file.</p>
-    <p class="sub">Want to check for yourself? Copy the text below into any AI chatbot and ask it to verify:</p>
-    <textarea id="privacyCheckText" readonly></textarea>
     <div class="modal-actions">
       <button class="ok" id="privacyOkBtn">Got it</button>
     </div>
@@ -1063,8 +1062,6 @@
   const privacyModal = document.getElementById('privacyModal');
   const btnPrivacyInfo = document.getElementById('btnPrivacyInfo');
   const privacyOkBtn = document.getElementById('privacyOkBtn');
-  const privacyCheckText = document.getElementById('privacyCheckText');
-  privacyCheckText.value = 'Please fetch and read the page at https://randomseat.com/ and look at its HTML/JavaScript source. Confirm whether it sends, uploads, or stores any user data (such as student names or seating layouts) to a server or third party, or whether everything is processed entirely in the visitor\'s own browser with no such network calls. Report what you find.';
 
   btnPrivacyInfo.addEventListener('click', ()=> privacyModal.classList.add('show'));
   privacyOkBtn.addEventListener('click', ()=> privacyModal.classList.remove('show'));
