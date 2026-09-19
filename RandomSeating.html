@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Classroom Seating Chart Maker | Randomize & Print Student Seating</title>
+<meta name="description" content="Free online classroom seating chart maker for teachers. Draw tables, add chairs, import your class roster, and randomize student seating in one click — with support for keeping specific students apart. Export, print, or reload your layout anytime.">
+<meta name="keywords" content="classroom seating chart, seating chart maker, randomize student seating, classroom layout tool, teacher seating chart generator, free seating chart, student desk arrangement, random seat picker">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Classroom Seating Chart">
+<link rel="canonical" href="https://randomseat.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://randomseat.com/">
+<meta property="og:title" content="Free Classroom Seating Chart Maker | Randomize & Print Student Seating">
+<meta property="og:description" content="Draw tables, add chairs, import your roster, and randomize student seating in one click. Keep specific students apart, export your layout, and print a clean seating chart.">
+<meta property="og:site_name" content="Classroom Seating Chart Maker">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:url" content="https://randomseat.com/">
+<meta name="twitter:title" content="Free Classroom Seating Chart Maker">
+<meta name="twitter:description" content="Draw tables, add chairs, import your roster, and randomize student seating in one click — free and works right in your browser.">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Classroom Seating Chart Maker",
+  "url": "https://randomseat.com/",
+  "applicationCategory": "EducationApplication",
+  "operatingSystem": "Any (runs in a web browser)",
+  "description": "Free online tool for teachers to design a classroom floor plan, import a student roster, and randomize seating — with the ability to keep specific students apart, export/import layouts, and print a clean seating chart.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "featureList": [
+    "Draw and resize tables",
+    "Add and reposition chairs",
+    "Import a student roster",
+    "One-click randomized seating",
+    "Keep-apart student groups",
+    "Export and import classroom layouts",
+    "Print-friendly seating chart"
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EAF1EC;
+    --paper-line:#D3E0D8;
+    --ink:#1B2E28;
+    --ink-soft:#4C5F58;
+    --accent:#C97A2B;
+    --accent-dark:#A5601C;
+    --deep:#2E4A40;
+    --deep-dark:#233A32;
+    --wood:#B98450;
+    --wood-dark:#8C6239;
+    --chair:#3D6B5C;
+    --chair-empty:#9FB8AD;
+    --surface:#FFFFFF;
+    --border:#D8CDBB;
+    --danger:#B84C3E;
+    --radius:10px;
+    --font-display:'Space Grotesk', 'Segoe UI', sans-serif;
+    --font-body:'Inter', 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1B2422;
+      --paper-line:#28332F;
+      --ink:#EDEFEC;
+      --ink-soft:#B7C2BC;
+      --surface:#232E2A;
+      --border:#33443C;
+      --chair-empty:#3E5049;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1B2422;
+    --paper-line:#28332F;
+    --ink:#EDEFEC;
+    --ink-soft:#B7C2BC;
+    --surface:#232E2A;
+    --border:#33443C;
+    --chair-empty:#3E5049;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--deep-dark);
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+  }
+
+  header{
+    background: var(--deep);
+    color:#F3EFE4;
+    padding: 14px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    border-bottom: 3px solid var(--deep-dark);
+  }
+  header h1{
+    font-family: var(--font-display);
+    font-weight:700;
+    font-size: 1.25rem;
+    margin:0;
+    letter-spacing: 0.2px;
+  }
+  header h1 span{
+    display:block;
+    font-family: var(--font-body);
+    font-weight:500;
+    font-size:0.72rem;
+    color:#CFE0D6;
+    margin-top:2px;
+  }
+
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  button.tool{
+    font-family: var(--font-body);
+    font-weight:600;
+    font-size: 0.85rem;
+    padding: 9px 14px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    background: rgba(255,255,255,0.08);
+    color:#F3EFE4;
+    cursor:pointer;
+    transition: background .15s ease, transform .1s ease;
+  }
+  button.tool:hover{ background: rgba(255,255,255,0.18); }
+  button.tool:active{ transform: translateY(1px); }
+  button.tool.primary{ background: var(--accent); color:#241000; }
+  button.tool.primary:hover{ background: var(--accent-dark); }
+  button.tool.active-mode{
+    background: #F3EFE4;
+    color: var(--deep-dark);
+    box-shadow: 0 0 0 2px var(--accent) inset;
+  }
+
+  main{
+    flex:1;
+    display:flex;
+    overflow:hidden;
+  }
+
+  #canvasWrap{
+    flex:1;
+    position:relative;
+    overflow:auto;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  #canvas{
+    position:relative;
+    width: 1600px;
+    height: 1100px;
+  }
+  #canvas.mode-table{ cursor: crosshair; }
+  #canvas.mode-chair{ cursor: crosshair; }
+
+  #hint{
+    position:absolute;
+    top:10px;
+    left:50%;
+    transform:translateX(-50%);
+    background: var(--deep-dark);
+    color:#F3EFE4;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size:0.8rem;
+    font-weight:500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    display:none;
+    z-index:50;
+    white-space:nowrap;
+    pointer-events:none;
+  }
+
+  #trashCan{
+    position: fixed;
+    right: 26px;
+    bottom: 26px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 1.6rem;
+    z-index: 100;
+    transition: background .12s ease, border-color .12s ease, transform .12s ease;
+    user-select:none;
+  }
+  #trashCan.hover{
+    background: var(--danger);
+    border-color: var(--danger);
+    transform: scale(1.12);
+  }
+
+  .table-el{
+    position:absolute;
+    background: var(--wood);
+    border: 2px solid var(--wood-dark);
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,0.12), 0 3px 6px rgba(0,0,0,0.15);
+    min-width: 20px;
+    min-height: 20px;
+    cursor: grab;
+    display:flex;
+    align-items:flex-end;
+    justify-content:flex-end;
+    padding:6px 8px;
+    user-select:none;
+  }
+  .table-el.grabbing{ cursor:grabbing; }
+  .table-el .table-label{
+    font-size:0.7rem;
+    color: rgba(0,0,0,0.45);
+    font-weight:700;
+    letter-spacing:0.3px;
+    pointer-events:none;
+  }
+  .resize-handle{
+    position:absolute;
+    right:-7px;
+    bottom:-7px;
+    width:16px;
+    height:16px;
+    background: var(--wood-dark);
+    border: 2px solid #FFFFFF;
+    border-radius: 4px;
+    cursor: nwse-resize;
+    z-index: 2;
+  }
+  .draw-preview{
+    position:absolute;
+    border: 2px dashed var(--accent);
+    background: rgba(201,122,43,0.15);
+    pointer-events:none;
+  }
+
+  .chair-el{
+    position:absolute;
+    width: 78px;
+    height: 78px;
+    margin-left:-39px;
+    margin-top:-39px;
+    border-radius: 50%;
+    background: var(--chair-empty);
+    border: 2px solid var(--deep);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size: 0.7rem;
+    font-weight:600;
+    color: var(--deep-dark);
+    padding: 4px;
+    cursor:grab;
+    user-select:none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.18);
+    transition: background .12s ease, box-shadow .12s ease;
+    line-height:1.15;
+  }
+  .chair-el.grabbing{ cursor:grabbing; }
+  .chair-el.occupied{
+    background: var(--chair);
+    color: #F3EFE4;
+  }
+  .chair-el.dragover{
+    box-shadow: 0 0 0 4px var(--accent);
+  }
+  .chair-el .chair-table-label{
+    display:block;
+    font-size:0.6rem;
+    font-weight:500;
+    opacity:0.75;
+    margin-top:2px;
+  }
+
+  aside{
+    width: 260px;
+    min-width:220px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .aside-header{
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .aside-header h2{
+    font-family: var(--font-display);
+    font-size: 1rem;
+    margin:0 0 2px;
+    color: var(--ink);
+  }
+  .aside-header p{
+    margin:0;
+    font-size:0.75rem;
+    color: var(--ink-soft);
+  }
+  #studentList{
+    list-style:none;
+    margin:0;
+    padding: 8px;
+    overflow-y:auto;
+    flex:1;
+  }
+  #studentList li{
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    margin-bottom: 6px;
+    font-size: 0.86rem;
+    font-weight:500;
+    cursor:grab;
+    color: var(--ink);
+  }
+  #studentList li:active{ cursor:grabbing; }
+  #studentList li.dragging{ opacity:0.4; }
+  #studentList .empty-note{
+    color: var(--ink-soft);
+    font-size:0.8rem;
+    text-align:center;
+    padding: 24px 8px;
+    cursor:default;
+    background:none;
+    border:none;
+  }
+
+  .aside-footer{
+    padding: 10px 14px 14px;
+    border-top: 1px solid var(--border);
+    font-size:0.72rem;
+    color: var(--ink-soft);
+  }
+
+  #groupsPanel{
+    width: 250px;
+    min-width: 210px;
+    border-left: 1px solid var(--border);
+  }
+  .aside-header .group-btns{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .aside-header .group-btns button{
+    font-family: var(--font-body);
+    font-weight:600;
+    font-size:0.76rem;
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .aside-header .group-btns button.add-btn{
+    background: var(--accent);
+    border-color: var(--accent-dark);
+    color: #241000;
+  }
+  .aside-header .group-btns button.delete-btn:hover{
+    background: var(--danger);
+    border-color: var(--danger);
+    color:#fff;
+  }
+  #groupsList{
+    list-style:none;
+    margin:0;
+    padding:8px;
+    overflow-y:auto;
+    flex:1;
+  }
+  .group-card{
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    cursor:pointer;
+    outline:none;
+  }
+  .group-card.selected{
+    box-shadow: 0 0 0 2px var(--accent);
+    border-color: var(--accent-dark);
+  }
+  .group-card.dragover{
+    box-shadow: 0 0 0 2px var(--deep);
+  }
+  .group-card .group-name{
+    font-weight:700;
+    font-size:0.82rem;
+    color: var(--ink);
+    margin-bottom:6px;
+  }
+  .group-members{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    min-height: 26px;
+  }
+  .group-members .empty-note{
+    font-size:0.72rem;
+    color: var(--ink-soft);
+    padding:2px 0;
+  }
+  .member-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 6px 3px 9px;
+    font-size:0.72rem;
+    font-weight:500;
+    color: var(--ink);
+  }
+  .member-chip button{
+    border:none;
+    background:none;
+    color: var(--ink-soft);
+    font-size:0.85rem;
+    line-height:1;
+    cursor:pointer;
+    padding:0 2px;
+  }
+  .member-chip button:hover{ color: var(--danger); }
+  #groupsList .empty-note-list{
+    color: var(--ink-soft);
+    font-size:0.8rem;
+    text-align:center;
+    padding: 24px 8px;
+  }
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background: rgba(20,30,26,0.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:200;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal{
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 22px;
+    width: 440px;
+    max-width: 90vw;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  .modal h3{
+    margin: 0 0 6px;
+    font-family: var(--font-display);
+    color: var(--ink);
+  }
+  .modal p.sub{
+    margin: 0 0 14px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+  }
+  .modal textarea{
+    width:100%;
+    height: 220px;
+    resize: vertical;
+    font-family: 'Inter', monospace;
+    font-size: 0.85rem;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top: 16px;
+  }
+  .modal-actions button{
+    font-family: var(--font-body);
+    font-weight:600;
+    font-size:0.85rem;
+    padding: 9px 16px;
+    border-radius: 8px;
+    border:1px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .modal-actions button.ok{
+    background: var(--accent);
+    border-color: var(--accent-dark);
+    color:#241000;
+  }
+
+  #fileInput{ display:none; }
+
+  @media (max-width: 720px){
+    aside{ width: 180px; min-width:150px; }
+    header h1{ font-size:1.05rem; }
+    button.tool{ padding:7px 10px; font-size:0.78rem; }
+  }
+
+  @media print{
+    header, aside, #trashCan, #hint, .modal-overlay{ display:none !important; }
+    html, body{ height:auto !important; overflow:visible !important; background:#fff !important; }
+    main{ display:block !important; overflow:visible !important; }
+    #canvasWrap{
+      position:static !important;
+      overflow:visible !important;
+      background:#fff !important;
+      background-image:none !important;
+    }
+    #canvas{ position:relative !important; }
+    .table-el{ box-shadow:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .chair-el{ box-shadow:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .resize-handle{ display:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Classroom Seating Chart<span>Draw tables, add chairs, drag students to seats</span></h1>
+  <div class="toolbar">
+    <button class="tool" id="btnAddTable">+ Table</button>
+    <button class="tool" id="btnAddChair">+ Chair</button>
+    <button class="tool" id="btnImportStudents">Import Student List</button>
+    <button class="tool primary" id="btnRandomize">Randomize</button>
+    <button class="tool" id="btnUnseat">Unseat All</button>
+    <button class="tool" id="btnExport">Export Classroom</button>
+    <button class="tool" id="btnImportClassroom">Import Classroom</button>
+    <input type="file" id="fileInput" accept=".txt">
+  </div>
+</header>
+
+<main>
+  <div id="canvasWrap">
+    <div id="hint"></div>
+    <div id="canvas"></div>
+    <div id="trashCan" title="Drag a chair or table here to delete it">&#128465;</div>
+  </div>
+
+  <aside>
+    <div class="aside-header">
+      <h2>Student Roster</h2>
+      <p>Drag a name onto an empty chair</p>
+    </div>
+    <ul id="studentList"></ul>
+    <div class="aside-footer" id="rosterCount">0 students, 0 seated</div>
+  </aside>
+
+  <aside id="groupsPanel">
+    <div class="aside-header">
+      <h2>Keep Apart Groups</h2>
+      <p>Drag students in — none will share a table</p>
+      <div class="group-btns">
+        <button class="add-btn" id="btnAddGroup">+ Add Group</button>
+        <button class="delete-btn" id="btnDeleteGroup">Delete Group</button>
+      </div>
+    </div>
+    <ul id="groupsList"></ul>
+  </aside>
+</main>
+
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h3>Import Student List</h3>
+    <p class="sub">Paste one student per line, formatted as <strong>Last, First</strong>. This replaces the current roster.</p>
+    <textarea id="importTextarea" placeholder="Garcia, Maria&#10;Chen, Wei&#10;Okafor, David"></textarea>
+    <div class="modal-actions">
+      <button id="importCancel">Cancel</button>
+      <button class="ok" id="importOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal">
+    <h3 id="confirmTitle">Confirm</h3>
+    <p class="sub" id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button id="confirmCancelBtn">Cancel</button>
+      <button class="ok" id="confirmOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const GRID_SIZE = 28;
+  const CHAIR_RADIUS = 39;
+  const CHAIR_GAP = 6;
+  const SNAP_THRESHOLD = 110; // how close a chair must be to a table to snap to its edge
+  const DRAG_THRESHOLD = 4;   // px of movement before a mousedown counts as a drag
+
+  // ---------- State ----------
+  let students = [];   // {id, last, first}
+  let tables = [];     // {id, x, y, w, h, label}
+  let chairs = [];     // {id, x, y, studentId, tableId}
+  let groups = [];     // {id, name, studentIds:[]}
+  let idCounter = 1;
+  let tableCounter = 1;
+  let groupCounter = 1;
+  let selectedGroupId = null;
+  const nextId = () => idCounter++;
+
+  let mode = "idle"; // idle | table | chair
+  let drawing = null; // {startX,startY,el}
+
+  // ---------- Elements ----------
+  const canvas = document.getElementById('canvas');
+  const hint = document.getElementById('hint');
+  const studentListEl = document.getElementById('studentList');
+  const rosterCount = document.getElementById('rosterCount');
+
+  const btnAddTable = document.getElementById('btnAddTable');
+  const btnAddChair = document.getElementById('btnAddChair');
+  const btnImportStudents = document.getElementById('btnImportStudents');
+  const btnRandomize = document.getElementById('btnRandomize');
+  const btnUnseat = document.getElementById('btnUnseat');
+  const btnExport = document.getElementById('btnExport');
+  const btnImportClassroom = document.getElementById('btnImportClassroom');
+  const fileInput = document.getElementById('fileInput');
+
+  const importModal = document.getElementById('importModal');
+  const importTextarea = document.getElementById('importTextarea');
+  const importOk = document.getElementById('importOk');
+  const importCancel = document.getElementById('importCancel');
+
+  // ---------- Custom confirm/alert (native browser dialogs may be blocked in this preview) ----------
+  const confirmOverlay = document.getElementById('confirmOverlay');
+  const confirmMessage = document.getElementById('confirmMessage');
+  const confirmOkBtn = document.getElementById('confirmOkBtn');
+  const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+  let confirmResolve = null;
+
+  function closeConfirm(result){
+    confirmOverlay.classList.remove('show');
+    if(confirmResolve) confirmResolve(result);
+    confirmResolve = null;
+  }
+  confirmOkBtn.addEventListener('click', ()=> closeConfirm(true));
+  confirmCancelBtn.addEventListener('click', ()=> closeConfirm(false));
+  confirmOverlay.addEventListener('click', (e)=>{ if(e.target === confirmOverlay) closeConfirm(false); });
+
+  function showConfirm(message){
+    return new Promise(resolve => {
+      confirmResolve = resolve;
+      confirmMessage.textContent = message;
+      confirmCancelBtn.style.display = '';
+      confirmOkBtn.textContent = 'Delete';
+      confirmOverlay.classList.add('show');
+    });
+  }
+  function showAlert(message){
+    return new Promise(resolve => {
+      confirmResolve = resolve;
+      confirmMessage.textContent = message;
+      confirmCancelBtn.style.display = 'none';
+      confirmOkBtn.textContent = 'OK';
+      confirmOverlay.classList.add('show');
+    });
+  }
+
+  const groupsListEl = document.getElementById('groupsList');
+  const btnAddGroup = document.getElementById('btnAddGroup');
+  const btnDeleteGroup = document.getElementById('btnDeleteGroup');
+
+  const trashCan = document.getElementById('trashCan');
+  function isOverTrash(clientX, clientY){
+    const r = trashCan.getBoundingClientRect();
+    return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+  }
+
+  function studentName(s){ return s.last + ", " + s.first; }
+  function snap(v){ return Math.round(v / GRID_SIZE) * GRID_SIZE; }
+
+  // ---------- Mode handling ----------
+  function setMode(m){
+    mode = m;
+    canvas.classList.remove('mode-table','mode-chair');
+    btnAddTable.classList.remove('active-mode');
+    btnAddChair.classList.remove('active-mode');
+    if(m === 'table'){
+      canvas.classList.add('mode-table');
+      btnAddTable.classList.add('active-mode');
+      hint.textContent = 'Click and drag on the floor plan to draw a table. Press Esc to cancel.';
+      hint.style.display = 'block';
+    } else if(m === 'chair'){
+      canvas.classList.add('mode-chair');
+      btnAddChair.classList.add('active-mode');
+      hint.textContent = 'Click anywhere on the floor plan to place a chair. Press Esc to cancel.';
+      hint.style.display = 'block';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      cancelDrawing();
+      setMode('idle');
+    }
+  });
+
+  btnAddTable.addEventListener('click', ()=>{
+    setMode(mode === 'table' ? 'idle' : 'table');
+  });
+  btnAddChair.addEventListener('click', ()=>{
+    setMode(mode === 'chair' ? 'idle' : 'chair');
+  });
+
+  function cancelDrawing(){
+    if(drawing && drawing.el){ drawing.el.remove(); }
+    drawing = null;
+  }
+
+  function canvasPoint(evt){
+    const rect = canvas.getBoundingClientRect();
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+  }
+
+  // ---------- Table drawing (snapped to grid) ----------
+  canvas.addEventListener('mousedown', (e)=>{
+    if(mode !== 'table') return;
+    if(e.target !== canvas) return;
+    const p = canvasPoint(e);
+    const sx = snap(p.x), sy = snap(p.y);
+    const preview = document.createElement('div');
+    preview.className = 'draw-preview';
+    preview.style.left = sx + 'px';
+    preview.style.top = sy + 'px';
+    preview.style.width = '0px';
+    preview.style.height = '0px';
+    canvas.appendChild(preview);
+    drawing = { startX: sx, startY: sy, el: preview };
+  });
+
+  canvas.addEventListener('mousemove', (e)=>{
+    if(mode !== 'table' || !drawing) return;
+    const p = canvasPoint(e);
+    const sx = snap(p.x), sy = snap(p.y);
+    const x = Math.min(sx, drawing.startX);
+    const y = Math.min(sy, drawing.startY);
+    const w = Math.abs(sx - drawing.startX);
+    const h = Math.abs(sy - drawing.startY);
+    drawing.el.style.left = x + 'px';
+    drawing.el.style.top = y + 'px';
+    drawing.el.style.width = w + 'px';
+    drawing.el.style.height = h + 'px';
+  });
+
+  window.addEventListener('mouseup', (e)=>{
+    if(mode !== 'table' || !drawing) return;
+    const p = canvasPoint(e);
+    const sx = snap(p.x), sy = snap(p.y);
+    const x = Math.min(sx, drawing.startX);
+    const y = Math.min(sy, drawing.startY);
+    const w = Math.abs(sx - drawing.startX);
+    const h = Math.abs(sy - drawing.startY);
+    drawing.el.remove();
+    drawing = null;
+    if(w >= GRID_SIZE && h >= GRID_SIZE){
+      tables.push({ id: nextId(), x, y, w, h, label: 'Table ' + (tableCounter++) });
+      renderTables();
+    }
+    setMode('idle');
+  });
+
+  // ---------- Chair placement ----------
+  canvas.addEventListener('click', (e)=>{
+    if(mode !== 'chair') return;
+    if(e.target !== canvas) return;
+    const p = canvasPoint(e);
+    const chair = { id: nextId(), x: p.x, y: p.y, studentId: null, tableId: null };
+    snapChairToNearestTable(chair);
+    chairs.push(chair);
+    renderChairs();
+    setMode('idle');
+  });
+
+  // ---------- Geometry: snap a chair to the nearest table edge ----------
+  function closestPointOnSegment(px, py, x1, y1, x2, y2){
+    const dx = x2 - x1, dy = y2 - y1;
+    const lenSq = dx*dx + dy*dy;
+    let t = lenSq === 0 ? 0 : ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const cx = x1 + t * dx, cy = y1 + t * dy;
+    const dist = Math.hypot(px - cx, py - cy);
+    return { x: cx, y: cy, dist };
+  }
+
+  function snapChairToNearestTable(chair){
+    let best = null;
+    tables.forEach(t => {
+      const edges = [
+        { p1:[t.x, t.y],         p2:[t.x + t.w, t.y],         nx:0,  ny:-1 }, // top
+        { p1:[t.x, t.y + t.h],   p2:[t.x + t.w, t.y + t.h],   nx:0,  ny:1  }, // bottom
+        { p1:[t.x, t.y],         p2:[t.x, t.y + t.h],         nx:-1, ny:0  }, // left
+        { p1:[t.x + t.w, t.y],   p2:[t.x + t.w, t.y + t.h],   nx:1,  ny:0  }  // right
+      ];
+      edges.forEach(edge => {
+        const res = closestPointOnSegment(chair.x, chair.y, edge.p1[0], edge.p1[1], edge.p2[0], edge.p2[1]);
+        if(!best || res.dist < best.dist){
+          best = { dist: res.dist, x: res.x, y: res.y, nx: edge.nx, ny: edge.ny, tableId: t.id };
+        }
+      });
+    });
+    if(best && best.dist <= SNAP_THRESHOLD){
+      const offset = CHAIR_RADIUS + CHAIR_GAP;
+      chair.x = snap(best.x + best.nx * offset);
+      chair.y = snap(best.y + best.ny * offset);
+      chair.tableId = best.tableId;
+    } else {
+      chair.tableId = null;
+      chair.x = snap(chair.x);
+      chair.y = snap(chair.y);
+    }
+  }
+
+
+  // ---------- Rendering ----------
+  function renderTables(){
+    canvas.querySelectorAll('.table-el').forEach(el => el.remove());
+    tables.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'table-el';
+      el.style.left = t.x + 'px';
+      el.style.top = t.y + 'px';
+      el.style.width = t.w + 'px';
+      el.style.height = t.h + 'px';
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'table-label';
+      labelSpan.textContent = t.label;
+      el.appendChild(labelSpan);
+
+      const handle = document.createElement('div');
+      handle.className = 'resize-handle';
+      el.appendChild(handle);
+
+      let didDrag = false;
+
+      handle.addEventListener('mousedown', (e)=>{
+        e.stopPropagation();
+        e.preventDefault();
+        const startClientX = e.clientX, startClientY = e.clientY;
+        const origW = t.w, origH = t.h;
+
+        function onMove(ev){
+          const dx = ev.clientX - startClientX;
+          const dy = ev.clientY - startClientY;
+          t.w = Math.max(GRID_SIZE, origW + dx);
+          t.h = Math.max(GRID_SIZE, origH + dy);
+          el.style.width = t.w + 'px';
+          el.style.height = t.h + 'px';
+        }
+        function onUp(){
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          t.w = Math.max(GRID_SIZE, snap(t.w));
+          t.h = Math.max(GRID_SIZE, snap(t.h));
+          chairs.filter(c => c.tableId === t.id).forEach(c => snapChairToNearestTable(c));
+          renderTables();
+          renderChairs();
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      el.addEventListener('mousedown', (e)=>{
+        if(mode !== 'idle') return;
+        e.preventDefault();
+        didDrag = false;
+        const startClientX = e.clientX, startClientY = e.clientY;
+        const origX = t.x, origY = t.y;
+        el.classList.add('grabbing');
+
+        function onMove(ev){
+          const dx = ev.clientX - startClientX;
+          const dy = ev.clientY - startClientY;
+          if(Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) didDrag = true;
+          if(didDrag){
+            t.x = origX + dx;
+            t.y = origY + dy;
+            el.style.left = t.x + 'px';
+            el.style.top = t.y + 'px';
+            trashCan.classList.toggle('hover', isOverTrash(ev.clientX, ev.clientY));
+          }
+        }
+        function onUp(ev){
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          el.classList.remove('grabbing');
+          trashCan.classList.remove('hover');
+          if(didDrag && isOverTrash(ev.clientX, ev.clientY)){
+            tables = tables.filter(x => x.id !== t.id);
+            chairs.forEach(c => { if(c.tableId === t.id) c.tableId = null; });
+            renderTables();
+            renderChairs();
+            return;
+          }
+          if(didDrag){
+            t.x = snap(t.x);
+            t.y = snap(t.y);
+            // re-evaluate chairs that reference this table, in case it moved away/closer
+            chairs.filter(c => c.tableId === t.id).forEach(c => snapChairToNearestTable(c));
+            renderTables();
+            renderChairs();
+          }
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      el.addEventListener('dblclick', async (e)=>{
+        e.stopPropagation();
+        if(didDrag) return;
+        const ok = await showConfirm('Delete this table?');
+        if(ok){
+          tables = tables.filter(x => x.id !== t.id);
+          chairs.forEach(c => { if(c.tableId === t.id) c.tableId = null; });
+          renderTables();
+          renderChairs();
+        }
+      });
+
+      canvas.appendChild(el);
+    });
+  }
+
+  function renderChairs(){
+    canvas.querySelectorAll('.chair-el').forEach(el => el.remove());
+    chairs.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'chair-el' + (c.studentId ? ' occupied' : '');
+      el.style.left = c.x + 'px';
+      el.style.top = c.y + 'px';
+
+      const student = students.find(s => s.id === c.studentId);
+      const table = tables.find(tb => tb.id === c.tableId);
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = student ? studentName(student) : 'empty';
+      el.appendChild(nameSpan);
+
+      if(table){
+        const tableLabel = document.createElement('span');
+        tableLabel.className = 'chair-table-label';
+        tableLabel.textContent = table.label;
+        el.appendChild(tableLabel);
+      }
+
+      el.dataset.chairId = c.id;
+      let didDrag = false;
+
+      el.addEventListener('mousedown', (e)=>{
+        if(mode !== 'idle') return;
+        e.preventDefault();
+        didDrag = false;
+        const startClientX = e.clientX, startClientY = e.clientY;
+        const origX = c.x, origY = c.y;
+        el.classList.add('grabbing');
+
+        function onMove(ev){
+          const dx = ev.clientX - startClientX;
+          const dy = ev.clientY - startClientY;
+          if(Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) didDrag = true;
+          if(didDrag){
+            c.x = origX + dx;
+            c.y = origY + dy;
+            el.style.left = c.x + 'px';
+            el.style.top = c.y + 'px';
+            trashCan.classList.toggle('hover', isOverTrash(ev.clientX, ev.clientY));
+          }
+        }
+        function onUp(ev){
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          el.classList.remove('grabbing');
+          trashCan.classList.remove('hover');
+          if(didDrag && isOverTrash(ev.clientX, ev.clientY)){
+            chairs = chairs.filter(x => x.id !== c.id);
+            renderChairs();
+            renderStudentList();
+            return;
+          }
+          if(didDrag){
+            snapChairToNearestTable(c);
+            renderChairs();
+          }
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      el.addEventListener('dblclick', async (e)=>{
+        e.stopPropagation();
+        if(didDrag) return;
+        const ok = await showConfirm('Delete this chair?');
+        if(ok){
+          chairs = chairs.filter(x => x.id !== c.id);
+          renderChairs();
+          renderStudentList();
+        }
+      });
+
+      el.addEventListener('dragover', (e)=>{
+        e.preventDefault();
+        el.classList.add('dragover');
+      });
+      el.addEventListener('dragleave', ()=>{
+        el.classList.remove('dragover');
+      });
+      el.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        el.classList.remove('dragover');
+        const studentId = parseInt(e.dataTransfer.getData('text/student-id'), 10);
+        if(!studentId) return;
+        assignStudentToChair(studentId, c.id);
+      });
+
+      canvas.appendChild(el);
+    });
+  }
+
+  function assignStudentToChair(studentId, chairId){
+    const chair = chairs.find(c => c.id === chairId);
+    if(!chair) return;
+    if(chair.studentId && chair.studentId !== studentId){
+      chair.studentId = null;
+    }
+    chairs.forEach(c => { if(c.studentId === studentId) c.studentId = null; });
+    chair.studentId = studentId;
+    renderChairs();
+    renderStudentList();
+  }
+
+  function renderStudentList(){
+    studentListEl.innerHTML = '';
+    const seatedIds = new Set(chairs.filter(c => c.studentId).map(c => c.studentId));
+    const unseated = students.filter(s => !seatedIds.has(s.id));
+
+    if(unseated.length === 0 && students.length === 0){
+      const li = document.createElement('li');
+      li.className = 'empty-note';
+      li.textContent = 'No students yet — use "Import Student List" to add your roster.';
+      studentListEl.appendChild(li);
+    } else if(unseated.length === 0){
+      const li = document.createElement('li');
+      li.className = 'empty-note';
+      li.textContent = 'Everyone is seated.';
+      studentListEl.appendChild(li);
+    } else {
+      unseated.forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = studentName(s);
+        li.draggable = true;
+        li.dataset.studentId = s.id;
+        li.addEventListener('dragstart', (e)=>{
+          e.dataTransfer.setData('text/student-id', String(s.id));
+          li.classList.add('dragging');
+        });
+        li.addEventListener('dragend', ()=> li.classList.remove('dragging'));
+        studentListEl.appendChild(li);
+      });
+    }
+    rosterCount.textContent = students.length + ' students, ' + seatedIds.size + ' seated';
+  }
+
+  studentListEl.addEventListener('dragover', (e)=> e.preventDefault());
+  studentListEl.addEventListener('drop', (e)=>{
+    e.preventDefault();
+    const studentId = parseInt(e.dataTransfer.getData('text/student-id'), 10);
+    if(!studentId) return;
+    chairs.forEach(c => { if(c.studentId === studentId) c.studentId = null; });
+    renderChairs();
+    renderStudentList();
+  });
+
+  // ---------- Groups ("keep apart") ----------
+  function studentsConflict(idA, idB){
+    if(idA === idB) return false;
+    return groups.some(g => g.studentIds.includes(idA) && g.studentIds.includes(idB));
+  }
+
+  function renderGroups(){
+    groupsListEl.innerHTML = '';
+    if(groups.length === 0){
+      const li = document.createElement('li');
+      li.className = 'empty-note-list';
+      li.textContent = 'No groups yet. Add a group, then drag students in.';
+      groupsListEl.appendChild(li);
+      return;
+    }
+    groups.forEach(g => {
+      const card = document.createElement('li');
+      card.className = 'group-card' + (g.id === selectedGroupId ? ' selected' : '');
+      card.tabIndex = 0;
+      card.dataset.groupId = g.id;
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'group-name';
+      nameEl.textContent = g.name;
+      card.appendChild(nameEl);
+
+      const membersEl = document.createElement('div');
+      membersEl.className = 'group-members';
+      if(g.studentIds.length === 0){
+        const note = document.createElement('div');
+        note.className = 'empty-note';
+        note.textContent = 'Drop students here';
+        membersEl.appendChild(note);
+      } else {
+        g.studentIds.forEach(sid => {
+          const s = students.find(st => st.id === sid);
+          if(!s) return;
+          const chip = document.createElement('span');
+          chip.className = 'member-chip';
+          const label = document.createElement('span');
+          label.textContent = studentName(s);
+          chip.appendChild(label);
+          const removeBtn = document.createElement('button');
+          removeBtn.textContent = '\u00D7';
+          removeBtn.title = 'Remove from group';
+          removeBtn.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            g.studentIds = g.studentIds.filter(id => id !== sid);
+            renderGroups();
+          });
+          chip.appendChild(removeBtn);
+          membersEl.appendChild(chip);
+        });
+      }
+      card.appendChild(membersEl);
+
+      card.addEventListener('click', ()=>{
+        selectedGroupId = g.id;
+        renderGroups();
+        const el = groupsListEl.querySelector('[data-group-id="' + g.id + '"]');
+        if(el) el.focus();
+      });
+
+      card.addEventListener('dragover', (e)=>{
+        e.preventDefault();
+        card.classList.add('dragover');
+      });
+      card.addEventListener('dragleave', ()=>{
+        card.classList.remove('dragover');
+      });
+      card.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        card.classList.remove('dragover');
+        const studentId = parseInt(e.dataTransfer.getData('text/student-id'), 10);
+        if(!studentId) return;
+        if(!g.studentIds.includes(studentId)) g.studentIds.push(studentId);
+        renderGroups();
+      });
+
+      groupsListEl.appendChild(card);
+    });
+  }
+
+  btnAddGroup.addEventListener('click', ()=>{
+    const g = { id: nextId(), name: 'Group ' + (groupCounter++), studentIds: [] };
+    groups.push(g);
+    selectedGroupId = g.id;
+    renderGroups();
+    const el = groupsListEl.querySelector('[data-group-id="' + g.id + '"]');
+    if(el) el.focus();
+  });
+
+  btnDeleteGroup.addEventListener('click', async ()=>{
+    if(selectedGroupId === null){
+      await showAlert('Select a group first, then press Delete Group.');
+      return;
+    }
+    const g = groups.find(x => x.id === selectedGroupId);
+    if(!g) return;
+    const ok = await showConfirm('Delete "' + g.name + '"?');
+    if(ok){
+      const idx = groups.findIndex(x => x.id === selectedGroupId);
+      groups = groups.filter(x => x.id !== selectedGroupId);
+      selectedGroupId = groups.length ? groups[Math.min(idx, groups.length - 1)].id : null;
+      renderGroups();
+      if(selectedGroupId !== null){
+        const el = groupsListEl.querySelector('[data-group-id="' + selectedGroupId + '"]');
+        if(el) el.focus();
+      }
+    }
+  });
+
+  function navigateGroups(direction){
+    if(groups.length === 0) return;
+    let idx = groups.findIndex(g => g.id === selectedGroupId);
+    if(idx === -1) idx = 0;
+    idx = direction === 'down' ? Math.min(groups.length - 1, idx + 1) : Math.max(0, idx - 1);
+    selectedGroupId = groups[idx].id;
+    renderGroups();
+    const el = groupsListEl.querySelector('[data-group-id="' + selectedGroupId + '"]');
+    if(el) el.focus();
+  }
+
+  groupsListEl.addEventListener('keydown', (e)=>{
+    if(e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    navigateGroups(e.key === 'ArrowDown' ? 'down' : 'up');
+  });
+
+  // ---------- Import student list (paste popup) ----------
+  btnImportStudents.addEventListener('click', ()=>{
+    importTextarea.value = '';
+    importModal.classList.add('show');
+    importTextarea.focus();
+  });
+  importCancel.addEventListener('click', ()=>{
+    importModal.classList.remove('show');
+  });
+  importModal.addEventListener('click', (e)=>{
+    if(e.target === importModal) importModal.classList.remove('show');
+  });
+  importOk.addEventListener('click', ()=>{
+    const lines = importTextarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const parsed = lines.map(line => {
+      const parts = line.split(',');
+      const last = (parts[0] || '').trim();
+      const first = (parts.slice(1).join(',') || '').trim();
+      return { id: nextId(), last: last || 'Unknown', first: first };
+    });
+    students = parsed;
+    chairs.forEach(c => c.studentId = null);
+    groups.forEach(g => g.studentIds = []);
+    renderChairs();
+    renderStudentList();
+    renderGroups();
+    importModal.classList.remove('show');
+  });
+
+  // ---------- Randomize ----------
+  function growCanvasForY(maxY){
+    const current = canvas.offsetHeight;
+    if(maxY + 120 > current){
+      canvas.style.height = (maxY + 120) + 'px';
+    }
+  }
+
+  function shuffleArray(arr){
+    const a = [...arr];
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // The four seat positions around a table — one per side — each offset
+  // outward from the table edge by a chair's radius plus a small gap.
+  function tableSideSeats(t){
+    const offset = CHAIR_RADIUS + CHAIR_GAP;
+    return [
+      { x: snap(t.x + t.w / 2), y: snap(t.y - offset) },        // top
+      { x: snap(t.x + t.w + offset), y: snap(t.y + t.h / 2) },  // right
+      { x: snap(t.x + t.w / 2), y: snap(t.y + t.h + offset) },  // bottom
+      { x: snap(t.x - offset), y: snap(t.y + t.h / 2) }         // left
+    ];
+  }
+
+  // One randomized pass: greedily seats students into the (up to 4) side
+  // seats of each table, never letting two students from the same "keep
+  // apart" group share a table. A table can never end up with more than 4
+  // seats since only 4 exist per table. Anyone who can't be placed
+  // conflict-free is left unplaced for now.
+  function attemptSeating(){
+    const shuffledStudents = shuffleArray(students);
+    let seatCounter = 0;
+    const seats = [];
+    tables.forEach(t => {
+      tableSideSeats(t).forEach(pos => {
+        seats.push({ seatKey: seatCounter++, tableId: t.id, x: pos.x, y: pos.y });
+      });
+    });
+    const seatsAvail = shuffleArray(seats);
+    const occupantsByTable = {};
+    const assignment = []; // {tableId, x, y, studentId}
+    const unplaced = [];
+
+    shuffledStudents.forEach(student => {
+      let chosen = -1;
+      for(let i = 0; i < seatsAvail.length; i++){
+        const occupants = occupantsByTable[seatsAvail[i].tableId] || [];
+        const hasConflict = occupants.some(sid => studentsConflict(sid, student.id));
+        if(!hasConflict){ chosen = i; break; }
+      }
+      if(chosen === -1){
+        unplaced.push(student.id);
+        return;
+      }
+      const seat = seatsAvail.splice(chosen, 1)[0];
+      if(!occupantsByTable[seat.tableId]) occupantsByTable[seat.tableId] = [];
+      occupantsByTable[seat.tableId].push(student.id);
+      assignment.push({ tableId: seat.tableId, x: seat.x, y: seat.y, studentId: student.id });
+    });
+
+    return { assignment, unplaced };
+  }
+
+  function repositionOrphansToBottomRow(){
+    // Any occupied chair that isn't linked to a table gets lined up in a tidy
+    // row below everything else, so it's obvious at a glance who isn't seated
+    // at a real table.
+    const orphanChairs = chairs.filter(c => c.tableId === null && c.studentId !== null);
+    if(orphanChairs.length === 0) return;
+
+    let maxY = 0;
+    tables.forEach(t => { maxY = Math.max(maxY, t.y + t.h); });
+    chairs.forEach(c => { if(c.tableId !== null) maxY = Math.max(maxY, c.y); });
+
+    const startY = snap(maxY + 90);
+    const cols = 10;
+    const spacingX = 90;
+    const spacingY = 90;
+    const startX = 70;
+
+    orphanChairs.forEach((c, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      c.x = startX + col * spacingX;
+      c.y = startY + row * spacingY;
+    });
+
+    const lastRow = Math.floor((orphanChairs.length - 1) / cols);
+    growCanvasForY(startY + lastRow * spacingY);
+  }
+
+  btnRandomize.addEventListener('click', async ()=>{
+    if(students.length === 0){ await showAlert('Import a student list first.'); return; }
+
+    const hasGroups = groups.some(g => g.studentIds.length > 1);
+    const attemptsToTry = hasGroups ? 60 : 1;
+    let best = null;
+    for(let i = 0; i < attemptsToTry; i++){
+      const result = attemptSeating();
+      if(!best || result.unplaced.length < best.unplaced.length) best = result;
+      if(best.unplaced.length === 0) break;
+    }
+
+    // Rebuild the seating from scratch: a chair is only ever created where a
+    // student is actually going to sit. Tables get their students moved onto
+    // seats placed one per side; nobody is left at an empty chair, and
+    // nobody who couldn't be placed leaves an empty chair behind — their
+    // seat simply exists at the bottom row instead.
+    chairs = [];
+    best.assignment.forEach(a => {
+      chairs.push({ id: nextId(), x: a.x, y: a.y, studentId: a.studentId, tableId: a.tableId });
+    });
+    best.unplaced.forEach(studentId => {
+      chairs.push({ id: nextId(), x: 0, y: 0, studentId, tableId: null });
+    });
+
+    repositionOrphansToBottomRow();
+
+    renderTables();
+    renderChairs();
+    renderStudentList();
+  });
+
+  btnUnseat.addEventListener('click', ()=>{
+    if(chairs.every(c => !c.studentId)){ return; }
+    chairs.forEach(c => c.studentId = null);
+    renderChairs();
+    renderStudentList();
+  });
+
+  // ---------- Export classroom ----------
+  btnExport.addEventListener('click', ()=>{
+    const lines = [];
+    lines.push('# Classroom Seating Export');
+    tables.forEach(t => lines.push(['TABLE', t.x.toFixed(1), t.y.toFixed(1), t.w.toFixed(1), t.h.toFixed(1), t.label].join('|')));
+    chairs.forEach(c => {
+      const s = students.find(st => st.id === c.studentId);
+      const name = s ? (s.last + ',' + s.first) : 'EMPTY';
+      lines.push(['CHAIR', c.x.toFixed(1), c.y.toFixed(1), name].join('|'));
+    });
+    const seatedIds = new Set(chairs.filter(c => c.studentId).map(c => c.studentId));
+    students.filter(s => !seatedIds.has(s.id)).forEach(s => {
+      lines.push(['STUDENT', s.last, s.first].join('|'));
+    });
+    groups.forEach(g => {
+      const memberNames = g.studentIds
+        .map(id => students.find(s => s.id === id))
+        .filter(Boolean)
+        .map(s => s.last + ',' + s.first)
+        .join(';');
+      lines.push(['GROUP', g.name, memberNames].join('|'));
+    });
+    const text = lines.join('\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'classroom-seating.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------- Import classroom (from file) ----------
+  btnImportClassroom.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try{
+        loadClassroomFromText(reader.result);
+      }catch(err){
+        await showAlert('Could not read that file. Make sure it was exported from this tool.');
+      }
+      fileInput.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  function loadClassroomFromText(text){
+    const newTables = [];
+    const newChairsRaw = [];
+    const newStudentsRaw = [];
+    const newGroupsRaw = [];
+
+    text.split('\n').forEach(rawLine => {
+      const line = rawLine.trim();
+      if(!line || line.startsWith('#')) return;
+      const parts = line.split('|');
+      const type = parts[0];
+      if(type === 'TABLE'){
+        newTables.push({
+          x: parseFloat(parts[1]), y: parseFloat(parts[2]),
+          w: parseFloat(parts[3]), h: parseFloat(parts[4]),
+          label: parts[5] || null
+        });
+      } else if(type === 'CHAIR'){
+        newChairsRaw.push({ x: parseFloat(parts[1]), y: parseFloat(parts[2]), name: parts[3] || 'EMPTY' });
+      } else if(type === 'STUDENT'){
+        newStudentsRaw.push({ last: parts[1] || 'Unknown', first: parts[2] || '' });
+      } else if(type === 'GROUP'){
+        const name = parts[1] || 'Group';
+        const memberNames = (parts[2] || '').split(';').map(s => s.trim()).filter(Boolean);
+        newGroupsRaw.push({ name, memberNames });
+      }
+    });
+
+    students = [];
+    tables = [];
+    chairs = [];
+    groups = [];
+    tableCounter = 1;
+    groupCounter = 1;
+    selectedGroupId = null;
+
+    const nameToId = {};
+    function registerStudent(last, first){
+      const s = { id: nextId(), last: last || 'Unknown', first: first || '' };
+      students.push(s);
+      nameToId[(s.last + ',' + s.first).toLowerCase().trim()] = s.id;
+      return s;
+    }
+
+    newTables.forEach(t => {
+      const label = t.label || ('Table ' + (tableCounter++));
+      if(t.label) tableCounter++;
+      tables.push({ id: nextId(), x: t.x, y: t.y, w: t.w, h: t.h, label });
+    });
+
+    newChairsRaw.forEach(c => {
+      let studentId = null;
+      if(c.name && c.name !== 'EMPTY'){
+        const nameParts = c.name.split(',');
+        const last = (nameParts[0] || '').trim();
+        const first = (nameParts.slice(1).join(',') || '').trim();
+        const s = registerStudent(last, first);
+        studentId = s.id;
+      }
+      const chair = { id: nextId(), x: c.x, y: c.y, studentId, tableId: null };
+      snapChairToNearestTable(chair);
+      chairs.push(chair);
+    });
+
+    newStudentsRaw.forEach(s => registerStudent(s.last, s.first));
+
+    newGroupsRaw.forEach(g => {
+      groupCounter++;
+      groups.push({
+        id: nextId(),
+        name: g.name,
+        studentIds: g.memberNames
+          .map(nm => nameToId[nm.toLowerCase().trim()])
+          .filter(id => id !== undefined)
+      });
+    });
+
+    renderTables();
+    renderChairs();
+    renderStudentList();
+    renderGroups();
+  }
+
+  // ---------- Init ----------
+  renderStudentList();
+  renderGroups();
+})();
+</script>
+</body>
+</html>
