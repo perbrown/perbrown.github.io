@@ -15,8 +15,8 @@
     --zero-bg: #e7f0ea;
     --neg: #a86a1f;
     --neg-bg: #f6ead3;
-    --negfrac: #6a4a8f;
-    --negfrac-bg: #ede4f5;
+    --negbase: #6a4a8f;
+    --negbase-bg: #ede4f5;
     --mix: #a13c3c;
     --mix-bg: #f6dfdc;
 
@@ -36,8 +36,8 @@
       --zero-bg: #24352d;
       --neg: #e0a95a;
       --neg-bg: #3a2f1c;
-      --negfrac: #c3a3e6;
-      --negfrac-bg: #322a42;
+      --negbase: #c3a3e6;
+      --negbase-bg: #322a42;
       --mix: #e08d84;
       --mix-bg: #3a2422;
     }
@@ -55,8 +55,8 @@
     --zero-bg: #24352d;
     --neg: #e0a95a;
     --neg-bg: #3a2f1c;
-    --negfrac: #c3a3e6;
-    --negfrac-bg: #322a42;
+    --negbase: #c3a3e6;
+    --negbase-bg: #322a42;
     --mix: #e08d84;
     --mix-bg: #3a2422;
   }
@@ -121,7 +121,7 @@
   }
   .law-chip.zero { color: var(--zero); background: var(--zero-bg); }
   .law-chip.neg { color: var(--neg); background: var(--neg-bg); }
-  .law-chip.negfrac { color: var(--negfrac); background: var(--negfrac-bg); }
+  .law-chip.negbase { color: var(--negbase); background: var(--negbase-bg); }
   .law-chip.mix { color: var(--mix); background: var(--mix-bg); }
 
   .expr sup, .method sup {
@@ -347,7 +347,7 @@
   }
   .group.zero .group-head h2 { color: var(--zero); }
   .group.neg .group-head h2 { color: var(--neg); }
-  .group.negfrac .group-head h2 { color: var(--negfrac); }
+  .group.negbase .group-head h2 { color: var(--negbase); }
   .group.mix .group-head h2 { color: var(--mix); }
 
   ol.qlist { list-style: none; margin: 0; padding: 0; }
@@ -381,7 +381,7 @@
   }
   .group.zero .qanswer { color: var(--zero); }
   .group.neg .qanswer { color: var(--neg); }
-  .group.negfrac .qanswer { color: var(--negfrac); }
+  .group.negbase .qanswer { color: var(--negbase); }
   .group.mix .qanswer { color: var(--mix); }
 
   @media (max-width: 480px) {
@@ -416,7 +416,8 @@
       <div class="law-strip">
         <span class="law-chip zero">a⁰ = 1</span>
         <span class="law-chip neg">a⁻ⁿ = 1 / aⁿ</span>
-        <span class="law-chip negfrac">(a/b)⁻ⁿ = (b/a)ⁿ</span>
+        <span class="law-chip negbase">-aⁿ ≠ (-a)ⁿ</span>
+        <span class="law-chip mix">combine the rules</span>
       </div>
     </div>
   </div>
@@ -450,11 +451,11 @@
       .replace(/\^(-?\d+)/g, '<sup>$1</sup>');
   }
 
-  var CAT_LABEL = { zero: 'Zero Exponent', neg: 'Negative Exponent', negfrac: 'Negative Exponent, Fraction Base', mix: 'Mixed Challenge' };
+  var CAT_LABEL = { zero: 'Zero Exponent', neg: 'Negative Exponent', negbase: 'Negative Base', mix: 'Mixed Challenge' };
   var CAT_RULE = {
     zero: 'anything to the zero power is 1',
     neg: 'flip to get a positive exponent',
-    negfrac: 'flip the fraction, then apply the positive exponent',
+    negbase: 'the sign is only inside the base if parentheses say so',
     mix: 'combine the zero and negative rules'
   };
 
@@ -475,13 +476,13 @@
       ['x^-5', ['flip: 1 / x^5'], '1/x^5'],
       ['4^-2', ['flip: 1 / 4^2', '4^2 = 16'], '1/16']
     ],
-    negfrac: [
-      ['(2/3)^-2', ['flip the fraction: (3/2)^2', '9/4'], '9/4'],
-      ['(1/2)^-4', ['flip the fraction: (2/1)^4', '2^4 = 16'], '16'],
-      ['(3/5)^-2', ['flip the fraction: (5/3)^2', '25/9'], '25/9'],
-      ['(2/5)^-3', ['flip the fraction: (5/2)^3', '125/8'], '125/8'],
-      ['(1/4)^-2', ['flip the fraction: (4/1)^2', '4^2 = 16'], '16'],
-      ['(5/2)^-1', ['flip the fraction: (2/5)^1'], '2/5']
+    negbase: [
+      ['-3^-2', ['exponent applies to 3 only, not the sign', '3^-2 = 1/9, then negate'], '-1/9'],
+      ['(-3)^-2', ['exponent applies to -3 (parentheses)', '(-3)^2 = 9, flip: 1/9'], '1/9'],
+      ['-2^-4', ['exponent applies to 2 only, not the sign', '2^-4 = 1/16, then negate'], '-1/16'],
+      ['(-2)^-4', ['exponent applies to -2 (parentheses)', '(-2)^4 = 16, flip: 1/16'], '1/16'],
+      ['-5^-3', ['exponent applies to 5 only, not the sign', '5^-3 = 1/125, then negate'], '-1/125'],
+      ['(-5)^-3', ['exponent applies to -5 (parentheses)', '(-5)^3 = -125, flip: -1/125'], '-1/125']
     ],
     mix: [
       ['3^-2 · 3^0', ['3^0 = 1, so just 3^-2', 'flip: 1 / 3^2 = 1/9'], '1/9'],
@@ -493,7 +494,7 @@
     ]
   };
 
-  var CAT_ORDER = ['zero', 'neg', 'negfrac', 'mix'];
+  var CAT_ORDER = ['zero', 'neg', 'negbase', 'mix'];
   var master = [];
   CAT_ORDER.forEach(function (cat) {
     bank[cat].forEach(function (item) {
@@ -709,3 +710,4 @@
 </script>
 
 </body></html>
+
