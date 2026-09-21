@@ -1,3 +1,5 @@
+
+
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Zero &amp; Negative Exponents</title>
 <style>
@@ -77,14 +79,85 @@
     flex-direction: column;
   }
 
-  .app {
-    max-width: 820px;
+  .layout {
+    max-width: 1040px;
     width: 100%;
     margin: 0 auto;
     flex: 1;
     display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    min-height: 0;
+  }
+
+  .app {
+    max-width: 820px;
+    width: 100%;
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /* ---------- timing sidebar ---------- */
+
+  .sidebar {
+    flex: 0 0 190px;
+    width: 190px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 20px);
+    padding-top: 62px;
+  }
+
+  .slider-group {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .slider-group .slider-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  .slider-group .slider-val {
+    font-size: 13px;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .slider-group input[type="range"] {
+    width: 100%;
+    accent-color: var(--ink);
+    cursor: pointer;
+  }
+
+  @media (max-width: 880px) {
+    .layout { flex-direction: column; gap: 14px; }
+    .sidebar {
+      width: 100%;
+      flex-direction: row;
+      position: static;
+      padding-top: 0;
+    }
+    .slider-group { flex: 1; }
   }
 
   [hidden] { display: none !important; }
@@ -396,6 +469,7 @@
   }
 </style>
 
+<div class="layout">
 <div class="app">
 
   <!-- CONTROLS: present on every screen -->
@@ -412,7 +486,7 @@
     <div>
       <p class="eyebrow">Grade 9 · Algebra</p>
       <h1>Zero &amp; Negative Exponents</h1>
-      <p class="subtitle">24 problems, shuffled at random. Each one flashes for 6 seconds — then the method and answer show for 3 seconds before the next question. Use Next to skip ahead any time.</p>
+      <p class="subtitle">24 problems, shuffled at random. Use the sliders on the right to set how long each question and answer stay on screen, or Next to skip ahead any time.</p>
       <div class="law-strip">
         <span class="law-chip zero">a⁰ = 1</span>
         <span class="law-chip neg">a⁻ⁿ = 1 / aⁿ</span>
@@ -441,6 +515,18 @@
     <div class="summary-scroll" id="summaryList"></div>
   </div>
 
+</div>
+
+<aside class="sidebar">
+  <div class="slider-group">
+    <span class="slider-label">Question time <span class="slider-val" id="qTimeVal">6s</span></span>
+    <input type="range" id="qTimeSlider" min="1" max="20" step="1" value="6" aria-label="Question time in seconds">
+  </div>
+  <div class="slider-group">
+    <span class="slider-label">Answer time <span class="slider-val" id="aTimeVal">3s</span></span>
+    <input type="range" id="aTimeSlider" min="1" max="20" step="1" value="3" aria-label="Answer time in seconds">
+  </div>
+</aside>
 </div>
 
 <script>
@@ -522,10 +608,26 @@
   var pauseBtn = document.getElementById('pauseBtn');
   var nextBtn = document.getElementById('nextBtn');
   var restartBtn = document.getElementById('restartBtn');
+  var qTimeSlider = document.getElementById('qTimeSlider');
+  var aTimeSlider = document.getElementById('aTimeSlider');
+  var qTimeVal = document.getElementById('qTimeVal');
+  var aTimeVal = document.getElementById('aTimeVal');
 
   var order = [];
   var current = 'start'; // 'start' | 'drill' | 'summary'
   var currentIndex = 0;
+  var questionMs = parseInt(qTimeSlider.value, 10) * 1000;
+  var answerMs = parseInt(aTimeSlider.value, 10) * 1000;
+
+  qTimeSlider.addEventListener('input', function () {
+    qTimeVal.textContent = qTimeSlider.value + 's';
+    questionMs = parseInt(qTimeSlider.value, 10) * 1000;
+  });
+
+  aTimeSlider.addEventListener('input', function () {
+    aTimeVal.textContent = aTimeSlider.value + 's';
+    answerMs = parseInt(aTimeSlider.value, 10) * 1000;
+  });
 
   // ---- pause-capable phase timer, driven by requestAnimationFrame ----
   var timer = { duration: 0, remaining: 0, lastTime: 0, paused: false, running: false, onDone: null, rafId: null };
@@ -618,7 +720,7 @@
     stage.innerHTML =
       '<span class="law-chip ' + item.cat + '">' + CAT_LABEL[item.cat] + '</span>' +
       '<div class="stage-expr">' + expr(item.q) + '</div>';
-    startTimer(6000, 'q', function () { showAnswer(i); });
+    startTimer(questionMs, 'q', function () { showAnswer(i); });
   }
 
   function showAnswer(i) {
@@ -631,7 +733,7 @@
       '<div class="stage-expr small">' + expr(item.q) + '</div>' +
       '<div class="answer-block">' + methodHtml +
       '<div class="final-answer">' + expr(item.a) + '</div></div>';
-    startTimer(3000, 'a', function () { showQuestion(i + 1); });
+    startTimer(answerMs, 'a', function () { showQuestion(i + 1); });
   }
 
   function showSummary() {
@@ -710,4 +812,3 @@
 </script>
 
 </body></html>
-
