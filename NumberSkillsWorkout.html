@@ -186,6 +186,49 @@
     .ctrl-btn { padding: 8px 10px; }
   }
 
+  /* ---------- timing sliders (right-aligned) ---------- */
+
+  .settings-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding-bottom: 12px;
+  }
+
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slider-group .sg-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .slider-group input[type="range"] {
+    width: 110px;
+    accent-color: var(--ink);
+  }
+
+  .slider-group .sg-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    min-width: 26px;
+    text-align: right;
+  }
+
+  @media (max-width: 480px) {
+    .slider-group input[type="range"] { width: 84px; }
+  }
+
   /* ---------- start screen ---------- */
 
   #screen-start {
@@ -416,12 +459,26 @@
     <button class="ctrl-btn restart" id="restartBtn" type="button"><span class="ico">⟲</span><span class="label">Restart</span></button>
   </div>
 
+  <!-- TIMING SLIDERS -->
+  <div class="settings-row">
+    <div class="slider-group">
+      <span class="sg-label">Question</span>
+      <input type="range" id="qTimeSlider" min="1" max="20" step="1" value="6">
+      <span class="sg-val" id="qTimeVal">6s</span>
+    </div>
+    <div class="slider-group">
+      <span class="sg-label">Answer</span>
+      <input type="range" id="aTimeSlider" min="1" max="20" step="1" value="3">
+      <span class="sg-val" id="aTimeVal">3s</span>
+    </div>
+  </div>
+
   <!-- START -->
   <div id="screen-start">
     <div>
       <p class="eyebrow">Grade 9 · Number Sense</p>
       <h1>Number Skills</h1>
-      <p class="subtitle">30 problems, shuffled at random. Each one flashes for 6 seconds — then the method and answer show for 3 seconds before the next question.</p>
+      <p class="subtitle">30 problems, shuffled at random. Use the sliders on the right to set how long each question and answer stay on screen.</p>
       <div class="law-strip">
         <span class="law-chip abs">|−a| = a</span>
         <span class="law-chip sign">combining signs</span>
@@ -541,6 +598,22 @@
   var pauseBtn = document.getElementById('pauseBtn');
   var nextBtn = document.getElementById('nextBtn');
   var restartBtn = document.getElementById('restartBtn');
+  var qTimeSlider = document.getElementById('qTimeSlider');
+  var aTimeSlider = document.getElementById('aTimeSlider');
+  var qTimeVal = document.getElementById('qTimeVal');
+  var aTimeVal = document.getElementById('aTimeVal');
+
+  var qSeconds = parseInt(qTimeSlider.value, 10);
+  var aSeconds = parseInt(aTimeSlider.value, 10);
+
+  qTimeSlider.addEventListener('input', function () {
+    qSeconds = parseInt(qTimeSlider.value, 10);
+    qTimeVal.textContent = qSeconds + 's';
+  });
+  aTimeSlider.addEventListener('input', function () {
+    aSeconds = parseInt(aTimeSlider.value, 10);
+    aTimeVal.textContent = aSeconds + 's';
+  });
 
   var order = [];
   var current = 'start'; // 'start' | 'drill' | 'summary'
@@ -637,7 +710,7 @@
     stage.innerHTML =
       '<span class="law-chip ' + item.cat + '">' + CAT_LABEL[item.cat] + '</span>' +
       '<div class="stage-expr">' + expr(item.q) + '</div>';
-    startTimer(6000, 'q', function () { showAnswer(i); });
+    startTimer(qSeconds * 1000, 'q', function () { showAnswer(i); });
   }
 
   function showAnswer(i) {
@@ -650,7 +723,7 @@
       '<div class="stage-expr small">' + expr(item.q) + '</div>' +
       '<div class="answer-block">' + methodHtml +
       '<div class="final-answer">' + expr(item.a) + '</div></div>';
-    startTimer(3000, 'a', function () { showQuestion(i + 1); });
+    startTimer(aSeconds * 1000, 'a', function () { showQuestion(i + 1); });
   }
 
   function showSummary() {
@@ -729,3 +802,4 @@
 </script>
 
 </body></html>
+
