@@ -1,5 +1,4 @@
 
-
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Zero &amp; Negative Exponents</title>
 <style>
@@ -104,60 +103,118 @@
   /* ---------- timing sidebar ---------- */
 
   .sidebar {
-    flex: 0 0 190px;
-    width: 190px;
+    width: 200px;
+    flex-shrink: 0;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + 20px);
-    padding-top: 62px;
-  }
-
-  .slider-group {
+    gap: 18px;
+    padding: 16px;
+    margin-top: 10px;
     background: var(--paper-raised);
     border: 1px solid var(--rule);
     border-radius: 14px;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
   }
 
-  .slider-group .slider-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+  .sidebar-title {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--ink-soft);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0;
   }
 
-  .slider-group .slider-val {
+  .slider-field { display: flex; flex-direction: column; gap: 6px; }
+
+  .slider-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     font-size: 13px;
-    color: var(--ink);
-    text-transform: none;
-    letter-spacing: 0;
+    font-weight: 600;
+  }
+  .slider-label .val {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-soft);
+    font-weight: 600;
   }
 
-  .slider-group input[type="range"] {
+  .slider-field input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
     width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--rule-strong);
+    outline: none;
+    margin: 6px 0 0;
+  }
+  .slider-field input[type="range"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .infinite-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 2px;
+  }
+  .infinite-row input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
     accent-color: var(--ink);
     cursor: pointer;
   }
+  .infinite-row label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .slider-field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--paper-raised);
+    box-shadow: 0 0 0 1px var(--rule-strong);
+    cursor: pointer;
+  }
+  .slider-field input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--paper-raised);
+    box-shadow: 0 0 0 1px var(--rule-strong);
+    cursor: pointer;
+  }
+  .slider-field#questionTimeField input[type="range"]::-webkit-slider-thumb { background: var(--negbase); }
+  .slider-field#questionTimeField input[type="range"]::-moz-range-thumb { background: var(--negbase); }
+  .slider-field#answerTimeField input[type="range"]::-webkit-slider-thumb { background: var(--mix); }
+  .slider-field#answerTimeField input[type="range"]::-moz-range-thumb { background: var(--mix); }
 
-  @media (max-width: 880px) {
-    .layout { flex-direction: column; gap: 14px; }
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
     .sidebar {
       width: 100%;
-      flex-direction: row;
       position: static;
-      padding-top: 0;
+      margin-top: 0;
+      flex-direction: row;
+      gap: 22px;
     }
-    .slider-group { flex: 1; }
+    .sidebar-title { display: none; }
+    .slider-field { flex: 1; }
+  }
+
+  @media (max-width: 480px) {
+    .sidebar { flex-direction: column; gap: 14px; }
   }
 
   [hidden] { display: none !important; }
@@ -278,6 +335,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     min-height: 0;
     padding-block: 14px;
   }
@@ -316,7 +374,7 @@
 
   .stage {
     position: relative;
-    flex: 1;
+    flex: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -327,7 +385,8 @@
     background: var(--paper-raised);
     border: 1px solid var(--rule);
     padding: 32px 20px;
-    min-height: 260px;
+    height: clamp(340px, 56vh, 480px);
+    overflow-y: auto;
   }
 
   .paused-badge {
@@ -461,7 +520,7 @@
     .q { grid-template-columns: 20px 1fr auto; gap: 8px; }
     .qexpr, .qanswer { font-size: 13.5px; }
     .group-head .rule { display: none; }
-    .stage { padding: 24px 14px; min-height: 220px; }
+    .stage { padding: 24px 14px; height: clamp(280px, 50vh, 380px); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -486,7 +545,7 @@
     <div>
       <p class="eyebrow">Grade 9 · Algebra</p>
       <h1>Zero &amp; Negative Exponents</h1>
-      <p class="subtitle">24 problems, shuffled at random. Use the sliders on the right to set how long each question and answer stay on screen, or Next to skip ahead any time.</p>
+      <p class="subtitle">24 problems, shuffled at random. Use the sliders to set how long each question and answer stays on screen, and Next to skip ahead any time.</p>
       <div class="law-strip">
         <span class="law-chip zero">a⁰ = 1</span>
         <span class="law-chip neg">a⁻ⁿ = 1 / aⁿ</span>
@@ -518,13 +577,22 @@
 </div>
 
 <aside class="sidebar">
-  <div class="slider-group">
-    <span class="slider-label">Question time <span class="slider-val" id="qTimeVal">6s</span></span>
-    <input type="range" id="qTimeSlider" min="1" max="20" step="1" value="6" aria-label="Question time in seconds">
+  <p class="sidebar-title">Timing</p>
+  <div class="slider-field" id="questionTimeField">
+    <label class="slider-label" for="questionTimeSlider">Question time <span class="val" id="questionTimeVal">6s</span></label>
+    <input type="range" id="questionTimeSlider" min="1" max="60" step="1" value="6">
+    <div class="infinite-row">
+      <input type="checkbox" id="questionInfiniteCheckbox">
+      <label for="questionInfiniteCheckbox">Infinite time</label>
+    </div>
   </div>
-  <div class="slider-group">
-    <span class="slider-label">Answer time <span class="slider-val" id="aTimeVal">3s</span></span>
-    <input type="range" id="aTimeSlider" min="1" max="20" step="1" value="3" aria-label="Answer time in seconds">
+  <div class="slider-field" id="answerTimeField">
+    <label class="slider-label" for="answerTimeSlider">Answer time <span class="val" id="answerTimeVal">3s</span></label>
+    <input type="range" id="answerTimeSlider" min="1" max="60" step="1" value="3">
+    <div class="infinite-row">
+      <input type="checkbox" id="answerInfiniteCheckbox">
+      <label for="answerInfiniteCheckbox">Infinite time</label>
+    </div>
   </div>
 </aside>
 </div>
@@ -608,26 +676,44 @@
   var pauseBtn = document.getElementById('pauseBtn');
   var nextBtn = document.getElementById('nextBtn');
   var restartBtn = document.getElementById('restartBtn');
-  var qTimeSlider = document.getElementById('qTimeSlider');
-  var aTimeSlider = document.getElementById('aTimeSlider');
-  var qTimeVal = document.getElementById('qTimeVal');
-  var aTimeVal = document.getElementById('aTimeVal');
+  var questionTimeSlider = document.getElementById('questionTimeSlider');
+  var answerTimeSlider = document.getElementById('answerTimeSlider');
+  var questionTimeVal = document.getElementById('questionTimeVal');
+  var answerTimeVal = document.getElementById('answerTimeVal');
+  var questionInfiniteCheckbox = document.getElementById('questionInfiniteCheckbox');
+  var answerInfiniteCheckbox = document.getElementById('answerInfiniteCheckbox');
+
+  var questionMs = Number(questionTimeSlider.value) * 1000;
+  var answerMs = Number(answerTimeSlider.value) * 1000;
+  var questionInfinite = false;
+  var answerInfinite = false;
+
+  questionTimeSlider.addEventListener('input', function () {
+    questionMs = Number(questionTimeSlider.value) * 1000;
+    questionTimeVal.textContent = questionTimeSlider.value + 's';
+  });
+  answerTimeSlider.addEventListener('input', function () {
+    answerMs = Number(answerTimeSlider.value) * 1000;
+    answerTimeVal.textContent = answerTimeSlider.value + 's';
+  });
+
+  questionInfiniteCheckbox.addEventListener('change', function () {
+    questionInfinite = questionInfiniteCheckbox.checked;
+    questionTimeSlider.disabled = questionInfinite;
+    questionTimeVal.textContent = questionInfinite ? '∞' : questionTimeSlider.value + 's';
+    if (current === 'drill' && !isAnswerPhase) { showQuestion(currentIndex); }
+  });
+  answerInfiniteCheckbox.addEventListener('change', function () {
+    answerInfinite = answerInfiniteCheckbox.checked;
+    answerTimeSlider.disabled = answerInfinite;
+    answerTimeVal.textContent = answerInfinite ? '∞' : answerTimeSlider.value + 's';
+    if (current === 'drill' && isAnswerPhase) { showAnswer(currentIndex); }
+  });
 
   var order = [];
   var current = 'start'; // 'start' | 'drill' | 'summary'
   var currentIndex = 0;
-  var questionMs = parseInt(qTimeSlider.value, 10) * 1000;
-  var answerMs = parseInt(aTimeSlider.value, 10) * 1000;
-
-  qTimeSlider.addEventListener('input', function () {
-    qTimeVal.textContent = qTimeSlider.value + 's';
-    questionMs = parseInt(qTimeSlider.value, 10) * 1000;
-  });
-
-  aTimeSlider.addEventListener('input', function () {
-    aTimeVal.textContent = aTimeSlider.value + 's';
-    answerMs = parseInt(aTimeSlider.value, 10) * 1000;
-  });
+  var isAnswerPhase = false;
 
   // ---- pause-capable phase timer, driven by requestAnimationFrame ----
   var timer = { duration: 0, remaining: 0, lastTime: 0, paused: false, running: false, onDone: null, rafId: null };
@@ -688,6 +774,7 @@
 
   function updateControls() {
     var drillActive = current === 'drill' && timer.running;
+    var untimedPhase = current === 'drill' && !timer.running && (isAnswerPhase ? answerInfinite : questionInfinite);
     stage.classList.toggle('is-paused', !!(drillActive && timer.paused));
     var badge = stage.querySelector('.paused-badge');
     if (drillActive && timer.paused) {
@@ -697,16 +784,24 @@
         badge.textContent = 'Paused';
         stage.appendChild(badge);
       }
+    } else if (untimedPhase) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'paused-badge';
+        stage.appendChild(badge);
+      }
+      badge.textContent = 'Untimed — tap Next';
     } else if (badge) {
       badge.remove();
     }
-    // Play: enabled to resume a paused drill, or to (re)start from start/summary.
-    playBtn.disabled = drillActive && !timer.paused;
+    // Play: enabled to resume a paused, still-running drill timer, or to (re)start from start/summary.
+    // While in the drill with no running timer (an infinite-time phase), Play does nothing, so it stays disabled.
+    playBtn.disabled = current === 'drill' && !(timer.running && timer.paused);
     // Pause: enabled only while the drill is actively counting down.
     pauseBtn.disabled = !(drillActive && !timer.paused);
     restartBtn.disabled = false;
-    // Back: step to the previous question in the drill, or back into the drill from the summary.
-    backBtn.disabled = current === 'start' || (current === 'drill' && currentIndex === 0);
+    // Back: step to the previous phase in the drill, or back into the drill from the summary.
+    backBtn.disabled = current === 'start' || (current === 'drill' && currentIndex === 0 && !isAnswerPhase);
     // Next: step to the next question (or into the summary) while the drill is active.
     nextBtn.disabled = current !== 'drill';
   }
@@ -714,16 +809,24 @@
   function showQuestion(i) {
     if (i >= order.length) { showSummary(); return; }
     currentIndex = i;
+    isAnswerPhase = false;
     var item = order[i];
     progressLabel.textContent = 'Question ' + (i + 1) + ' of ' + order.length;
     stage.style.setProperty('--cat-color', 'var(--' + item.cat + ')');
     stage.innerHTML =
       '<span class="law-chip ' + item.cat + '">' + CAT_LABEL[item.cat] + '</span>' +
       '<div class="stage-expr">' + expr(item.q) + '</div>';
-    startTimer(questionMs, 'q', function () { showAnswer(i); });
+    if (questionInfinite) {
+      stopTimer();
+      updateControls();
+    } else {
+      startTimer(questionMs, 'q', function () { showAnswer(i); });
+    }
   }
 
   function showAnswer(i) {
+    currentIndex = i;
+    isAnswerPhase = true;
     var item = order[i];
     var methodHtml = item.method.map(function (line) {
       return '<div class="method-line">' + expr(line) + '</div>';
@@ -733,7 +836,12 @@
       '<div class="stage-expr small">' + expr(item.q) + '</div>' +
       '<div class="answer-block">' + methodHtml +
       '<div class="final-answer">' + expr(item.a) + '</div></div>';
-    startTimer(answerMs, 'a', function () { showQuestion(i + 1); });
+    if (answerInfinite) {
+      stopTimer();
+      updateControls();
+    } else {
+      startTimer(answerMs, 'a', function () { showQuestion(i + 1); });
+    }
   }
 
   function showSummary() {
@@ -779,16 +887,18 @@
       current = 'drill';
       screenSummary.hidden = true;
       screenDrill.hidden = false;
-      showQuestion(order.length - 1);
+      showAnswer(order.length - 1);
+    } else if (current === 'drill' && isAnswerPhase) {
+      showQuestion(currentIndex);
     } else if (current === 'drill' && currentIndex > 0) {
-      showQuestion(currentIndex - 1);
+      showAnswer(currentIndex - 1);
     }
   });
 
   playBtn.addEventListener('click', function () {
     if (current === 'drill' && timer.running && timer.paused) {
       resumeTimer();
-    } else {
+    } else if (current !== 'drill') {
       startDrill();
     }
   });
@@ -798,8 +908,11 @@
   });
 
   nextBtn.addEventListener('click', function () {
-    if (current === 'drill') {
+    if (current !== 'drill') return;
+    if (isAnswerPhase) {
       showQuestion(currentIndex + 1);
+    } else {
+      showAnswer(currentIndex);
     }
   });
 
