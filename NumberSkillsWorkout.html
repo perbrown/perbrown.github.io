@@ -1,3 +1,5 @@
+
+
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Number Skills</title>
 <style>
@@ -83,6 +85,17 @@
     flex-direction: column;
   }
 
+  .page {
+    max-width: 1060px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    min-height: 0;
+  }
+
   .app {
     max-width: 820px;
     width: 100%;
@@ -94,6 +107,123 @@
   }
 
   [hidden] { display: none !important; }
+
+  /* ---------- timing sidebar ---------- */
+
+  .sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 16px;
+    margin-top: 10px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+  }
+
+  .sidebar-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .slider-field { display: flex; flex-direction: column; gap: 6px; }
+
+  .slider-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .slider-label .val {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .slider-field input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--rule-strong);
+    outline: none;
+    margin: 6px 0 0;
+  }
+  .slider-field input[type="range"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .infinite-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 2px;
+  }
+  .infinite-row input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--ink);
+    cursor: pointer;
+  }
+  .infinite-row label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .slider-field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--paper-raised);
+    box-shadow: 0 0 0 1px var(--rule-strong);
+    cursor: pointer;
+  }
+  .slider-field input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--paper-raised);
+    box-shadow: 0 0 0 1px var(--rule-strong);
+    cursor: pointer;
+  }
+  .slider-field#questionTimeField input[type="range"]::-webkit-slider-thumb { background: var(--abs); }
+  .slider-field#questionTimeField input[type="range"]::-moz-range-thumb { background: var(--abs); }
+  .slider-field#answerTimeField input[type="range"]::-webkit-slider-thumb { background: var(--muldiv); }
+  .slider-field#answerTimeField input[type="range"]::-moz-range-thumb { background: var(--muldiv); }
+
+  @media (max-width: 900px) {
+    .page { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      position: static;
+      margin-top: 0;
+      flex-direction: row;
+      gap: 22px;
+    }
+    .sidebar-title { display: none; }
+    .slider-field { flex: 1; }
+  }
+
+  @media (max-width: 480px) {
+    .sidebar { flex-direction: column; gap: 14px; }
+  }
 
   /* ---------- shared bits ---------- */
 
@@ -186,49 +316,6 @@
     .ctrl-btn { padding: 8px 10px; }
   }
 
-  /* ---------- timing sliders (right-aligned) ---------- */
-
-  .settings-row {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 18px;
-    padding-bottom: 12px;
-  }
-
-  .slider-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .slider-group .sg-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    white-space: nowrap;
-  }
-
-  .slider-group input[type="range"] {
-    width: 110px;
-    accent-color: var(--ink);
-  }
-
-  .slider-group .sg-val {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--ink);
-    min-width: 26px;
-    text-align: right;
-  }
-
-  @media (max-width: 480px) {
-    .slider-group input[type="range"] { width: 84px; }
-  }
-
   /* ---------- start screen ---------- */
 
   #screen-start {
@@ -236,7 +323,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 22px;
+    gap: 18px;
     padding-block: 24px;
   }
 
@@ -255,6 +342,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     min-height: 0;
     padding-block: 14px;
   }
@@ -293,7 +381,7 @@
 
   .stage {
     position: relative;
-    flex: 1;
+    flex: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -304,7 +392,8 @@
     background: var(--paper-raised);
     border: 1px solid var(--rule);
     padding: 32px 20px;
-    min-height: 260px;
+    height: clamp(340px, 56vh, 480px);
+    overflow-y: auto;
   }
 
   .paused-badge {
@@ -326,13 +415,13 @@
   .stage-expr {
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 700;
-    font-size: clamp(40px, 9vw, 88px);
+    font-size: clamp(36px, 8vw, 80px);
     line-height: 1.15;
     letter-spacing: -0.01em;
   }
 
   .stage-expr.small {
-    font-size: clamp(26px, 5vw, 46px);
+    font-size: clamp(24px, 5vw, 44px);
     color: var(--ink-soft);
     font-weight: 600;
   }
@@ -353,7 +442,7 @@
   .final-answer {
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 700;
-    font-size: clamp(38px, 9vw, 84px);
+    font-size: clamp(34px, 8vw, 72px);
     line-height: 1;
     color: var(--cat-color, var(--ink));
   }
@@ -394,6 +483,7 @@
     font-size: 12.5px;
     color: var(--ink-soft);
     margin-left: auto;
+    text-align: right;
   }
   .group.abs .group-head h2 { color: var(--abs); }
   .group.sign .group-head h2 { color: var(--sign); }
@@ -440,7 +530,7 @@
     .q { grid-template-columns: 20px 1fr auto; gap: 8px; }
     .qexpr, .qanswer { font-size: 13.5px; }
     .group-head .rule { display: none; }
-    .stage { padding: 24px 14px; min-height: 220px; }
+    .stage { padding: 24px 14px; height: clamp(280px, 50vh, 380px); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -448,6 +538,7 @@
   }
 </style>
 
+<div class="page">
 <div class="app">
 
   <!-- CONTROLS: present on every screen -->
@@ -459,26 +550,12 @@
     <button class="ctrl-btn restart" id="restartBtn" type="button"><span class="ico">⟲</span><span class="label">Restart</span></button>
   </div>
 
-  <!-- TIMING SLIDERS -->
-  <div class="settings-row">
-    <div class="slider-group">
-      <span class="sg-label">Question</span>
-      <input type="range" id="qTimeSlider" min="1" max="20" step="1" value="6">
-      <span class="sg-val" id="qTimeVal">6s</span>
-    </div>
-    <div class="slider-group">
-      <span class="sg-label">Answer</span>
-      <input type="range" id="aTimeSlider" min="1" max="20" step="1" value="3">
-      <span class="sg-val" id="aTimeVal">3s</span>
-    </div>
-  </div>
-
   <!-- START -->
   <div id="screen-start">
     <div>
       <p class="eyebrow">Grade 9 · Number Sense</p>
       <h1>Number Skills</h1>
-      <p class="subtitle">30 problems, shuffled at random. Use the sliders on the right to set how long each question and answer stay on screen.</p>
+      <p class="subtitle">30 problems, shuffled at random. Use the sliders to set how long each question and answer stays on screen, and Next to skip ahead any time.</p>
       <div class="law-strip">
         <span class="law-chip abs">|−a| = a</span>
         <span class="law-chip sign">combining signs</span>
@@ -507,6 +584,28 @@
     </div>
     <div class="summary-scroll" id="summaryList"></div>
   </div>
+
+</div>
+
+<aside class="sidebar">
+  <p class="sidebar-title">Timing</p>
+  <div class="slider-field" id="questionTimeField">
+    <label class="slider-label" for="questionTimeSlider">Question time <span class="val" id="questionTimeVal">6s</span></label>
+    <input type="range" id="questionTimeSlider" min="1" max="60" step="1" value="6">
+    <div class="infinite-row">
+      <input type="checkbox" id="questionInfiniteCheckbox">
+      <label for="questionInfiniteCheckbox">Infinite time</label>
+    </div>
+  </div>
+  <div class="slider-field" id="answerTimeField">
+    <label class="slider-label" for="answerTimeSlider">Answer time <span class="val" id="answerTimeVal">3s</span></label>
+    <input type="range" id="answerTimeSlider" min="1" max="60" step="1" value="3">
+    <div class="infinite-row">
+      <input type="checkbox" id="answerInfiniteCheckbox">
+      <label for="answerInfiniteCheckbox">Infinite time</label>
+    </div>
+  </div>
+</aside>
 
 </div>
 
@@ -598,26 +697,44 @@
   var pauseBtn = document.getElementById('pauseBtn');
   var nextBtn = document.getElementById('nextBtn');
   var restartBtn = document.getElementById('restartBtn');
-  var qTimeSlider = document.getElementById('qTimeSlider');
-  var aTimeSlider = document.getElementById('aTimeSlider');
-  var qTimeVal = document.getElementById('qTimeVal');
-  var aTimeVal = document.getElementById('aTimeVal');
+  var questionTimeSlider = document.getElementById('questionTimeSlider');
+  var answerTimeSlider = document.getElementById('answerTimeSlider');
+  var questionTimeVal = document.getElementById('questionTimeVal');
+  var answerTimeVal = document.getElementById('answerTimeVal');
+  var questionInfiniteCheckbox = document.getElementById('questionInfiniteCheckbox');
+  var answerInfiniteCheckbox = document.getElementById('answerInfiniteCheckbox');
 
-  var qSeconds = parseInt(qTimeSlider.value, 10);
-  var aSeconds = parseInt(aTimeSlider.value, 10);
+  var questionMs = Number(questionTimeSlider.value) * 1000;
+  var answerMs = Number(answerTimeSlider.value) * 1000;
+  var questionInfinite = false;
+  var answerInfinite = false;
 
-  qTimeSlider.addEventListener('input', function () {
-    qSeconds = parseInt(qTimeSlider.value, 10);
-    qTimeVal.textContent = qSeconds + 's';
+  questionTimeSlider.addEventListener('input', function () {
+    questionMs = Number(questionTimeSlider.value) * 1000;
+    questionTimeVal.textContent = questionTimeSlider.value + 's';
   });
-  aTimeSlider.addEventListener('input', function () {
-    aSeconds = parseInt(aTimeSlider.value, 10);
-    aTimeVal.textContent = aSeconds + 's';
+  answerTimeSlider.addEventListener('input', function () {
+    answerMs = Number(answerTimeSlider.value) * 1000;
+    answerTimeVal.textContent = answerTimeSlider.value + 's';
+  });
+
+  questionInfiniteCheckbox.addEventListener('change', function () {
+    questionInfinite = questionInfiniteCheckbox.checked;
+    questionTimeSlider.disabled = questionInfinite;
+    questionTimeVal.textContent = questionInfinite ? '∞' : questionTimeSlider.value + 's';
+    if (current === 'drill' && !isAnswerPhase) { showQuestion(currentIndex); }
+  });
+  answerInfiniteCheckbox.addEventListener('change', function () {
+    answerInfinite = answerInfiniteCheckbox.checked;
+    answerTimeSlider.disabled = answerInfinite;
+    answerTimeVal.textContent = answerInfinite ? '∞' : answerTimeSlider.value + 's';
+    if (current === 'drill' && isAnswerPhase) { showAnswer(currentIndex); }
   });
 
   var order = [];
   var current = 'start'; // 'start' | 'drill' | 'summary'
   var currentIndex = 0;
+  var isAnswerPhase = false;
 
   // ---- pause-capable phase timer, driven by requestAnimationFrame ----
   var timer = { duration: 0, remaining: 0, lastTime: 0, paused: false, running: false, onDone: null, rafId: null };
@@ -678,6 +795,7 @@
 
   function updateControls() {
     var drillActive = current === 'drill' && timer.running;
+    var untimedPhase = current === 'drill' && !timer.running && (isAnswerPhase ? answerInfinite : questionInfinite);
     stage.classList.toggle('is-paused', !!(drillActive && timer.paused));
     var badge = stage.querySelector('.paused-badge');
     if (drillActive && timer.paused) {
@@ -687,16 +805,24 @@
         badge.textContent = 'Paused';
         stage.appendChild(badge);
       }
+    } else if (untimedPhase) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'paused-badge';
+        stage.appendChild(badge);
+      }
+      badge.textContent = 'Untimed — tap Next';
     } else if (badge) {
       badge.remove();
     }
-    // Play: enabled to resume a paused drill, or to (re)start from start/summary.
-    playBtn.disabled = drillActive && !timer.paused;
+    // Play: enabled to resume a paused, still-running drill timer, or to (re)start from start/summary.
+    // While in the drill with no running timer (an infinite-time phase), Play does nothing, so it stays disabled.
+    playBtn.disabled = current === 'drill' && !(timer.running && timer.paused);
     // Pause: enabled only while the drill is actively counting down.
     pauseBtn.disabled = !(drillActive && !timer.paused);
     restartBtn.disabled = false;
-    // Back: step to the previous question in the drill, or back into the drill from the summary.
-    backBtn.disabled = current === 'start' || (current === 'drill' && currentIndex === 0);
+    // Back: step to the previous phase in the drill, or back into the drill from the summary.
+    backBtn.disabled = current === 'start' || (current === 'drill' && currentIndex === 0 && !isAnswerPhase);
     // Next: step to the next question (or into the summary) while the drill is active.
     nextBtn.disabled = current !== 'drill';
   }
@@ -704,16 +830,24 @@
   function showQuestion(i) {
     if (i >= order.length) { showSummary(); return; }
     currentIndex = i;
+    isAnswerPhase = false;
     var item = order[i];
     progressLabel.textContent = 'Question ' + (i + 1) + ' of ' + order.length;
     stage.style.setProperty('--cat-color', 'var(--' + item.cat + ')');
     stage.innerHTML =
       '<span class="law-chip ' + item.cat + '">' + CAT_LABEL[item.cat] + '</span>' +
       '<div class="stage-expr">' + expr(item.q) + '</div>';
-    startTimer(qSeconds * 1000, 'q', function () { showAnswer(i); });
+    if (questionInfinite) {
+      stopTimer();
+      updateControls();
+    } else {
+      startTimer(questionMs, 'q', function () { showAnswer(i); });
+    }
   }
 
   function showAnswer(i) {
+    currentIndex = i;
+    isAnswerPhase = true;
     var item = order[i];
     var methodHtml = item.method.map(function (line) {
       return '<div class="method-line">' + expr(line) + '</div>';
@@ -723,7 +857,12 @@
       '<div class="stage-expr small">' + expr(item.q) + '</div>' +
       '<div class="answer-block">' + methodHtml +
       '<div class="final-answer">' + expr(item.a) + '</div></div>';
-    startTimer(aSeconds * 1000, 'a', function () { showQuestion(i + 1); });
+    if (answerInfinite) {
+      stopTimer();
+      updateControls();
+    } else {
+      startTimer(answerMs, 'a', function () { showQuestion(i + 1); });
+    }
   }
 
   function showSummary() {
@@ -769,16 +908,18 @@
       current = 'drill';
       screenSummary.hidden = true;
       screenDrill.hidden = false;
-      showQuestion(order.length - 1);
+      showAnswer(order.length - 1);
+    } else if (current === 'drill' && isAnswerPhase) {
+      showQuestion(currentIndex);
     } else if (current === 'drill' && currentIndex > 0) {
-      showQuestion(currentIndex - 1);
+      showAnswer(currentIndex - 1);
     }
   });
 
   playBtn.addEventListener('click', function () {
     if (current === 'drill' && timer.running && timer.paused) {
       resumeTimer();
-    } else {
+    } else if (current !== 'drill') {
       startDrill();
     }
   });
@@ -788,8 +929,11 @@
   });
 
   nextBtn.addEventListener('click', function () {
-    if (current === 'drill') {
+    if (current !== 'drill') return;
+    if (isAnswerPhase) {
       showQuestion(currentIndex + 1);
+    } else {
+      showAnswer(currentIndex);
     }
   });
 
@@ -802,4 +946,3 @@
 </script>
 
 </body></html>
-
