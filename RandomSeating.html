@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,11 +155,6 @@
     flex-wrap:wrap;
     gap:8px;
   }
-  .bmc-container{
-    display:flex;
-    align-items:center;
-    flex-shrink:0;
-  }
   .menu-toggle{
     display:none;
     flex-direction:column;
@@ -183,7 +177,10 @@
     border-radius:2px;
   }
   .menu-toggle:hover{ background: rgba(255,255,255,0.18); }
-  button.tool{
+  .tool{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
     font-family: var(--font-body);
     font-weight:600;
     font-size: 0.85rem;
@@ -192,18 +189,25 @@
     border: 1px solid transparent;
     background: rgba(255,255,255,0.08);
     color:#F3EFE4;
+    text-decoration:none;
     cursor:pointer;
-    transition: background .15s ease, transform .1s ease;
+    transition: background .15s ease, transform .1s ease, border-color .15s ease;
   }
-  button.tool:hover{ background: rgba(255,255,255,0.18); }
-  button.tool:active{ transform: translateY(1px); }
-  button.tool.primary{ background: var(--accent); color:#241000; }
-  button.tool.primary:hover{ background: var(--accent-dark); }
-  button.tool.active-mode{
+  .tool:hover{ background: rgba(255,255,255,0.18); }
+  .tool:active{ transform: translateY(1px); }
+  .tool.primary{ background: var(--accent); color:#241000; }
+  .tool.primary:hover{ background: var(--accent-dark); }
+  .tool.active-mode{
     background: #F3EFE4;
     color: var(--deep-dark);
     box-shadow: 0 0 0 2px var(--accent) inset;
   }
+  .bmc-link{
+    margin-left:auto;
+    border-color: rgba(255,221,0,0.3);
+  }
+  .bmc-link:hover{ border-color: rgba(255,221,0,0.65); }
+  .bmc-link .bmc-icon{ font-size:0.95rem; }
 
   main{
     flex:1;
@@ -719,7 +723,7 @@
   @media (max-width: 720px){
     aside{ width: 180px; min-width:150px; }
     header h1{ font-size:1.05rem; }
-    button.tool{ padding:7px 10px; font-size:0.78rem; }
+    .tool{ padding:7px 10px; font-size:0.78rem; }
   }
 
   /* Collapse the toolbar into a hamburger menu once it no longer fits
@@ -748,7 +752,8 @@
       box-sizing:border-box;
     }
     .toolbar.open{ display:flex; }
-    .toolbar button.tool{ width:100%; text-align:left; flex-shrink:0; }
+    .toolbar .tool{ width:100%; text-align:left; flex-shrink:0; }
+    .bmc-link{ margin-left:0; }
   }
 
   /* Small screens: stack the canvas above the roster/groups panels instead
@@ -895,10 +900,10 @@
     <button class="tool" id="btnImportClassroom">Import Classroom</button>
     <button class="tool" id="btnPrintClassroom" title="Toggle on, then print from your browser's Print menu if this button doesn't open it directly">Print Classroom</button>
     <button class="tool" id="btnPrintByTable" title="Toggle on, then print from your browser's Print menu if this button doesn't open it directly">Print By Table</button>
+    <a class="tool bmc-link" id="btnCoffee" href="https://www.buymeacoffee.com/mr_b" target="_blank" rel="noopener noreferrer" title="Support this site">
+      <span class="bmc-icon" aria-hidden="true">&#9749;</span>Buy me a coffee
+    </a>
     <input type="file" id="fileInput" accept=".txt">
-  </div>
-  <div class="bmc-container">
-    <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="mr_b" data-color="#FFDD00" data-emoji="☕"  data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
   </div>
 </header>
 
@@ -1077,7 +1082,7 @@
   });
   // Tapping a tool closes the menu again so it doesn't sit open over the canvas.
   toolbarEl.addEventListener('click', (e)=>{
-    if(e.target.closest('button') && toolbarEl.classList.contains('open')){
+    if(e.target.closest('.tool') && toolbarEl.classList.contains('open')){
       toolbarEl.classList.remove('open');
       btnMenuToggle.setAttribute('aria-expanded', 'false');
     }
