@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +30,6 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html{-webkit-text-size-adjust:100%}
 body{
   margin:0; color:var(--ink); background-color:var(--paper);
   background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
@@ -169,6 +169,7 @@ footer{color:var(--muted);font-size:.85rem}
       <p class="msg" id="msg" aria-live="assertive"></p>
       <div class="actions">
         <button class="btn" id="hintBtn">Show hint (costs 1 guess)</button>
+        <button class="btn" id="answerBtn">Show answer</button>
         <button class="btn primary" id="nextBtn">Next game</button>
         <button class="btn" id="resetBtn">Restart level</button>
         <button class="btn" id="changeBtn">Change level</button>
@@ -372,11 +373,12 @@ function render(){
   $("hintText").hidden = !st.hint;
   $("hintText").textContent = "Hint: "+g.h;
   $("hintBtn").disabled = st.hint || !!st.done || left <= 1;
+  $("answerBtn").disabled = !!st.done;
 
   const m = $("msg");
   m.className = "msg";
   if(st.done==="won"){ m.textContent = "Solved it! Nice work."; m.classList.add("win"); }
-  else if(st.done==="lost"){ m.textContent = "Out of guesses. The word was "+g.w+"."; m.classList.add("lose"); }
+  else if(st.done==="lost"){ m.textContent = st.revealed ? "The answer is "+g.w+". This one counts as missed." : "Out of guesses. The word was "+g.w+"."; m.classList.add("lose"); }
   else m.textContent = "";
 
   document.querySelectorAll(".keys button").forEach(b=>{
@@ -396,6 +398,7 @@ function render(){
   $("nextBtn").disabled = won+lost===10;
 }
 
+$("answerBtn").onclick = ()=>{ const st = state[cur]; if(st.done) return; st.revealed = true; st.done = "lost"; render(); };
 $("hintBtn").onclick = ()=>{ const st = state[cur]; if(st.done||st.hint) return; st.hint = true; st.wrong++; check(); render(); };
 $("nextBtn").onclick = ()=>{
   for(let k=1;k<=10;k++){ const i=(cur+k)%10; if(!state[i].done){ cur=i; break; } }
