@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --ground:#e9eef3;
+  --ink:#16222e;
+  --muted:#5b6b7a;
+  --tray:#1f4e8c;
+  --tray-edge:#163a69;
+  --die:#fbfaf6;
+  --die-shade:#d9d6cc;
+  --die-ink:#1b1f24;
+  --accent:#f2b705;
+  --danger:#d8452f;
+  --panel:#ffffff;
+  --line:#cfd8e1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0f161e;
+    --ink:#e7edf3;
+    --muted:#95a4b3;
+    --tray:#1d4679;
+    --tray-edge:#10294a;
+    --panel:#17212c;
+    --line:#2a3a4b;
+    --danger:#ff6a52;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0f161e;
+  --ink:#e7edf3;
+  --muted:#95a4b3;
+  --tray:#1d4679;
+  --tray-edge:#10294a;
+  --panel:#17212c;
+  --line:#2a3a4b;
+  --danger:#ff6a52;
+}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+body{
+  background:var(--ground);color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding-inline:16px;padding-block:28px 40px;
+}
+.wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-weight:900;font-size:1.9rem;letter-spacing:-.02em}
+.sub{margin:0;color:var(--muted);font-size:.9rem}
+
+.clock{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px;
+}
+.time{
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;
+  font-size:2.6rem;font-variant-numeric:tabular-nums;line-height:1;
+}
+.time.low{color:var(--danger)}
+.bar{flex:1;height:8px;background:var(--line);border-radius:99px;overflow:hidden;max-width:180px}
+.bar span{display:block;height:100%;width:100%;background:var(--accent);transform-origin:left;transition:transform .25s linear}
+.time.low ~ .bar span{background:var(--danger)}
+
+.tray{
+  background:var(--tray);border-radius:18px;padding:14px;
+  box-shadow:inset 0 -6px 0 var(--tray-edge),0 10px 30px rgba(10,30,60,.25);
+  position:relative;
+}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.die{
+  aspect-ratio:1;max-width:100%;border-radius:18%;
+  background:radial-gradient(circle at 35% 30%,#fff 0,var(--die) 45%,var(--die-shade) 100%);
+  box-shadow:0 4px 0 rgba(0,0,0,.25),inset 0 -3px 0 rgba(0,0,0,.08);
+  display:grid;place-items:center;
+}
+.die b{
+  font-weight:900;color:var(--die-ink);font-size:clamp(1.6rem,9vw,2.8rem);line-height:1;
+  display:inline-block;transition:transform .2s;
+}
+.die b.qu{font-size:clamp(1.3rem,7vw,2.2rem)}
+.die b.ul{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:3px}
+.shaking .die{animation:shake .12s infinite alternate}
+@keyframes shake{from{transform:translate(-2px,1px) rotate(-3deg)}to{transform:translate(2px,-1px) rotate(3deg)}}
+.cover{
+  position:absolute;inset:0;border-radius:18px;display:grid;place-items:center;
+  background:rgba(15,30,55,.72);color:#fff;font-weight:900;font-size:2rem;letter-spacing:.02em;text-align:center;
+}
+
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+fieldset{border:0;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+legend{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px;font-weight:700}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt span{
+  display:inline-block;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
+  font-weight:700;cursor:pointer;user-select:none;
+}
+.opt input:checked + span{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.opt input:focus-visible + span{outline:3px solid var(--accent);outline-offset:2px}
+.opt input:disabled + span{opacity:.5;cursor:not-allowed}
+.btns{display:flex;gap:8px}
+button{
+  font:inherit;font-weight:900;font-size:1.05rem;border:0;border-radius:12px;padding:12px 22px;cursor:pointer;
+}
+#start{background:var(--accent);color:#1b1f24;box-shadow:0 4px 0 #b88900}
+#start:active{transform:translateY(2px);box-shadow:0 2px 0 #b88900}
+#stop{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.opts{display:flex;gap:14px;align-items:center;color:var(--muted);font-size:.9rem}
+.opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+@media (prefers-reduced-motion: reduce){.shaking .die{animation:none}.bar span{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Word Search</h1>
+    <p class="sub">Find words from touching letters. 3+ letters.</p>
+  </header>
+
+  <div class="clock" aria-live="polite">
+    <div class="time" id="time">3:00</div>
+    <div class="bar"><span id="bar"></span></div>
+  </div>
+
+  <div class="tray" id="tray">
+    <div class="grid" id="grid"></div>
+    <div class="cover" id="cover" hidden></div>
+  </div>
+
+  <div class="controls">
+    <fieldset id="mins">
+      <legend>Round length</legend>
+      <label class="opt"><input type="radio" name="m" id="m1" value="1"><span>1 min</span></label>
+      <label class="opt"><input type="radio" name="m" id="m2" value="2"><span>2 min</span></label>
+      <label class="opt"><input type="radio" name="m" id="m5" value="5"><span>5 min</span></label>
+    </fieldset>
+    <div class="btns">
+      <button id="stop" disabled>Stop</button>
+      <button id="start">Start</button>
+    </div>
+  </div>
+
+  <div class="opts">
+    <label><input type="checkbox" id="rot"> Rotate letters</label>
+    <label><input type="checkbox" id="snd" checked> Sound</label>
+  </div>
+</div>
+
+<script>
+// The 16 letter dice used for the grid
+const DICE=["AAEEGN","ABBJOO","ACHOPS","AFFKPS","AOOTTW","CIMOTU","DEILRX","DELRVY",
+            "DISTTY","EEGHNW","EEINSU","EHRTVW","EIOSST","ELRTTY","HIMNUQ","HLNNRZ"];
+const grid=document.getElementById('grid'),timeEl=document.getElementById('time'),
+      bar=document.getElementById('bar'),tray=document.getElementById('tray'),
+      cover=document.getElementById('cover'),startBtn=document.getElementById('start'),
+      stopBtn=document.getElementById('stop'),radios=[...document.querySelectorAll('input[name=m]')],
+      rot=document.getElementById('rot'),snd=document.getElementById('snd');
+let total=120,endAt=0,tick=null,audio=null;
+document.getElementById('m2').checked=true;
+
+function roll(){
+  const d=[...DICE];
+  for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+  grid.innerHTML='';
+  d.forEach(die=>{
+    let L=die[Math.floor(Math.random()*6)];
+    const cell=document.createElement('div');cell.className='die';
+    const b=document.createElement('b');
+    b.textContent=L==='Q'?'Qu':L;
+    if(L==='Q')b.className='qu';
+    if('MWNZ'.includes(L))b.classList.add('ul');
+    if(rot.checked)b.style.transform=`rotate(${[0,90,180,270][Math.floor(Math.random()*4)]}deg)`;
+    cell.appendChild(b);grid.appendChild(cell);
+  });
+}
+function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function selected(){return +radios.find(r=>r.checked).value*60;}
+function show(left){
+  timeEl.textContent=fmt(left);
+  timeEl.classList.toggle('low',left<=10&&tick!==null);
+  bar.style.transform=`scaleX(${Math.max(0,left/total)})`;
+}
+function beep(f,dur,when=0){
+  if(!snd.checked||!audio)return;
+  const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+when;
+  o.frequency.value=f;o.type='square';g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  o.connect(g).connect(audio.destination);o.start(t);o.stop(t+dur);
+}
+let lastSec=null;
+function loop(){
+  const left=(endAt-Date.now())/1000;
+  show(left);
+  const s=Math.ceil(left);
+  if(s!==lastSec&&s<=5&&s>0)beep(880,.08);
+  lastSec=s;
+  if(left<=0)finish(true);
+}
+function setRunning(on){
+  radios.forEach(r=>r.disabled=on);
+  startBtn.disabled=on;stopBtn.disabled=!on;
+}
+function start(){
+  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();audio.resume();}catch(e){}
+  total=selected();cover.hidden=true;
+  tray.classList.add('shaking');
+  let n=0;const shuffle=setInterval(()=>{roll();if(++n>=6){clearInterval(shuffle);tray.classList.remove('shaking');go();}},90);
+  setRunning(true);
+}
+function go(){
+  beep(660,.12);endAt=Date.now()+total*1000;lastSec=null;
+  tick=setInterval(loop,200);loop();
+}
+function finish(timeUp){
+  clearInterval(tick);tick=null;setRunning(false);
+  timeEl.classList.remove('low');
+  if(timeUp){
+    show(0);cover.textContent="Time's up!";cover.hidden=false;
+    beep(440,.25);beep(330,.25,.28);beep(220,.5,.56);
+    startBtn.textContent='New round';
+  }else{
+    show(total);startBtn.textContent='Start';
+  }
+}
+startBtn.addEventListener('click',start);
+stopBtn.addEventListener('click',()=>finish(false));
+radios.forEach(r=>r.addEventListener('change',()=>{total=selected();show(total);}));
+rot.addEventListener('change',()=>{ if(tick===null) roll(); else
+  grid.querySelectorAll('b').forEach(b=>b.style.transform=rot.checked?`rotate(${[0,90,180,270][Math.floor(Math.random()*4)]}deg)`:'');});
+
+roll();total=selected();show(total);
+</script>
+</body>
+</html>
