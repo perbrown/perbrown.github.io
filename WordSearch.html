@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -93,8 +94,11 @@ h1{margin:0;font-weight:900;font-size:1.9rem;letter-spacing:-.02em}
 @keyframes shake{from{transform:translate(-2px,1px) rotate(-3deg)}to{transform:translate(2px,-1px) rotate(3deg)}}
 .cover{
   position:absolute;inset:0;border-radius:18px;display:grid;place-items:center;
-  background:rgba(15,30,55,.72);color:#fff;font-weight:900;font-size:2rem;letter-spacing:.02em;text-align:center;
+  background:rgba(15,30,55,.35);color:#fff;font-weight:900;font-size:2.2rem;letter-spacing:.02em;text-align:center;
+  text-shadow:0 2px 12px rgba(0,0,0,.6);
 }
+.grid{transition:filter .4s,opacity .4s}
+.tray.over .grid{filter:grayscale(1);opacity:.4}
 
 .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 fieldset{border:0;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
@@ -167,7 +171,8 @@ const grid=document.getElementById('grid'),timeEl=document.getElementById('time'
       cover=document.getElementById('cover'),startBtn=document.getElementById('start'),
       stopBtn=document.getElementById('stop'),radios=[...document.querySelectorAll('input[name=m]')],
       rot=document.getElementById('rot'),snd=document.getElementById('snd');
-let total=120,endAt=0,tick=null,audio=null;
+let total=120,endAt=0,tick=null,audio=null,overTimer=null;
+function clearOver(){clearTimeout(overTimer);overTimer=null;cover.hidden=true;tray.classList.remove('over');}
 document.getElementById('m2').checked=true;
 
 function roll(){
@@ -213,7 +218,7 @@ function setRunning(on){
 }
 function start(){
   try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();audio.resume();}catch(e){}
-  total=selected();cover.hidden=true;
+  total=selected();clearOver();
   tray.classList.add('shaking');
   let n=0;const shuffle=setInterval(()=>{roll();if(++n>=6){clearInterval(shuffle);tray.classList.remove('shaking');go();}},90);
   setRunning(true);
@@ -226,7 +231,8 @@ function finish(timeUp){
   clearInterval(tick);tick=null;setRunning(false);
   timeEl.classList.remove('low');
   if(timeUp){
-    show(0);cover.textContent="Time's up!";cover.hidden=false;
+    show(0);cover.textContent="Time's up!";cover.hidden=false;tray.classList.add('over');
+    overTimer=setTimeout(clearOver,3000);
     beep(440,.25);beep(330,.25,.28);beep(220,.5,.56);
     startBtn.textContent='New round';
   }else{
@@ -236,7 +242,7 @@ function finish(timeUp){
 startBtn.addEventListener('click',start);
 stopBtn.addEventListener('click',()=>finish(false));
 radios.forEach(r=>r.addEventListener('change',()=>{total=selected();show(total);}));
-rot.addEventListener('change',()=>{ if(tick===null) roll(); else
+rot.addEventListener('change',()=>{
   grid.querySelectorAll('b').forEach(b=>b.style.transform=rot.checked?`rotate(${[0,90,180,270][Math.floor(Math.random()*4)]}deg)`:'');});
 
 roll();total=selected();show(total);
