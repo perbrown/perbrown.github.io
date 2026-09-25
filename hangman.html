@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hangman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --paper:#F6F7F2; --grid:#DCE4EE; --ink:#1E2A44; --muted:#5B6474; --margin:#D2463A;
+  --hi:#F2D35B; --card:#FFFFFF; --line:#C9D2DE; --good:#2E7D4F; --bad:#B8322A;
+  --key:#FFFFFF; --key-used:#E7EAF0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#171C26; --grid:#232B39; --ink:#E6EAF2; --muted:#9AA3B5; --margin:#E8675C;
+    --hi:#8C7420; --card:#1E2431; --line:#343E50; --good:#5CC48A; --bad:#F07B72;
+    --key:#232A38; --key-used:#1A1F2A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#171C26; --grid:#232B39; --ink:#E6EAF2; --muted:#9AA3B5; --margin:#E8675C;
+  --hi:#8C7420; --card:#1E2431; --line:#343E50; --good:#5CC48A; --bad:#F07B72;
+  --key:#232A38; --key-used:#1A1F2A;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; color:var(--ink); background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  font:16px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif;
+  padding-inline:16px; padding-block:24px 48px;
+}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--margin);padding-bottom:10px}
+h1{font-family:Kalam,"Comic Sans MS",cursive;font-weight:700;font-size:clamp(2rem,6vw,2.8rem);line-height:1;margin:0;text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--muted)}
+.score{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:.95rem;display:flex;gap:14px}
+.score b{font-size:1.2rem}
+.score .w b{color:var(--good)} .score .l b{color:var(--bad)}
+
+.levels{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.levels legend{float:left;margin-right:6px;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.levels label{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--line);border-radius:999px;background:var(--card);cursor:pointer;font-size:.9rem}
+.levels label:has(input:checked){border-color:var(--ink);background:var(--hi)}
+.levels input{accent-color:var(--ink);margin:0}
+.levels input:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.toggle{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.toggle legend{padding:0;margin-bottom:4px;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.seg{position:relative;display:inline-flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg label{padding:8px 18px;cursor:pointer;font-weight:700;color:var(--ink);background:var(--card)}
+.seg input:checked + label{background:var(--ink);color:var(--paper)}
+.seg input:focus-visible + label{outline:3px solid var(--hi);outline-offset:-3px}
+.picker{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.picker button{
+  font:700 1rem "JetBrains Mono",ui-monospace,monospace;padding:8px 0;border-radius:6px;
+  border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;position:relative
+}
+.picker button[aria-current="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
+.picker button.won{background:var(--good);color:#fff;border-color:var(--good)}
+.picker button.lost{background:var(--bad);color:#fff;border-color:var(--bad)}
+@media (max-width:520px){.picker{grid-template-columns:repeat(5,1fr)}}
+
+.board{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:20px;display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:center}
+@media (max-width:640px){.board{grid-template-columns:1fr;justify-items:center}}
+svg.gallows{width:200px;max-width:100%;height:auto}
+svg .base{stroke:var(--ink);stroke-width:5;stroke-linecap:round;fill:none}
+svg .part{stroke:var(--margin);stroke-width:5;stroke-linecap:round;fill:none;opacity:0;transition:opacity .25s}
+svg .part.on{opacity:1}
+@media (prefers-reduced-motion:reduce){svg .part{transition:none}}
+
+.info{display:flex;flex-direction:column;gap:14px;width:100%}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--hi);color:var(--ink)}
+.lives{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.clue{margin:0;font-size:1.05rem}
+.word{display:flex;flex-wrap:wrap;gap:6px;font-family:"JetBrains Mono",ui-monospace,monospace}
+.word span{width:1.6em;border-bottom:3px solid var(--ink);text-align:center;font-size:clamp(1.2rem,4vw,1.7rem);font-weight:700;line-height:1.4}
+.word span.miss{color:var(--bad)}
+.msg{min-height:1.6em;font-family:Kalam,cursive;font-size:1.35rem;margin:0}
+.msg.win{color:var(--good)} .msg.lose{color:var(--bad)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:700 .95rem "Atkinson Hyperlegible",system-ui,sans-serif;padding:8px 14px;border-radius:6px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.4;cursor:default}
+.hint{margin:0;color:var(--muted);font-style:italic}
+
+.keys{display:grid;grid-template-columns:repeat(13,1fr);gap:6px}
+@media (max-width:640px){.keys{grid-template-columns:repeat(7,1fr)}}
+.keys button{
+  font:700 1.05rem "JetBrains Mono",ui-monospace,monospace;padding:10px 0;border-radius:6px;
+  border:1.5px solid var(--line);background:var(--key);color:var(--ink);cursor:pointer
+}
+.keys button:hover:not(:disabled){border-color:var(--ink)}
+.keys button:disabled{background:var(--key-used);cursor:default}
+.keys button.right{color:var(--good);border-color:var(--good)}
+.keys button.wrong{color:var(--bad);border-color:var(--bad);text-decoration:line-through}
+button:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+footer{color:var(--muted);font-size:.85rem}
+.game{display:flex;flex-direction:column;gap:20px}
+.start{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.start h2{font-family:Kalam,"Comic Sans MS",cursive;font-size:1.6rem;margin:0;line-height:1.1}
+.start .levels{flex-direction:column;align-items:stretch;width:100%;max-width:360px}
+.start .levels legend{float:none;margin-bottom:4px}
+.start .levels label{border-radius:8px;font-size:1rem}
+.start .levels label input{order:-1}
+.startNote{margin:0;color:var(--muted)}
+.btn.big{font-size:1.15rem;padding:12px 36px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Hangman</h1>
+      <p class="sub" id="levelSub">Pick a topic and level, then press Start.</p>
+    </div>
+    <div class="score" id="scoreBox" aria-live="polite" hidden>
+      <span class="w">Solved <b id="won">0</b></span>
+      <span class="l">Missed <b id="lost">0</b></span>
+      <span>Left <b id="left">10</b></span>
+    </div>
+  </header>
+
+  <section class="start" id="startPanel">
+    <h2>Choose your game</h2>
+    <fieldset class="toggle" id="cats">
+      <legend>Topic</legend>
+      <div class="seg">
+        <input type="radio" name="cat" id="catCurriculum" value="curriculum" checked><label for="catCurriculum">Curriculum</label>
+        <input type="radio" name="cat" id="catPop" value="pop"><label for="catPop">Pop Culture</label>
+      </div>
+    </fieldset>
+    <fieldset class="levels" id="levels">
+      <legend>Level</legend>
+    </fieldset>
+    <p class="startNote">Each level has 10 words. You get 6 wrong guesses per word.</p>
+    <button class="btn primary big" id="startBtn">Start</button>
+  </section>
+
+  <div class="game" id="game" hidden>
+  <nav class="picker" id="picker" aria-label="Choose a game"></nav>
+
+  <section class="board">
+    <svg class="gallows" viewBox="0 0 200 240" aria-label="Hangman drawing" role="img">
+      <path class="base" d="M20 225 H140 M50 225 V20 H130 V45 M50 60 L85 20"/>
+      <circle class="part" cx="130" cy="67" r="22"/>
+      <path class="part" d="M130 89 V150"/>
+      <path class="part" d="M130 105 L105 130"/>
+      <path class="part" d="M130 105 L155 130"/>
+      <path class="part" d="M130 150 L108 190"/>
+      <path class="part" d="M130 150 L152 190"/>
+    </svg>
+    <div class="info">
+      <div class="meta">
+        <span class="chip" id="subject">Science</span>
+        <span class="lives" id="lives">6 wrong guesses left</span>
+      </div>
+      <p class="clue" id="clue"></p>
+      <div class="word" id="word" aria-live="polite"></div>
+      <p class="hint" id="hintText" hidden></p>
+      <p class="msg" id="msg" aria-live="assertive"></p>
+      <div class="actions">
+        <button class="btn" id="hintBtn">Show hint (costs 1 guess)</button>
+        <button class="btn primary" id="nextBtn">Next game</button>
+        <button class="btn" id="resetBtn">Restart level</button>
+        <button class="btn" id="changeBtn">Change level</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="keys" id="keys" aria-label="Letter keys"></div>
+  <footer>Tip: you can type letters on your keyboard too.</footer>
+  </div>
+</div>
+
+<script>
+const LEVELS = [
+{name:"Grade 9", games:[
+  {w:"PHOTOSYNTHESIS", s:"Science", c:"The process plants use to turn light, water and carbon dioxide into sugar.", h:"It happens in the chloroplasts and releases oxygen."},
+  {w:"HYPOTENUSE", s:"Math", c:"The longest side of a right triangle.", h:"It sits opposite the 90° angle in a² + b² = c²."},
+  {w:"METAPHOR", s:"English", c:"A figure of speech that says one thing IS another, without using 'like' or 'as'.", h:"\"The classroom was a zoo.\""},
+  {w:"CONFEDERATION", s:"Canadian History", c:"The 1867 union of colonies that created the Dominion of Canada.", h:"Ontario, Quebec, Nova Scotia and New Brunswick were the first four provinces."},
+  {w:"ECOSYSTEM", s:"Science", c:"A community of living things interacting with their physical environment.", h:"A pond, a forest or a coral reef are all examples."},
+  {w:"PARALLELOGRAM", s:"Math", c:"A four-sided shape with two pairs of parallel sides.", h:"Its area is base × height."},
+  {w:"PROTAGONIST", s:"English", c:"The main character in a story.", h:"The opposite of the antagonist."},
+  {w:"DEMOCRACY", s:"Social Studies", c:"A system of government where citizens choose their leaders by voting.", h:"From Greek: 'rule by the people'."},
+  {w:"RENAISSANCE", s:"History", c:"The European 'rebirth' of art, science and learning from the 14th to 17th centuries.", h:"Leonardo da Vinci and Michelangelo lived during it."},
+  {w:"ELECTRON", s:"Science", c:"A negatively charged particle that orbits the nucleus of an atom.", h:"Its flow through a wire is electric current."}
+]},
+{name:"Grade 10", games:[
+  {w:"MITOSIS", s:"Biology", c:"Cell division that produces two identical daughter cells.", h:"Prophase, metaphase, anaphase, telophase."},
+  {w:"QUADRATIC", s:"Math", c:"An equation or function where the highest power of x is 2.", h:"Its graph is a parabola."},
+  {w:"FORESHADOWING", s:"English", c:"A hint early in a story about what will happen later.", h:"The storm clouds gathering in chapter one…"},
+  {w:"SUFFRAGE", s:"History", c:"The right to vote in political elections.", h:"The women's movement of the early 1900s fought for it."},
+  {w:"CATALYST", s:"Chemistry", c:"A substance that speeds up a reaction without being used up.", h:"Enzymes are the biological version."},
+  {w:"TRIGONOMETRY", s:"Math", c:"The branch of math dealing with angles and side lengths of triangles.", h:"SOH CAH TOA."},
+  {w:"SOLILOQUY", s:"English", c:"A speech where a character speaks their thoughts aloud, alone on stage.", h:"\"To be, or not to be…\""},
+  {w:"BIODIVERSITY", s:"Science", c:"The variety of life found in a particular place.", h:"Rainforests have a lot of it."},
+  {w:"IMPERIALISM", s:"History", c:"A policy of extending a nation's power by taking control of other lands.", h:"The 'Scramble for Africa' is a key example."},
+  {w:"VELOCITY", s:"Physics", c:"Speed in a given direction.", h:"It's a vector, measured in m/s."}
+]},
+{name:"Grade 11", games:[
+  {w:"STOICHIOMETRY", s:"Chemistry", c:"Calculating amounts of reactants and products using balanced equations.", h:"Mole ratios are the key tool."},
+  {w:"LOGARITHM", s:"Math", c:"The exponent a base must be raised to in order to produce a given number.", h:"log₁₀(1000) = 3."},
+  {w:"ALLEGORY", s:"English", c:"A story whose characters and events stand for larger ideas.", h:"Animal Farm is a famous one."},
+  {w:"MERCANTILISM", s:"Economics", c:"An economic theory that colonies exist to enrich the mother country through trade.", h:"Exports good, imports bad; hoard gold."},
+  {w:"MEIOSIS", s:"Biology", c:"Cell division that produces four gametes with half the chromosomes.", h:"It creates sperm and egg cells."},
+  {w:"ASYMPTOTE", s:"Math", c:"A line a curve approaches but never touches.", h:"y = 1/x has two of them."},
+  {w:"JUXTAPOSITION", s:"English", c:"Placing two contrasting things side by side for effect.", h:"\"It was the best of times, it was the worst of times.\""},
+  {w:"MOMENTUM", s:"Physics", c:"Mass multiplied by velocity.", h:"p = mv, and it's conserved in collisions."},
+  {w:"ISOTOPE", s:"Chemistry", c:"Atoms of the same element with different numbers of neutrons.", h:"Carbon-14 is used for dating fossils."},
+  {w:"TOTALITARIANISM", s:"History", c:"A system where the state holds total control over public and private life.", h:"Orwell's 1984 depicts one."}
+]},
+{name:"Grade 12", games:[
+  {w:"DERIVATIVE", s:"Calculus", c:"The instantaneous rate of change of a function.", h:"The slope of the tangent line."},
+  {w:"ELECTRONEGATIVITY", s:"Chemistry", c:"An atom's tendency to attract shared electrons in a bond.", h:"Fluorine has the highest value."},
+  {w:"HAMARTIA", s:"English", c:"The tragic flaw that leads to a hero's downfall.", h:"Macbeth's ambition is a classic case."},
+  {w:"EQUILIBRIUM", s:"Chemistry", c:"The state where forward and reverse reaction rates are equal.", h:"Le Chatelier's principle predicts how it shifts."},
+  {w:"TRANSCRIPTION", s:"Biology", c:"The process of copying DNA into messenger RNA.", h:"The first step of protein synthesis."},
+  {w:"INTEGRAL", s:"Calculus", c:"The area under a curve.", h:"The reverse of differentiation."},
+  {w:"DECOLONIZATION", s:"History", c:"The process of colonies gaining independence from imperial powers.", h:"India in 1947 and much of Africa in the 1960s."},
+  {w:"SOVEREIGNTY", s:"Law & Civics", c:"Supreme authority of a state to govern itself.", h:"No outside power controls it."},
+  {w:"EXISTENTIALISM", s:"Philosophy", c:"The view that individuals create their own meaning in a meaningless universe.", h:"Sartre and Camus."},
+  {w:"INFLATION", s:"Economics", c:"A general rise in prices that reduces purchasing power.", h:"Measured with the Consumer Price Index."}
+]},
+{name:"College", games:[
+  {w:"EPISTEMOLOGY", s:"Philosophy", c:"The branch of philosophy that studies knowledge and justified belief.", h:"\"How do we know what we know?\""},
+  {w:"EIGENVALUE", s:"Linear Algebra", c:"A scalar λ where Av = λv for some nonzero vector v.", h:"Found by solving det(A − λI) = 0."},
+  {w:"PHOSPHORYLATION", s:"Biochemistry", c:"Adding a phosphate group to a molecule.", h:"How ATP is made, and how many enzymes are switched on."},
+  {w:"HEGEMONY", s:"Political Science", c:"Dominance of one group or state over others, often through consent as well as force.", h:"Gramsci wrote about the cultural kind."},
+  {w:"ENTROPY", s:"Thermodynamics", c:"A measure of disorder that never decreases in an isolated system.", h:"The second law."},
+  {w:"HETEROSKEDASTICITY", s:"Statistics", c:"When the variance of regression errors is not constant.", h:"A fan-shaped residual plot."},
+  {w:"OLIGOPOLY", s:"Economics", c:"A market dominated by a small number of large firms.", h:"Think airlines or cell phone carriers."},
+  {w:"PALIMPSEST", s:"Literature", c:"A manuscript written over an erased earlier text, or anything with layered traces of its past.", h:"Medieval scribes scraped and reused parchment."},
+  {w:"SYNECDOCHE", s:"Rhetoric", c:"A figure of speech where a part stands for the whole.", h:"\"All hands on deck.\""},
+  {w:"NEUROPLASTICITY", s:"Psychology", c:"The brain's ability to rewire itself by forming new connections.", h:"It's why practice changes the brain."}
+]}
+];
+const POP = [
+{games:[
+  {w:"MINECRAFT", s:"Video Games", c:"A block-building game where you mine resources and survive the night.", h:"Creepers explode; Steve is the default player."},
+  {w:"SPIDERMAN", s:"Superheroes", c:"The web-slinging hero from Queens, New York.", h:"Peter Parker's alter ego."},
+  {w:"POKEMON", s:"Video Games", c:"A franchise about catching and training creatures.", h:"\"Gotta catch 'em all!\""},
+  {w:"EMOJI", s:"Internet", c:"A small picture used in texts to show a face or feeling.", h:"😂 is one of the most used."},
+  {w:"SELFIE", s:"Internet", c:"A photo you take of yourself, usually with a phone.", h:"Front-facing camera."},
+  {w:"PODCAST", s:"Media", c:"An audio show you can download or stream by episode.", h:"Like radio, but on demand."},
+  {w:"SUPERHERO", s:"Movies", c:"A character with special powers who fights crime.", h:"Many wear capes."},
+  {w:"OLYMPICS", s:"Sports", c:"A worldwide sports event held every four years, with five rings as its symbol.", h:"Gold, silver, bronze."},
+  {w:"HASHTAG", s:"Social Media", c:"The # symbol used to tag a topic in a post.", h:"#ThrowbackThursday"},
+  {w:"CARTOON", s:"TV", c:"An animated TV show or film.", h:"Saturday mornings used to be full of them."}
+]},
+{games:[
+  {w:"FORTNITE", s:"Video Games", c:"A battle royale game where 100 players drop onto an island.", h:"You can build walls and dance emotes."},
+  {w:"AVENGERS", s:"Movies", c:"Marvel's team of heroes including Iron Man, Thor and Captain America.", h:"\"Assemble!\""},
+  {w:"INFLUENCER", s:"Social Media", c:"Someone paid to promote products to their online followers.", h:"Sponsored posts."},
+  {w:"PLAYLIST", s:"Music", c:"A list of songs saved to play in order or on shuffle.", h:"You might make one for a road trip."},
+  {w:"ANIME", s:"TV & Film", c:"Animation style that comes from Japan.", h:"Naruto and One Piece are examples."},
+  {w:"SKATEBOARDING", s:"Sports", c:"A board sport that became an Olympic event in 2021.", h:"Kickflips and ollies."},
+  {w:"SITCOM", s:"TV", c:"A comedy series built around the same characters and places each episode.", h:"Short for 'situation comedy'."},
+  {w:"KARAOKE", s:"Music", c:"Singing along to music with the lyrics shown on a screen.", h:"Japanese for 'empty orchestra'."},
+  {w:"SEQUEL", s:"Movies", c:"A movie or book that continues an earlier story.", h:"Part 2."},
+  {w:"MASCOT", s:"Sports", c:"A costumed character that represents a team.", h:"It pumps up the crowd at games."}
+]},
+{games:[
+  {w:"HOGWARTS", s:"Books & Movies", c:"The school of witchcraft and wizardry in Harry Potter.", h:"Four houses, one Sorting Hat."},
+  {w:"WAKANDA", s:"Movies", c:"The hidden, high-tech African nation in Black Panther.", h:"\"Forever!\""},
+  {w:"TATOOINE", s:"Movies", c:"The desert planet with two suns where Luke Skywalker grew up.", h:"Star Wars."},
+  {w:"NARNIA", s:"Books & Movies", c:"The magical land reached through a wardrobe.", h:"Aslan the lion rules it."},
+  {w:"HYRULE", s:"Video Games", c:"The kingdom where The Legend of Zelda takes place.", h:"Link protects it."},
+  {w:"GOTHAM", s:"Comics", c:"The dark city Batman protects.", h:"The Joker causes trouble there."},
+  {w:"POKEDEX", s:"Video Games", c:"The device that records every creature a trainer has seen or caught.", h:"Professor Oak gives you one."},
+  {w:"LIGHTSABER", s:"Movies", c:"The glowing energy sword used by Jedi and Sith.", h:"Blue, green, red or purple."},
+  {w:"QUIDDITCH", s:"Books & Movies", c:"The flying broomstick sport played at wizarding school.", h:"Catch the Golden Snitch."},
+  {w:"TARDIS", s:"TV", c:"The time machine in Doctor Who that looks like a blue police box.", h:"It's bigger on the inside."}
+]},
+{games:[
+  {w:"PAPARAZZI", s:"Celebrity", c:"Photographers who chase celebrities for candid pictures.", h:"From an Italian film character's name."},
+  {w:"MULTIVERSE", s:"Movies", c:"The idea of many parallel universes existing at once.", h:"Spider-Verse and Doctor Strange explore it."},
+  {w:"SPEEDRUN", s:"Video Games", c:"Beating a game as fast as possible, often for a world record.", h:"Players use glitches to skip levels."},
+  {w:"MOCKUMENTARY", s:"TV & Film", c:"A fictional show filmed in the style of a documentary.", h:"The Office and Parks and Recreation."},
+  {w:"CROSSOVER", s:"TV & Comics", c:"When characters from different stories appear together.", h:"Think Smash Bros. or Fortnite skins."},
+  {w:"CINEMATOGRAPHY", s:"Film", c:"The art of camera work and lighting in a movie.", h:"There's an Oscar for it."},
+  {w:"BLOCKBUSTER", s:"Movies", c:"A hugely popular, big-budget movie.", h:"Also the name of a video rental chain."},
+  {w:"SOUNDTRACK", s:"Music & Film", c:"The music that accompanies a movie, show or game.", h:"You can buy it as an album."},
+  {w:"FRANCHISE", s:"Media", c:"A series of related movies, games and products built on one idea.", h:"Star Wars, Marvel, Pokémon."},
+  {w:"ESPORTS", s:"Gaming", c:"Competitive video gaming played in organized tournaments.", h:"League of Legends Worlds fills stadiums."}
+]},
+{games:[
+  {w:"MACGUFFIN", s:"Film", c:"An object that drives the plot but matters little in itself.", h:"Hitchcock popularized the term."},
+  {w:"ZEITGEIST", s:"Culture", c:"The spirit or mood of a particular period in time.", h:"German for 'time spirit'."},
+  {w:"RETCON", s:"Fandom", c:"Changing earlier story facts after the fact.", h:"Short for 'retroactive continuity'."},
+  {w:"SHOWRUNNER", s:"TV", c:"The person with overall creative control of a TV series.", h:"Usually also the head writer."},
+  {w:"METAVERSE", s:"Tech", c:"A shared virtual world where people meet as avatars.", h:"Facebook renamed itself Meta after it."},
+  {w:"DOPPELGANGER", s:"Culture", c:"A lookalike or double of a living person.", h:"German for 'double-walker'."},
+  {w:"SYNTHWAVE", s:"Music", c:"A music genre inspired by 1980s film and video game soundtracks.", h:"Neon grids and retro synthesizers."},
+  {w:"AUTOTUNE", s:"Music", c:"Software that corrects or robotically warps a singer's pitch.", h:"T-Pain made it famous."},
+  {w:"CLIFFHANGER", s:"TV", c:"An ending that leaves the audience in suspense.", h:"\"To be continued…\""},
+  {w:"ANTIHERO", s:"Film & Books", c:"A main character who lacks traditional heroic qualities.", h:"Deadpool is a classic example."}
+]}
+];
+const CATS = {curriculum:LEVELS, pop:POP};
+const MAX = 6;
+const $ = id => document.getElementById(id);
+const parts = [...document.querySelectorAll("svg .part")];
+let GAMES, state, cur, level = 0, cat = "curriculum";
+
+function fresh(){ state = GAMES.map(()=>({guessed:new Set(), wrong:0, hint:false, done:null})); cur = 0; }
+function buildLevels(){
+  for(let i=0;i<5;i++){
+    const lab = document.createElement("label");
+    lab.innerHTML = '<input type="radio" name="level" id="level'+(i+1)+'" value="'+i+'"'+(i===0?" checked":"")+'> Level '+(i+1);
+    $("levels").appendChild(lab);
+  }
+}
+
+function buildPicker(){
+  $("picker").innerHTML = "";
+  GAMES.forEach((g,i)=>{
+    const b = document.createElement("button");
+    b.id = "pick"+i; b.textContent = i+1;
+    b.setAttribute("aria-label","Game "+(i+1));
+    b.onclick = ()=>{ cur=i; render(); };
+    $("picker").appendChild(b);
+  });
+}
+function buildKeys(){
+  $("keys").innerHTML = "";
+  for(let i=65;i<=90;i++){
+    const L = String.fromCharCode(i), b = document.createElement("button");
+    b.id = "key"+L; b.textContent = L; b.onclick = ()=>guess(L);
+    $("keys").appendChild(b);
+  }
+}
+
+function guess(L){
+  const g = GAMES[cur], st = state[cur];
+  if(st.done || st.guessed.has(L)) return;
+  st.guessed.add(L);
+  if(!g.w.includes(L)) st.wrong++;
+  check(); render();
+}
+function check(){
+  const g = GAMES[cur], st = state[cur];
+  if([...g.w].every(ch=>st.guessed.has(ch))) st.done = "won";
+  else if(st.wrong >= MAX) st.done = "lost";
+}
+
+function render(){
+  const g = GAMES[cur], st = state[cur];
+  $("subject").textContent = g.s;
+  $("clue").textContent = "Game "+(cur+1)+": "+g.c;
+  const left = MAX - st.wrong;
+  $("lives").textContent = left+" wrong guess"+(left===1?"":"es")+" left";
+  parts.forEach((p,i)=>p.classList.toggle("on", i < st.wrong));
+
+  $("word").innerHTML = [...g.w].map(ch=>{
+    const shown = st.guessed.has(ch);
+    if(shown) return "<span>"+ch+"</span>";
+    if(st.done==="lost") return '<span class="miss">'+ch+"</span>";
+    return "<span>&nbsp;</span>";
+  }).join("");
+  $("word").setAttribute("aria-label", [...g.w].map(ch=>st.guessed.has(ch)?ch:"blank").join(" "));
+
+  $("hintText").hidden = !st.hint;
+  $("hintText").textContent = "Hint: "+g.h;
+  $("hintBtn").disabled = st.hint || !!st.done || left <= 1;
+
+  const m = $("msg");
+  m.className = "msg";
+  if(st.done==="won"){ m.textContent = "Solved it! Nice work."; m.classList.add("win"); }
+  else if(st.done==="lost"){ m.textContent = "Out of guesses. The word was "+g.w+"."; m.classList.add("lose"); }
+  else m.textContent = "";
+
+  document.querySelectorAll(".keys button").forEach(b=>{
+    const L = b.textContent, used = st.guessed.has(L);
+    b.disabled = used || !!st.done;
+    b.classList.toggle("right", used && g.w.includes(L));
+    b.classList.toggle("wrong", used && !g.w.includes(L));
+  });
+
+  document.querySelectorAll(".picker button").forEach((b,i)=>{
+    b.className = state[i].done || "";
+    b.setAttribute("aria-current", i===cur ? "true" : "false");
+  });
+  const won = state.filter(s=>s.done==="won").length, lost = state.filter(s=>s.done==="lost").length;
+  $("won").textContent = won; $("lost").textContent = lost; $("left").textContent = 10-won-lost;
+  $("nextBtn").textContent = (won+lost===10) ? "All done!" : "Next game";
+  $("nextBtn").disabled = won+lost===10;
+}
+
+$("hintBtn").onclick = ()=>{ const st = state[cur]; if(st.done||st.hint) return; st.hint = true; st.wrong++; check(); render(); };
+$("nextBtn").onclick = ()=>{
+  for(let k=1;k<=10;k++){ const i=(cur+k)%10; if(!state[i].done){ cur=i; break; } }
+  render();
+};
+$("resetBtn").onclick = ()=>{ fresh(); render(); };
+document.addEventListener("keydown", e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if($("game").hidden){ if(e.key==="Enter"){ e.preventDefault(); startGame(); } return; }
+  const L = e.key.toUpperCase();
+  if(/^[A-Z]$/.test(L)) guess(L);
+  else if(e.key==="Enter" && state[cur].done) $("nextBtn").click();
+});
+
+function startGame(){
+  const sel = document.querySelector('input[name="level"]:checked');
+  level = sel ? +sel.value : 0;
+  const c = document.querySelector('input[name="cat"]:checked');
+  cat = c ? c.value : "curriculum";
+  GAMES = CATS[cat][level].games;
+  fresh();
+  $("levelSub").textContent = (cat==="pop"?"Pop Culture":"Curriculum")+" · Level "+(level+1)+" · 10 words";
+  $("startPanel").hidden = true;
+  $("game").hidden = false; $("scoreBox").hidden = false;
+  render();
+}
+function showStart(){
+  $("game").hidden = true; $("scoreBox").hidden = true; $("startPanel").hidden = false;
+  $("levelSub").textContent = "Pick a topic and level, then press Start.";
+  const r = $("level"+(level+1)); if(r){ r.checked = true; r.focus(); }
+}
+$("startBtn").onclick = startGame;
+$("changeBtn").onclick = showStart;
+
+GAMES = CATS.curriculum[0].games; buildLevels(); buildPicker(); buildKeys(); fresh();
+</script>
+</body>
+</html>
