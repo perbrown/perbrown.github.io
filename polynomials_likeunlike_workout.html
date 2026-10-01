@@ -1,0 +1,946 @@
+<title>Polynomial Terms Workout</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
+
+  :root {
+    --paper: #faf6ec;
+    --paper-raised: #ffffff;
+    --ink: #262019;
+    --ink-soft: #6b6154;
+    --rule: #ded4bd;
+    --rule-strong: #c9bc9c;
+
+    --mul: #2f6f62;
+    --mul-bg: #e7f0ea;
+    --div: #a86a1f;
+    --div-bg: #f6ead3;
+    --pow: #6a4a8f;
+    --pow-bg: #ede4f5;
+    --mix: #a13c3c;
+    --mix-bg: #f6dfdc;
+
+    --focus: #2f6f62;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1c1812;
+      --paper-raised: #24201a;
+      --ink: #ece4d3;
+      --ink-soft: #a89d89;
+      --rule: #3c3427;
+      --rule-strong: #4c4231;
+
+      --mul: #7fbfa8;
+      --mul-bg: #24352d;
+      --div: #e0a95a;
+      --div-bg: #3a2f1c;
+      --pow: #c3a3e6;
+      --pow-bg: #322a42;
+      --mix: #e08d84;
+      --mix-bg: #3a2422;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #1c1812;
+    --paper-raised: #24201a;
+    --ink: #ece4d3;
+    --ink-soft: #a89d89;
+    --rule: #3c3427;
+    --rule-strong: #4c4231;
+
+    --mul: #7fbfa8;
+    --mul-bg: #24352d;
+    --div: #e0a95a;
+    --div-bg: #3a2f1c;
+    --pow: #c3a3e6;
+    --pow-bg: #322a42;
+    --mix: #e08d84;
+    --mix-bg: #3a2422;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Public Sans', system-ui, sans-serif;
+    margin: 0;
+    padding-inline: 20px;
+    padding-block: 20px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .layout {
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    gap: 28px;
+    min-height: 0;
+  }
+
+  .app {
+    max-width: 760px;
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  [hidden] { display: none !important; }
+
+  /* ---------- timing sidebar ---------- */
+
+  .sidebar {
+    width: 168px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 12px;
+    margin-top: 10px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+  }
+
+  .sidebar-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .slider-field { display: flex; flex-direction: column; gap: 5px; }
+
+  .slider-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .slider-label .val {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .slider-field input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--rule-strong);
+    outline: none;
+    margin: 6px 0 0;
+  }
+  .slider-field input[type="range"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .slider-field input[type="range"]:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  .infinite-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 2px;
+  }
+  .infinite-row input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--ink);
+    cursor: pointer;
+  }
+  .infinite-row label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .slider-field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--paper-raised);
+    box-shadow: 0 0 0 1px var(--rule-strong);
+    cursor: pointer;
+  }
+  .slider-field input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--paper-raised);
+    box-shadow: 0 0 0 1px var(--rule-strong);
+    cursor: pointer;
+  }
+  .slider-field#questionTimeField input[type="range"]::-webkit-slider-thumb { background: var(--mul); }
+  .slider-field#questionTimeField input[type="range"]::-moz-range-thumb { background: var(--mul); }
+  .slider-field#answerTimeField input[type="range"]::-webkit-slider-thumb { background: var(--mix); }
+  .slider-field#answerTimeField input[type="range"]::-moz-range-thumb { background: var(--mix); }
+
+  @media (max-width: 760px) {
+    .layout { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      position: static;
+      margin-top: 0;
+      flex-direction: row;
+      gap: 22px;
+    }
+    .sidebar-title { display: none; }
+    .slider-field { flex: 1; }
+  }
+
+  @media (max-width: 480px) {
+    .sidebar { flex-direction: column; gap: 14px; }
+  }
+
+  /* ---------- shared bits ---------- */
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(30px, 6vw, 42px);
+    letter-spacing: -0.01em;
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+
+  .law-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 7px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .law-chip.mul { color: var(--mul); background: var(--mul-bg); }
+  .law-chip.div { color: var(--div); background: var(--div-bg); }
+  .law-chip.pow { color: var(--pow); background: var(--pow-bg); }
+  .law-chip.mix { color: var(--mix); background: var(--mix-bg); }
+
+  .expr sup, .method sup {
+    font-size: 0.62em;
+    position: relative;
+    top: -0.5em;
+  }
+
+  button {
+    font-family: 'Public Sans', sans-serif;
+    cursor: pointer;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ---------- control bar (present on every screen) ---------- */
+
+  .controlbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-block: 10px;
+    background: var(--paper);
+  }
+
+  .ctrl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--paper-raised);
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 8px;
+    padding: 7px 12px;
+  }
+  .ctrl-btn:hover:not(:disabled) { border-color: var(--ink-soft); }
+  .ctrl-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+  .ctrl-btn .ico { font-size: 12px; line-height: 1; }
+  .ctrl-btn.restart { color: var(--mix); border-color: var(--mix-bg); background: var(--mix-bg); }
+  .ctrl-btn.restart:disabled { color: var(--ink); border-color: var(--rule-strong); background: var(--paper-raised); }
+
+  @media (max-width: 480px) {
+    .ctrl-btn span.label { display: none; }
+    .ctrl-btn { padding: 8px 10px; }
+  }
+
+  /* ---------- start screen ---------- */
+
+  #screen-start {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 22px;
+    padding-block: 24px;
+  }
+
+  .law-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+  .subtitle {
+    color: var(--ink-soft);
+    font-size: 15px;
+    max-width: 56ch;
+    margin: 0;
+  }
+
+  /* ---------- drill screen ---------- */
+
+  #screen-drill {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-block: 14px;
+  }
+
+  .drill-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .progress {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .timerbar-track {
+    display: none;
+  }
+  .timerbar-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: var(--ink-soft);
+    transform-origin: left;
+    transform: scaleX(1);
+  }
+  .timerbar-fill.run {
+    transition: transform linear;
+  }
+  .timerbar-fill.q { background: var(--cat-color, var(--ink-soft)); }
+  .timerbar-fill.a { background: var(--ink); }
+
+  .stage {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 18px;
+    border-radius: 18px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    padding: 32px 20px;
+    min-height: 260px;
+  }
+
+  .paused-badge {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--rule);
+    padding: 5px 10px;
+    border-radius: 999px;
+  }
+
+  .stage-expr {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: clamp(44px, 11vw, 108px);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .prompt-line {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(20px, 3.6vw, 30px);
+    text-wrap: balance;
+  }
+  .stage-expr.long { font-size: clamp(30px, 7vw, 68px); }
+  .stage-expr.small.long { font-size: clamp(22px, 4.5vw, 40px); }
+  .final-answer.long { font-size: clamp(28px, 6.5vw, 60px); }
+  .qprompt {
+    display: block;
+    font-family: 'Public Sans', sans-serif;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  .stage-expr.small {
+    font-size: clamp(30px, 6vw, 56px);
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .answer-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .method-line {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(15px, 2.6vw, 19px);
+    color: var(--ink-soft);
+  }
+
+  .final-answer {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: clamp(38px, 9vw, 84px);
+    line-height: 1;
+    color: var(--cat-color, var(--ink));
+  }
+
+  /* ---------- summary screen ---------- */
+
+  #screen-summary {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding-block: 20px;
+    gap: 20px;
+  }
+
+  .summary-scroll {
+    overflow-y: auto;
+  }
+
+  section.group { margin-bottom: 26px; }
+  section.group:last-child { margin-bottom: 0; }
+
+  .group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--rule-strong);
+  }
+  .group-head h2 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: 19px;
+    margin: 0;
+  }
+  .group-head .rule {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-left: auto;
+  }
+  .group.mul .group-head h2 { color: var(--mul); }
+  .group.div .group-head h2 { color: var(--div); }
+  .group.pow .group-head h2 { color: var(--pow); }
+  .group.mix .group-head h2 { color: var(--mix); }
+
+  ol.qlist { list-style: none; margin: 0; padding: 0; }
+
+  .q {
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    align-items: baseline;
+    gap: 12px;
+    padding-block: 11px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .q:last-child { border-bottom: none; }
+
+  .qnum {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+  .qexpr {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15.5px;
+    font-weight: 500;
+  }
+  .qanswer {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .group.mul .qanswer { color: var(--mul); }
+  .group.div .qanswer { color: var(--div); }
+  .group.pow .qanswer { color: var(--pow); }
+  .group.mix .qanswer { color: var(--mix); }
+
+  @media (max-width: 480px) {
+    .q { grid-template-columns: 20px 1fr auto; gap: 8px; }
+    .qexpr, .qanswer { font-size: 13.5px; }
+    .group-head .rule { display: none; }
+    .stage { padding: 24px 14px; min-height: 220px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .timerbar-fill.run { transition-duration: 0.01ms !important; }
+  }
+</style>
+
+<div class="layout">
+<div class="app">
+
+  <!-- CONTROLS: present on every screen -->
+  <div class="controlbar">
+    <button class="ctrl-btn back" id="backBtn" type="button"><span class="ico">◀</span><span class="label">Back</span></button>
+    <button class="ctrl-btn play" id="playBtn" type="button"><span class="ico">▶</span><span class="label">Play</span></button>
+    <button class="ctrl-btn pause" id="pauseBtn" type="button"><span class="ico">⏸</span><span class="label">Pause</span></button>
+    <button class="ctrl-btn next" id="nextBtn" type="button"><span class="label">Next</span><span class="ico">▶</span></button>
+    <button class="ctrl-btn restart" id="restartBtn" type="button"><span class="ico">⟲</span><span class="label">Restart</span></button>
+  </div>
+
+  <!-- START -->
+  <div id="screen-start">
+    <div>
+      <p class="eyebrow">Grade 9 · Algebra</p>
+      <h1>Polynomial Terms Workout</h1>
+      <p class="subtitle">20 problems, shuffled at random. Use the sliders to set how long each question and answer stays on screen, and Next to skip ahead any time.</p>
+      <div class="law-strip">
+        <span class="law-chip mul">−7x²: coefficient −7</span>
+        <span class="law-chip div">−7x²: variable x</span>
+        <span class="law-chip pow">3x &amp; −5x are like terms</span>
+        <span class="law-chip mix">x² &amp; x are unlike terms</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRILL -->
+  <div id="screen-drill" hidden>
+    <div class="drill-head">
+      <span class="progress" id="progressLabel">Question 1 of 20</span>
+      <div class="timerbar-track"><div class="timerbar-fill" id="timerFill"></div></div>
+    </div>
+    <div class="stage" id="stage"></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div id="screen-summary" hidden>
+    <div>
+      <p class="eyebrow">Drill complete</p>
+      <h1>All 20, Reviewed</h1>
+      <p class="subtitle">Every question and its answer, grouped by skill.</p>
+    </div>
+    <div class="summary-scroll" id="summaryList"></div>
+  </div>
+
+</div>
+
+  <!-- SETTINGS: right-hand rail, present on every screen -->
+  <aside class="sidebar">
+    <p class="sidebar-title">Timing</p>
+    <div class="slider-field" id="questionTimeField">
+      <label class="slider-label" for="questionTimeSlider">Question time <span class="val" id="questionTimeVal">45s</span></label>
+      <input type="range" id="questionTimeSlider" min="1" max="60" step="1" value="45">
+      <div class="infinite-row">
+        <input type="checkbox" id="questionInfiniteCheckbox">
+        <label for="questionInfiniteCheckbox">Infinite time</label>
+      </div>
+    </div>
+    <div class="slider-field" id="answerTimeField">
+      <label class="slider-label" for="answerTimeSlider">Answer time <span class="val" id="answerTimeVal">15s</span></label>
+      <input type="range" id="answerTimeSlider" min="1" max="60" step="1" value="15">
+      <div class="infinite-row">
+        <input type="checkbox" id="answerInfiniteCheckbox">
+        <label for="answerInfiniteCheckbox">Infinite time</label>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+(function () {
+  function expr(str) {
+    return str
+      .replace(/\^\(([^)]+)\)/g, '<sup>$1</sup>')
+      .replace(/\^(-?\d+)/g, '<sup>$1</sup>');
+  }
+
+  var CAT_LABEL = { mul: 'Coefficients', div: 'Variables & Constants', pow: 'Like or Unlike?', mix: 'Find the Like Terms' };
+  var CAT_RULE = {
+    mul: 'the number in front, sign included',
+    div: 'the letters in a term',
+    pow: 'same variables, same exponents',
+    mix: 'match variables and exponents'
+  };
+
+  // [prompt, expression, method lines, answer]
+  var bank = {
+    mul: [
+      ['What is the coefficient?', '7x^3', ['the number multiplying the variable'], '7'],
+      ['What is the coefficient?', '−4ab', ['the sign belongs to the coefficient'], '−4'],
+      ['What is the coefficient?', 'y^2', ['no number shown means 1 · y^2'], '1'],
+      ['What is the coefficient?', '−m^5', ['−m^5 means −1 · m^5'], '−1'],
+      ['What is the coefficient?', '½x', ['the fraction multiplies x'], '½'],
+      ['Coefficient of the x term?', '5x^2 − 8x + 2', ['the x term is −8x', 'keep the sign in front of it'], '−8']
+    ],
+    div: [
+      ['Name the variable(s)', '9xy', ['the letters in the term'], 'x and y'],
+      ['Name the variable(s)', '−2a^2b', ['the exponent 2 belongs to a only'], 'a and b'],
+      ['Name the variable(s)', '12', ['a number alone is a constant'], 'none'],
+      ['Name the variable(s)', '6p^3q^2r', ['three different letters'], 'p, q and r'],
+      ['Variable and its exponent?', '4t^3', ['variable t, raised to the 3rd power'], 't, exponent 3'],
+      ['What is the constant term?', '3x^2 + 5x − 9', ['the term with no variable', 'keep its sign'], '−9']
+    ],
+    pow: [
+      ['Like or unlike terms?', '3x  and  −7x', ['both have x to the power 1', 'coefficients can differ'], 'Like'],
+      ['Like or unlike terms?', '4x^2  and  4x', ['exponents differ: 2 and 1'], 'Unlike'],
+      ['Like or unlike terms?', '5ab  and  −2ba', ['ab and ba are the same variables'], 'Like'],
+      ['Like or unlike terms?', '6y  and  6z', ['different variables: y and z'], 'Unlike'],
+      ['Like or unlike terms?', 'x^2y  and  xy^2', ['x^2y has x squared', 'xy^2 has y squared'], 'Unlike'],
+      ['Like or unlike terms?', '9  and  −3', ['both are constants'], 'Like']
+    ],
+    mix: [
+      ['Which terms are like terms?', '2x^2 + 5x − 3x^2 + 1', ['x^2 terms: 2x^2 and −3x^2', '5x and 1 have no match'], '2x^2 and −3x^2'],
+      ['Which terms are like terms?', '4a − 2b + 7 − a', ['a terms: 4a and −a', '−2b and 7 have no match'], '4a and −a']
+    ]
+  };
+
+  var CAT_ORDER = ['mul', 'div', 'pow', 'mix'];
+  var master = [];
+  CAT_ORDER.forEach(function (cat) {
+    bank[cat].forEach(function (item) {
+      master.push({ cat: cat, prompt: item[0], q: item[1], method: item[2], a: item[3] });
+    });
+  });
+
+  function longCls(str, n) { return str.length > n ? ' long' : ''; }
+
+  function shuffled(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  var screenStart = document.getElementById('screen-start');
+  var screenDrill = document.getElementById('screen-drill');
+  var screenSummary = document.getElementById('screen-summary');
+  var stage = document.getElementById('stage');
+  var progressLabel = document.getElementById('progressLabel');
+  var timerFill = document.getElementById('timerFill');
+  var backBtn = document.getElementById('backBtn');
+  var playBtn = document.getElementById('playBtn');
+  var pauseBtn = document.getElementById('pauseBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var restartBtn = document.getElementById('restartBtn');
+  var questionTimeSlider = document.getElementById('questionTimeSlider');
+  var answerTimeSlider = document.getElementById('answerTimeSlider');
+  var questionTimeVal = document.getElementById('questionTimeVal');
+  var answerTimeVal = document.getElementById('answerTimeVal');
+  var questionInfiniteCheckbox = document.getElementById('questionInfiniteCheckbox');
+  var answerInfiniteCheckbox = document.getElementById('answerInfiniteCheckbox');
+
+  var questionMs = Number(questionTimeSlider.value) * 1000;
+  var answerMs = Number(answerTimeSlider.value) * 1000;
+  var questionInfinite = false;
+  var answerInfinite = false;
+
+  questionTimeSlider.addEventListener('input', function () {
+    questionMs = Number(questionTimeSlider.value) * 1000;
+    questionTimeVal.textContent = questionTimeSlider.value + 's';
+  });
+  answerTimeSlider.addEventListener('input', function () {
+    answerMs = Number(answerTimeSlider.value) * 1000;
+    answerTimeVal.textContent = answerTimeSlider.value + 's';
+  });
+
+  questionInfiniteCheckbox.addEventListener('change', function () {
+    questionInfinite = questionInfiniteCheckbox.checked;
+    questionTimeSlider.disabled = questionInfinite;
+    questionTimeVal.textContent = questionInfinite ? '∞' : questionTimeSlider.value + 's';
+    if (current === 'drill' && !isAnswerPhase) { showQuestion(currentIndex); }
+  });
+  answerInfiniteCheckbox.addEventListener('change', function () {
+    answerInfinite = answerInfiniteCheckbox.checked;
+    answerTimeSlider.disabled = answerInfinite;
+    answerTimeVal.textContent = answerInfinite ? '∞' : answerTimeSlider.value + 's';
+    if (current === 'drill' && isAnswerPhase) { showAnswer(currentIndex); }
+  });
+
+  var order = [];
+  var current = 'start'; // 'start' | 'drill' | 'summary'
+  var currentIndex = 0;
+  var isAnswerPhase = false;
+
+  // ---- pause-capable phase timer, driven by requestAnimationFrame ----
+  var timer = { duration: 0, remaining: 0, lastTime: 0, paused: false, running: false, onDone: null, rafId: null };
+
+  function timerLoop(now) {
+    if (!timer.running) return;
+    var dt = now - timer.lastTime;
+    timer.lastTime = now;
+    if (!timer.paused) {
+      timer.remaining = Math.max(0, timer.remaining - dt);
+      var frac = timer.duration ? timer.remaining / timer.duration : 0;
+      timerFill.style.transform = 'scaleX(' + frac + ')';
+      if (timer.remaining <= 0) {
+        timer.running = false;
+        var cb = timer.onDone;
+        timer.onDone = null;
+        cb && cb();
+        return;
+      }
+    }
+    timer.rafId = requestAnimationFrame(timerLoop);
+  }
+
+  function startTimer(ms, cls, onDone) {
+    if (timer.rafId) cancelAnimationFrame(timer.rafId);
+    timer.duration = ms;
+    timer.remaining = ms;
+    timer.paused = false;
+    timer.running = true;
+    timer.onDone = onDone;
+    timerFill.className = 'timerbar-fill ' + cls;
+    timerFill.style.transform = 'scaleX(1)';
+    timer.lastTime = performance.now();
+    timer.rafId = requestAnimationFrame(timerLoop);
+    updateControls();
+  }
+
+  function stopTimer() {
+    if (timer.rafId) cancelAnimationFrame(timer.rafId);
+    timer.running = false;
+    timer.onDone = null;
+  }
+
+  function pauseTimer() {
+    if (timer.running && !timer.paused) {
+      timer.paused = true;
+      updateControls();
+    }
+  }
+
+  function resumeTimer() {
+    if (timer.running && timer.paused) {
+      timer.paused = false;
+      timer.lastTime = performance.now();
+      updateControls();
+    }
+  }
+
+  function updateControls() {
+    var drillActive = current === 'drill' && timer.running;
+    var untimedPhase = current === 'drill' && !timer.running && (isAnswerPhase ? answerInfinite : questionInfinite);
+    stage.classList.toggle('is-paused', !!(drillActive && timer.paused));
+    var badge = stage.querySelector('.paused-badge');
+    if (drillActive && timer.paused) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'paused-badge';
+        badge.textContent = 'Paused';
+        stage.appendChild(badge);
+      }
+    } else if (untimedPhase) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'paused-badge';
+        stage.appendChild(badge);
+      }
+      badge.textContent = 'Untimed — tap Next';
+    } else if (badge) {
+      badge.remove();
+    }
+    // Play: enabled to resume a paused, still-running drill timer, or to (re)start from start/summary.
+    // While in the drill with no running timer (an infinite-time phase), Play does nothing, so it stays disabled.
+    playBtn.disabled = current === 'drill' && !(timer.running && timer.paused);
+    // Pause: enabled only while the drill is actively counting down.
+    pauseBtn.disabled = !(drillActive && !timer.paused);
+    restartBtn.disabled = false;
+    // Back: step to the previous phase in the drill, or back into the drill from the summary.
+    backBtn.disabled = current === 'start' || (current === 'drill' && currentIndex === 0 && !isAnswerPhase);
+    // Next: step to the next question (or into the summary) while the drill is active.
+    nextBtn.disabled = current !== 'drill';
+  }
+
+  function showQuestion(i) {
+    if (i >= order.length) { showSummary(); return; }
+    currentIndex = i;
+    isAnswerPhase = false;
+    var item = order[i];
+    progressLabel.textContent = 'Question ' + (i + 1) + ' of ' + order.length;
+    stage.style.setProperty('--cat-color', 'var(--' + item.cat + ')');
+    stage.innerHTML =
+      '<span class="law-chip ' + item.cat + '">' + CAT_LABEL[item.cat] + '</span>' +
+      '<div class="prompt-line">' + item.prompt + '</div>' +
+      '<div class="stage-expr' + longCls(item.q, 8) + '">' + expr(item.q) + '</div>';
+    if (questionInfinite) {
+      stopTimer();
+      updateControls();
+    } else {
+      startTimer(questionMs, 'q', function () { showAnswer(i); });
+    }
+  }
+
+  function showAnswer(i) {
+    currentIndex = i;
+    isAnswerPhase = true;
+    var item = order[i];
+    var methodHtml = item.method.map(function (line) {
+      return '<div class="method-line">' + expr(line) + '</div>';
+    }).join('');
+    stage.innerHTML =
+      '<span class="law-chip ' + item.cat + '">' + CAT_LABEL[item.cat] + '</span>' +
+      '<div class="prompt-line">' + item.prompt + '</div>' +
+      '<div class="stage-expr small' + longCls(item.q, 12) + '">' + expr(item.q) + '</div>' +
+      '<div class="answer-block">' + methodHtml +
+      '<div class="final-answer' + longCls(item.a, 8) + '">' + expr(item.a) + '</div></div>';
+    if (answerInfinite) {
+      stopTimer();
+      updateControls();
+    } else {
+      startTimer(answerMs, 'a', function () { showQuestion(i + 1); });
+    }
+  }
+
+  function showSummary() {
+    stopTimer();
+    current = 'summary';
+    screenDrill.hidden = true;
+    screenSummary.hidden = false;
+    updateControls();
+    var list = document.getElementById('summaryList');
+    list.innerHTML = '';
+    CAT_ORDER.forEach(function (cat) {
+      var section = document.createElement('section');
+      section.className = 'group ' + cat;
+      section.innerHTML =
+        '<div class="group-head"><h2>' + CAT_LABEL[cat] + '</h2><span class="rule">' + CAT_RULE[cat] + '</span></div>' +
+        '<ol class="qlist"></ol>';
+      var ol = section.querySelector('ol');
+      bank[cat].forEach(function (pair, n) {
+        var li = document.createElement('li');
+        li.className = 'q';
+        li.innerHTML =
+          '<span class="qnum">' + (n + 1) + '.</span>' +
+          '<span class="qexpr"><span class="qprompt">' + pair[0] + '</span>' + expr(pair[1]) + '</span>' +
+          '<span class="qanswer">' + expr(pair[3]) + '</span>';
+        ol.appendChild(li);
+      });
+      list.appendChild(section);
+    });
+  }
+
+  function startDrill() {
+    stopTimer();
+    order = shuffled(master);
+    current = 'drill';
+    screenStart.hidden = true;
+    screenSummary.hidden = true;
+    screenDrill.hidden = false;
+    showQuestion(0);
+  }
+
+  backBtn.addEventListener('click', function () {
+    if (current === 'summary') {
+      current = 'drill';
+      screenSummary.hidden = true;
+      screenDrill.hidden = false;
+      showAnswer(order.length - 1);
+    } else if (current === 'drill' && isAnswerPhase) {
+      showQuestion(currentIndex);
+    } else if (current === 'drill' && currentIndex > 0) {
+      showAnswer(currentIndex - 1);
+    }
+  });
+
+  playBtn.addEventListener('click', function () {
+    if (current === 'drill' && timer.running && timer.paused) {
+      resumeTimer();
+    } else if (current !== 'drill') {
+      startDrill();
+    }
+  });
+
+  pauseBtn.addEventListener('click', function () {
+    pauseTimer();
+  });
+
+  nextBtn.addEventListener('click', function () {
+    if (current !== 'drill') return;
+    if (isAnswerPhase) {
+      showQuestion(currentIndex + 1);
+    } else {
+      showAnswer(currentIndex);
+    }
+  });
+
+  restartBtn.addEventListener('click', function () {
+    startDrill();
+  });
+
+  updateControls();
+})();
+</script>
+
