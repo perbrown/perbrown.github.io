@@ -67,6 +67,11 @@ button:focus-visible{outline:2px solid var(--dv);outline-offset:2px}
       <canvas id="hodo" aria-label="Head to tail construction: v2, then minus v1 from its tip, giving delta v"></canvas>
       <small>Same circle, same scale. v₁ and v₂ are moved to the middle of the step. From the tip of v₂, draw v₁ reversed. Δv runs from the start to the end, along the dashed line to the centre.</small>
     </div>
+    <div class="plot">
+      <h2>Velocity space</h2>
+      <canvas id="vspace" aria-label="The current velocity vector drawn from the centre"></canvas>
+      <small>v₂ alone, with its tail at the centre. The dashed circle has radius v.</small>
+    </div>
   </div>
 
   <div class="btns">
@@ -142,6 +147,13 @@ function draw(){
     label(x,'v',px+(V+14)*bx,py+(V+14)*by,C.vel);
   }
   x.fillStyle=C.fg;x.beginPath();x.arc(ox,oy,3.5,0,7);x.fill();
+  // ---- velocity space: v2 from the centre ----
+  [x,w]=setup($('vspace'));
+  { const c=w/2, Vv=w*.3, [ux,uy]=vel(t2);
+    x.strokeStyle=C.line;x.lineWidth=1.5;x.setLineDash([4,5]);x.beginPath();x.arc(c,c,Vv,0,7);x.stroke();x.setLineDash([]);
+    arrow(x,c,c,c+Vv*ux,c+Vv*uy,C.vel,3);
+    label(x,k>0?'v₂':'v',c+(Vv+16)*ux,c+(Vv+16)*uy,C.vel);
+    x.fillStyle=C.fg;x.beginPath();x.arc(c,c,3.5,0,7);x.fill(); }
   // ---- controls ----
   $('tArc').textContent=['0','π/4','π/2','3π/4','π','5π/4','3π/2','7π/4','2π'][k]+(k?' · v':'');
   $('stepOut').textContent=k>0?`Step ${k} of 8 · ${(k-1)*45}° to ${k*45}°`:'Start · 0° · press Next';
@@ -158,3 +170,4 @@ draw();
 </script>
 </body>
 </html>
+
