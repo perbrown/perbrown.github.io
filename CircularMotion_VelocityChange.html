@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Velocity Hodograph</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: short statement, two matched square plots at the same scale (path | vector subtraction), then the step buttons. */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --fg:#17202b; --muted:#5b6878; --line:#d5dbe3;
+  --vel:#0b7a75; --old:#4f74a0; --dv:#c8501e; --ghost:#b4c0cc; --trail:#e0a88c;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10161d; --panel:#18212b; --fg:#e6ecf2; --muted:#93a1b1; --line:#2b3744;
+  --vel:#3fc9c0; --old:#8fb0d0; --dv:#f08a55; --ghost:#3f4d5b; --trail:#7d4f38; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#10161d; --panel:#18212b; --fg:#e6ecf2; --muted:#93a1b1; --line:#2b3744;
+  --vel:#3fc9c0; --old:#8fb0d0; --dv:#f08a55; --ghost:#3f4d5b; --trail:#7d4f38; color-scheme:dark }
+*{box-sizing:border-box}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body);padding-block:28px 48px;padding-inline:16px}
+main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font:600 clamp(26px,4.5vw,38px)/1.1 var(--display);margin:0;text-wrap:balance}
+h2{font:600 13px/1.3 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0;max-width:65ch}
+.lede{display:flex;flex-direction:column;gap:10px}
+.c1{color:var(--old);font-weight:600}.c2{color:var(--vel);font-weight:600}.cd{color:var(--dv);font-weight:600}
+.plots{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.plot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.plot small{color:var(--muted);font-size:13px}
+canvas{width:100%;aspect-ratio:1;display:block;max-width:100%}
+.btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#stepOut{font:500 14px var(--mono);color:var(--muted)}
+button{font:600 15px var(--body);padding:10px 16px;border-radius:6px;border:1px solid var(--vel);background:var(--vel);color:var(--bg);cursor:pointer}
+button.sec{background:transparent;color:var(--vel)}
+button:disabled{opacity:.4;cursor:default}
+#total{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:14px}
+#total div{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
+#total b{font:600 20px var(--mono);font-variant-numeric:tabular-nums;color:var(--dv)}
+#total div+div{color:var(--muted);font-size:14px}
+#total div+div b{font-size:15px;color:var(--muted);font-weight:500}
+.why{display:flex;flex-direction:column;gap:10px}
+button:focus-visible{outline:2px solid var(--dv);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+  <div class="lede">
+    <h1>The change in velocity points at the centre</h1>
+    <p>Step the particle 45° around the circle. Subtract the velocity before from the velocity after by adding its reverse: <span class="cd">Δv</span> = <span class="c2">v₂</span> + (<span class="c1">−v₁</span>). Move that <span class="cd">Δv</span> back onto the path and it aims straight at the centre.</p>
+  </div>
+
+  <div class="plots">
+    <div class="plot">
+      <h2>On the path</h2>
+      <canvas id="orbit" aria-label="Particle on a circular path with velocity before and after a 45 degree step, and the change in velocity pointing at the centre"></canvas>
+      <small>Δv from the right-hand panel, placed at the middle of the step. The dashed line runs on to the centre.</small>
+    </div>
+    <div class="plot">
+      <h2>Subtracting the vectors</h2>
+      <canvas id="hodo" aria-label="Head to tail construction: v2, then minus v1 from its tip, giving delta v"></canvas>
+      <small>Same circle, same scale. v₁ and v₂ are moved to the middle of the step. From the tip of v₂, draw v₁ reversed. Δv runs from the start to the end, along the dashed line to the centre.</small>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button id="back" class="sec" type="button">Back</button>
+    <button id="next" type="button">Next 45°</button>
+    <span id="stepOut"></span>
+  </div>
+  <div id="total">
+    <div><span>Running total of |Δv|, counting π/4 · v for each 45° the velocity turns</span><b id="tArc"></b></div>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const S={k:1}, STEP=Math.PI/4;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function setup(c){const d=window.devicePixelRatio||1,w=c.clientWidth;c.width=c.height=Math.round(w*d);const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,w);return [x,w];}
+function arrow(x,x0,y0,x1,y1,col,w,dash){const a=Math.atan2(y1-y0,x1-x0),h=Math.min(15,Math.hypot(x1-x0,y1-y0)*.4);
+  x.strokeStyle=x.fillStyle=col;x.lineWidth=w;x.setLineDash(dash||[]);x.beginPath();x.moveTo(x0,y0);x.lineTo(x1,y1);x.stroke();x.setLineDash([]);
+  x.beginPath();x.moveTo(x1,y1);x.lineTo(x1-h*Math.cos(a-.4),y1-h*Math.sin(a-.4));x.lineTo(x1-h*Math.cos(a+.4),y1-h*Math.sin(a+.4));x.closePath();x.fill();}
+function label(x,t,px,py,col){x.fillStyle=col;x.font='600 14px '+css('--mono');x.textAlign='center';x.textBaseline='middle';x.fillText(t,px,py);}
+// label beside the middle of a segment, pushed off to one side
+function side(x,t,x0,y0,x1,y1,col,off){const l=Math.hypot(x1-x0,y1-y0)||1,nx=-(y1-y0)/l,ny=(x1-x0)/l;label(x,t,(x0+x1)/2+nx*off,(y0+y1)/2+ny*off,col);}
+function draw(){
+  const C={vel:css('--vel'),old:css('--old'),dv:css('--dv'),ghost:css('--ghost'),trail:css('--trail'),line:css('--line'),fg:css('--fg'),muted:css('--muted')};
+  const k=S.k, t2=k*STEP, t1=(k-1)*STEP, tm=(t1+t2)/2;
+  // unit vectors in screen coordinates (y down): velocity direction and inward direction at angle t
+  const vel=t=>[-Math.sin(t),-Math.cos(t)], inw=t=>[-Math.cos(t),Math.sin(t)];
+  // ---- on the path ----
+  let [x,w]=setup($('orbit')), cx=w/2, cy=w/2; const R=w*.24, V=w*.3, D=2*V*Math.sin(STEP/2);
+  x.strokeStyle=C.line;x.lineWidth=1.5;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+  const P=t=>[cx+R*Math.cos(t),cy-R*Math.sin(t)];
+  for(let i=0;i<8;i++){const [a,b]=P(i*STEP);x.fillStyle=C.ghost;x.beginPath();x.arc(a,b,3,0,7);x.fill();}
+  x.fillStyle=C.fg;x.beginPath();x.arc(cx,cy,3.5,0,7);x.fill();
+  const onPath=(t,col,name)=>{const [px,py]=P(t),[ux,uy]=vel(t);
+    arrow(x,px,py,px+V*ux,py+V*uy,col,3);
+    x.fillStyle=C.fg;x.beginPath();x.arc(px,py,5,0,7);x.fill();
+    label(x,name,px+(V+14)*ux,py+(V+14)*uy,col);};
+  if(k>0){
+    x.strokeStyle=C.fg;x.lineWidth=3;x.beginPath();x.arc(cx,cy,R,-t1,-t2,true);x.stroke();
+    const [mx,my]=P(tm),[ix,iy]=inw(tm);
+    x.strokeStyle=C.dv;x.lineWidth=1.5;x.setLineDash([4,5]);x.beginPath();x.moveTo(mx,my);x.lineTo(cx,cy);x.stroke();x.setLineDash([]);
+    arrow(x,mx,my,mx+D*ix,my+D*iy,C.dv,3.5);
+    label(x,'Δv',mx-18*ix,my-18*iy,C.dv);
+    onPath(t1,C.old,'v₁');
+  }
+  onPath(t2,C.vel,k>0?'v₂':'v');
+  // ---- subtraction, drawn on the same circle and at the same scale ----
+  [x,w]=setup($('hodo'));
+  const ox=w/2, oy=w/2, Pr=t=>[ox+R*Math.cos(t),oy-R*Math.sin(t)];
+  x.strokeStyle=C.line;x.lineWidth=1.5;x.beginPath();x.arc(ox,oy,R,0,7);x.stroke();
+  for(let i=0;i<8;i++){const [a,b]=Pr(i*STEP);x.fillStyle=C.ghost;x.beginPath();x.arc(a,b,3,0,7);x.fill();}
+  const [bx,by]=vel(t2);
+  // trail: the arc already covered and the Δv found at each earlier step
+  if(k>1){x.strokeStyle=C.muted;x.lineWidth=3;x.beginPath();x.arc(ox,oy,R,0,-t1,true);x.stroke();}
+  for(let i=1;i<k;i++){const tq=(i-.5)*STEP,[qx,qy]=Pr(tq),[ix,iy]=inw(tq);arrow(x,qx,qy,qx+D*ix,qy+D*iy,C.trail,2.5);}
+  if(k>0){
+    x.strokeStyle=C.fg;x.lineWidth=3;x.beginPath();x.arc(ox,oy,R,-t1,-t2,true);x.stroke();
+    const [mx,my]=Pr(tm),[ax,ay]=vel(t1);
+    const tip1=[mx+V*ax,my+V*ay], tip2=[mx+V*bx,my+V*by], end=[tip2[0]-V*ax,tip2[1]-V*ay];
+    x.strokeStyle=C.dv;x.lineWidth=1.5;x.setLineDash([4,5]);x.beginPath();x.moveTo(mx,my);x.lineTo(ox,oy);x.stroke();x.setLineDash([]);
+    arrow(x,mx,my,tip1[0],tip1[1],C.ghost,2,[5,5]);
+    side(x,'v₁',mx,my,tip1[0],tip1[1],C.muted,-14);
+    arrow(x,mx,my,tip2[0],tip2[1],C.vel,3);
+    side(x,'v₂',mx,my,tip2[0],tip2[1],C.vel,14);
+    arrow(x,tip2[0],tip2[1],end[0],end[1],C.old,3);
+    side(x,'−v₁',tip2[0],tip2[1],end[0],end[1],C.old,20);
+    arrow(x,mx,my,end[0],end[1],C.dv,3.5);
+    side(x,'Δv',mx,my,end[0],end[1],C.dv,-18);
+    x.fillStyle=C.fg;x.beginPath();x.arc(mx,my,4,0,7);x.fill();
+  } else {
+    const [px,py]=Pr(0);
+    arrow(x,px,py,px+V*bx,py+V*by,C.vel,3);
+    label(x,'v',px+(V+14)*bx,py+(V+14)*by,C.vel);
+  }
+  x.fillStyle=C.fg;x.beginPath();x.arc(ox,oy,3.5,0,7);x.fill();
+  // ---- controls ----
+  $('tArc').textContent=['0','π/4','π/2','3π/4','π','5π/4','3π/2','7π/4','2π'][k]+(k?' · v':'');
+  $('stepOut').textContent=k>0?`Step ${k} of 8 · ${(k-1)*45}° to ${k*45}°`:'Start · 0° · press Next';
+  $('next').textContent=k>=8?'Start again':'Next 45°';
+  $('back').disabled=k<=0;
+}
+$('next').onclick=()=>{S.k=S.k>=8?0:S.k+1;draw();};
+$('back').onclick=()=>{if(S.k>0)S.k--;draw();};
+addEventListener('resize',draw);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
+draw();
+</script>
+</body>
+</html>
