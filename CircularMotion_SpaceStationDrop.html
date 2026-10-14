@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dropping a Ball in a Spinning Station</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one headline, two matched viewports (outside vs. aboard), a control strip, then a short plain-language explanation. */
+:root {
+  --bg: #eef1f4;
+  --panel: #ffffff;
+  --ink: #17202b;
+  --muted: #5a6675;
+  --line: #c9d1db;
+  --hull: #3b4a5c;
+  --hull-fill: #dde3ea;
+  --ball: #e0731c;
+  --crew: #1f7a8c;
+  --ghost: #9aa6b4;
+  --accent: #1f7a8c;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Source Serif 4", Georgia, serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d131b; --panel: #141d28; --ink: #e6ebf1; --muted: #92a0b1; --line: #263343;
+  --hull: #a9b8c9; --hull-fill: #1c2735; --ball: #ff9a45; --crew: #4fc3d6; --ghost: #5b6a7c; --accent: #4fc3d6;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d131b; --panel: #141d28; --ink: #e6ebf1; --muted: #92a0b1; --line: #263343;
+  --hull: #a9b8c9; --hull-fill: #1c2735; --ball: #ff9a45; --crew: #4fc3d6; --ghost: #5b6a7c; --accent: #4fc3d6;
+  color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 22px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(30px, 5vw, 46px); line-height: 1.02; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.lede { margin: 6px 0 0; max-width: 64ch; color: var(--muted); }
+.lede b { color: var(--ink); font-weight: 600; }
+
+.views { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.view { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 8px; min-width: 0; }
+.view h2 { font-family: var(--f-display); font-weight: 600; font-size: 21px; margin: 0; letter-spacing: .02em; }
+.view .sub { font-size: 14px; color: var(--muted); margin: 0; }
+canvas { width: 100%; aspect-ratio: 1; max-width: 100%; display: block; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 14px 26px; align-items: end; }
+.ctl { display: grid; gap: 4px; min-width: 170px; flex: 1 1 170px; }
+.ctl label { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .08em; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; }
+.ctl output { font-family: var(--f-mono); font-size: 13px; color: var(--ink); text-transform: none; letter-spacing: 0; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.btns { display: flex; gap: 8px; }
+button { font-family: var(--f-display); font-weight: 600; font-size: 16px; letter-spacing: .06em; text-transform: uppercase;
+  background: var(--accent); color: var(--panel); border: 0; border-radius: 4px; padding: 8px 16px; cursor: pointer; }
+.dropbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.dropbar .status { flex: 1 1 200px; color: var(--muted); font-size: 15px; }
+button.big { background: var(--ball); color: #fff; font-size: 22px; padding: 12px 28px; border-radius: 6px; box-shadow: 0 2px 0 color-mix(in srgb, var(--ball) 60%, #000); }
+button.big:active { transform: translateY(2px); box-shadow: none; }
+canvas { cursor: pointer; }
+button.alt { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ball); outline-offset: 2px; }
+
+.readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.readout div { background: var(--panel); padding: 10px 12px; }
+.readout dt { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--muted); }
+.readout dd { margin: 2px 0 0; font-family: var(--f-mono); font-size: 17px; font-variant-numeric: tabular-nums; }
+
+.explain { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px 32px; }
+.explain h3 { font-family: var(--f-display); font-weight: 600; font-size: 20px; margin: 0 0 4px; letter-spacing: .02em; }
+.explain p { margin: 0; max-width: 62ch; }
+.key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--muted); }
+.key span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>You let go. Nothing pulls the ball. So why does it hit the floor?</h1>
+    <p class="lede">Because the ball was <b>already moving sideways</b> with you when you released it. It keeps going in a straight line, and the curved floor swings around to meet it. Watch the same drop from outside the station and from aboard.</p>
+  </header>
+
+  <div class="dropbar">
+    <button id="drop" class="big" type="button">Drop the ball</button>
+    <span id="status" class="status" aria-live="polite"></span>
+    <button id="pause" class="alt" type="button">Pause</button>
+  </div>
+
+  <section class="views">
+    <div class="view">
+      <h2>Outside view (not spinning)</h2>
+      <p class="sub">No forces after release. The ball travels in a straight line at the speed your hand had.</p>
+      <canvas id="cvIn" aria-label="Station seen from outside, rotating, with the ball moving in a straight line"></canvas>
+    </div>
+    <div class="view">
+      <h2>Your view (spinning with the station)</h2>
+      <p class="sub">The floor seems still. The ball seems to fall, and drifts backward as it does.</p>
+      <canvas id="cvRot" aria-label="Same drop seen from the rotating station: ball falls and curves backward"></canvas>
+    </div>
+  </section>
+
+  <div class="key">
+    <span style="--c: var(--ball)">Ball and its path</span>
+    <span style="--c: var(--crew)">You (feet on floor) and release point</span>
+    <span style="--c: var(--ghost)">Spot directly below your hand</span>
+  </div>
+
+  <section class="controls">
+    <div class="ctl"><label for="rpm">Spin <output id="rpmOut"></output></label><input id="rpm" type="range" min="0.5" max="6" step="0.1" value="2"></div>
+    <div class="ctl"><label for="h">Drop height <output id="hOut"></output></label><input id="h" type="range" min="2" max="90" step="1" value="35"></div>
+    <div class="ctl"><label for="spd">Playback <output id="spdOut"></output></label><input id="spd" type="range" min="0.1" max="1" step="0.05" value="0.5"></div>
+  </section>
+
+  <dl class="readout">
+    <div><dt>Felt gravity at floor</dt><dd id="gFloor"></dd></div>
+    <div><dt>Ball speed at release</dt><dd id="vRel"></dd></div>
+    <div><dt>Fall time</dt><dd id="tFall"></dd></div>
+    <div><dt>Lands behind your feet by</dt><dd id="offset"></dd></div>
+  </dl>
+
+  <section class="explain">
+    <div>
+      <h3>From outside: no fall at all</h3>
+      <p>Your hand is carried around a circle, so at the moment you open it the ball has a sideways velocity of spin rate × radius. With no force on it, it coasts in a straight line. A straight line drawn inside a circle always reaches the rim, so the floor and the ball meet. Nothing pulled it down; the station's geometry did the work.</p>
+    </div>
+    <div>
+      <h3>From aboard: it looks like gravity</h3>
+      <p>You are rotating, so you describe motion in a turning frame. In that frame the ball appears to accelerate outward (centrifugal effect) and to veer against the spin (Coriolis effect). These "forces" are bookkeeping for the frame you are in, not pushes from anything. Raise the drop height or slow the spin to make the backward drift obvious.</p>
+    </div>
+    <div>
+      <h3>Why it misses your feet</h3>
+      <p>Your hand was closer to the hub than your feet, so it moved slower. While the ball coasts, your feet race ahead along the rim. On a real 100 m station with a 2 m drop the miss is a few centimetres; from high up near the hub it becomes huge.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const R = 100; // station radius in metres
+  const $ = id => document.getElementById(id);
+  const cvIn = $("cvIn"), cvRot = $("cvRot");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let omega, h, speed, r0, tc;
+  let T = 0, T0 = 0, paused = false, holding = true;
+
+  function read() {
+    const rpm = +$("rpm").value; omega = rpm * 2 * Math.PI / 60;
+    h = +$("h").value; speed = +$("spd").value; r0 = R - h;
+    tc = Math.sqrt(R * R - r0 * r0) / (omega * r0);
+    $("rpmOut").textContent = rpm.toFixed(1) + " rpm";
+    $("hOut").textContent = h + " m";
+    $("spdOut").textContent = speed.toFixed(2) + "×";
+    $("gFloor").textContent = (omega * omega * R / 9.81).toFixed(2) + " g";
+    $("vRel").textContent = (omega * r0).toFixed(1) + " m/s";
+    $("tFall").textContent = tc.toFixed(2) + " s";
+    const miss = R * (omega * tc - Math.atan(omega * tc));
+    $("offset").textContent = (miss < 1 ? (miss * 100).toFixed(1) + " cm" : miss.toFixed(1) + " m");
+  }
+  function setStatus() {
+    $("drop").textContent = holding ? "Drop the ball" : "Drop again";
+    $("status").textContent = holding ? "Ball is in your hand, spinning with you." : (T - T0 >= tc ? "Landed." : "Falling…");
+  }
+  function drop() { read(); T0 = T; holding = false; setStatus(); }
+  function pickUp() { read(); holding = true; setStatus(); }
+
+  // Ball state in the inertial frame, s seconds after release
+  function ballInertial(s) {
+    const th = Math.PI / 2 + omega * T0;
+    const px = r0 * Math.cos(th), py = r0 * Math.sin(th);
+    const vx = -omega * r0 * Math.sin(th), vy = omega * r0 * Math.cos(th);
+    return [px + vx * s, py + vy * s];
+  }
+  const rot = ([x, y], a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+
+  function setup(cv) {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(w * dpr); }
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, w);
+    return { ctx, w, k: (w / 2 - 14) / R, c: w / 2 };
+  }
+
+  function drawStation(g, col, phi) {
+    const { ctx, k, c } = g;
+    ctx.save(); ctx.translate(c, c); ctx.rotate(phi);
+    ctx.fillStyle = col.hullFill; ctx.strokeStyle = col.hull;
+    ctx.beginPath(); ctx.arc(0, 0, R * k + 9, 0, 2 * Math.PI); ctx.arc(0, 0, R * k, 0, 2 * Math.PI, true); ctx.fill("evenodd");
+    ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, R * k, 0, 2 * Math.PI); ctx.stroke();
+    ctx.globalAlpha = .45; ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + Math.PI / 6; ctx.beginPath(); ctx.moveTo(8 * Math.cos(a), 8 * Math.sin(a)); ctx.lineTo(R * k * Math.cos(a), R * k * Math.sin(a)); ctx.stroke(); }
+    ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(0, 0, 8, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Crew marker: feet on the rim at angle a, mast up to release point
+  function drawCrew(g, col, a) {
+    const { ctx, k, c } = g, P = (r) => [c + r * k * Math.cos(a), c + r * k * Math.sin(a)];
+    const [fx, fy] = P(R), [hx, hy] = P(r0);
+    ctx.strokeStyle = col.crew; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(hx, hy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = col.crew;
+    ctx.beginPath(); ctx.arc(fx, fy, 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx, hy, 3.5, 0, 2 * Math.PI); ctx.fill();
+  }
+
+  function drawPath(g, pts, col) {
+    const { ctx, k, c } = g;
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
+    pts.forEach(([x, y], i) => i ? ctx.lineTo(c + x * k, c + y * k) : ctx.moveTo(c + x * k, c + y * k));
+    ctx.stroke();
+  }
+  function dot(g, [x, y], col, r = 7) { const { ctx, k, c } = g; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c + x * k, c + y * k, r, 0, 2 * Math.PI); ctx.fill(); }
+
+  function frame() {
+    const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
+    const col = { hull: v("--hull"), hullFill: v("--hull-fill"), ball: v("--ball"), crew: v("--crew"), ghost: v("--ghost"), muted: v("--muted") };
+    const s = holding ? 0 : Math.min(T - T0, tc), landed = !holding && T - T0 >= tc;
+    const phi = omega * T; // station rotation angle
+    const N = 60, samples = [...Array(N + 1)].map((_, i) => i * s / N);
+
+    // ---- Inertial view
+    const gi = setup(cvIn);
+    drawStation(gi, col, phi);
+    // full straight-line course (faint), then traveled path
+    if (!holding) {
+      gi.ctx.setLineDash([4, 5]); drawPath(gi, [ballInertial(0), ballInertial(tc)], col.ghost); gi.ctx.setLineDash([]);
+      drawPath(gi, samples.map(ballInertial), col.ball);
+    }
+    drawCrew(gi, col, Math.PI / 2 + phi);
+    let bi = holding ? rot([0, r0], phi) : landed ? rot(ballInertial(tc), omega * (T - T0 - tc)) : ballInertial(s);
+    dot(gi, bi, col.ball);
+
+    // ---- Rotating view (astronaut stays at bottom)
+    const gr = setup(cvRot);
+    drawStation(gr, col, 0);
+    const toRot = (p, tt) => rot(p, -omega * tt);
+    if (!holding) drawPath(gr, samples.map(x => toRot(ballInertial(x), T0 + x)), col.ball);
+    // spot straight below the hand
+    dot(gr, [0, R - 1.5], col.ghost, 4);
+    drawCrew(gr, col, Math.PI / 2);
+    const br = holding ? [0, r0] : landed ? toRot(ballInertial(tc), T0 + tc) : toRot(ballInertial(s), T);
+    dot(gr, br, col.ball);
+
+    // labels
+    [gi, gr].forEach(g => { g.ctx.fillStyle = col.muted; g.ctx.font = "12px 'JetBrains Mono', monospace"; });
+    gi.ctx.fillText("spin ↻", 12, 18);
+    gr.ctx.fillText("floor = down", 12, 18);
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!paused) {
+      const wasFalling = !holding && T - T0 < tc;
+      T += dt * speed;
+      if (wasFalling && T - T0 >= tc) setStatus();
+    }
+    frame();
+    requestAnimationFrame(loop);
+  }
+
+  ["rpm", "h"].forEach(id => $(id).addEventListener("input", pickUp));
+  $("spd").addEventListener("input", read);
+  $("drop").addEventListener("click", drop);
+  [cvIn, cvRot].forEach(cv => cv.addEventListener("click", () => { if (holding) drop(); }));
+  addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body) { e.preventDefault(); drop(); } });
+  $("pause").addEventListener("click", () => { paused = !paused; $("pause").textContent = paused ? "Play" : "Pause"; });
+  read(); setStatus();
+  requestAnimationFrame(loop);
+  addEventListener("resize", frame);
+})();
+</script>
+</body>
+</html>
