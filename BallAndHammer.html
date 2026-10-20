@@ -1,0 +1,552 @@
+<title>Hammer and Ball</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: slim toolbar above one full-height workbench stage; the pivoting hammer hangs from a post on the left, the ball waits on a tee to its right */
+:root {
+  --bg: #E8EDF0;
+  --panel: #F6F8F9;
+  --ink: #1B252C;
+  --muted: #566772;
+  --grid: #DAE1E6;
+  --line: #9FADB7;
+  --steel: #6C7A85;
+  --steel-hi: #AEBAC3;
+  --wood: #B07A4B;
+  --wood-dk: #7F5330;
+  --ball: #E4572E;
+  --ball-hi: #FF9A74;
+  --font-ui: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181C;
+    --panel: #192127;
+    --ink: #E6ECEF;
+    --muted: #93A2AC;
+    --grid: #202A31;
+    --line: #3D4B55;
+    --steel: #8796A2;
+    --steel-hi: #C0CBD3;
+    --wood: #C58D5D;
+    --wood-dk: #8E6038;
+    --ball: #FF7447;
+    --ball-hi: #FFB394;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181C;
+  --panel: #192127;
+  --ink: #E6ECEF;
+  --muted: #93A2AC;
+  --grid: #202A31;
+  --line: #3D4B55;
+  --steel: #8796A2;
+  --steel-hi: #C0CBD3;
+  --wood: #C58D5D;
+  --wood-dk: #8E6038;
+  --ball: #FF7447;
+  --ball-hi: #FFB394;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+}
+h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  min-width: 0;
+}
+.field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.field input[type="range"] {
+  width: clamp(120px, 22vw, 220px);
+  accent-color: var(--ball);
+}
+.reads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+}
+.reads div { display: flex; flex-direction: column; gap: 1px; }
+.reads dt {
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.reads dd {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+button {
+  font: 600 0.95rem var(--font-ui);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  padding: 7px 18px;
+  cursor: pointer;
+}
+button:hover { background: var(--ink); color: var(--bg); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ball); outline-offset: 3px; }
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+  overflow: hidden;
+  background-color: var(--panel);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.hint {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: calc(100% - 48px);
+  padding: 6px 12px;
+  font-family: var(--font-data);
+  font-size: 0.78rem;
+  text-align: center;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  pointer-events: none;
+}
+</style>
+
+<header class="bar">
+  <h1>Hammer &amp; Ball</h1>
+  <div class="controls">
+    <label class="field" for="size"><span>Ball size</span><input id="size" type="range" min="16" max="64" step="1" value="24"></label>
+    <dl class="reads">
+      <div><dt>Mass</dt><dd id="massOut">1.00 kg</dd></div>
+      <div><dt>Hit impulse</dt><dd>1,200 (fixed)</dd></div>
+      <div><dt>Last launch</dt><dd id="launchOut">none yet</dd></div>
+    </dl>
+    <button id="reset" type="button">Reset</button>
+  </div>
+</header>
+
+<main class="stage" id="stage">
+  <canvas id="cv" role="img" aria-label="A hammer pivoting on a post beside a ball on a tee. Drag the hammer up and let go to hit the ball."></canvas>
+  <p class="hint" id="hint">Grab the hammer, swing it up to the left, then let go.</p>
+</main>
+
+<script>
+(function () {
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var stage = document.getElementById('stage');
+  var sizeEl = document.getElementById('size');
+  var massOut = document.getElementById('massOut');
+  var launchOut = document.getElementById('launchOut');
+  var hintEl = document.getElementById('hint');
+  var resetBtn = document.getElementById('reset');
+  var root = document.documentElement;
+
+  var G = 3200;          // pendulum gravity, px/s^2
+  var DAMP_H = 0.45;     // hammer swing damping, 1/s
+  var DAMP_B = 0.18;     // ball drift damping, 1/s
+  var REST_WALL = 0.96;  // wall bounciness
+  var REST_HAMMER = 0.85;
+  var IMPULSE = 1200;    // the same strike impulse every time
+  var VMAX = 2400;
+  var M = 10;            // arena margin
+  var HX = 42, HY = 23;  // hammer head half extents
+
+  var W = 0, H = 0, dpr = 1, L = 300, px = 0, py = 0, headY = 0;
+  var hammer = { th: 0, om: 0, drag: false };
+  var ball = { x: 0, y: 0, vx: 0, vy: 0, r: 24, rot: 0, ready: true, trail: [] };
+  var sparks = [], rings = [], cooldown = 0;
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function mass() { return Math.pow(ball.r / 24, 1.5); }
+  function fmt(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  function placeBall() {
+    ball.x = px + HX + ball.r + 3;
+    ball.y = headY;
+    ball.vx = 0; ball.vy = 0;
+    ball.trail = [];
+  }
+  function clampBall() {
+    ball.x = clamp(ball.x, M + ball.r, W - M - ball.r);
+    ball.y = clamp(ball.y, M + ball.r, H - M - ball.r);
+  }
+
+  function layout() {
+    var rect = stage.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(W * dpr);
+    cv.height = Math.round(H * dpr);
+    headY = H - M - 100;
+    L = Math.max(110, Math.min(360, headY - M - 24, (W - 110) * 0.5));
+    py = headY - L;
+    px = Math.max(L + HX + 14, W * 0.3);
+    if (ball.ready) placeBall(); else clampBall();
+  }
+
+  function updateMass() {
+    massOut.textContent = mass().toFixed(2) + ' kg';
+  }
+
+  function effects(x, y, dx, dy) {
+    rings.push({ x: x, y: y, t: 0 });
+    var base = Math.atan2(dy, dx);
+    for (var i = 0; i < 14; i++) {
+      var a = base + (Math.random() - 0.5) * 1.6;
+      var s = 250 + Math.random() * 600;
+      sparks.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.35 + Math.random() * 0.2, age: 0 });
+    }
+  }
+
+  function test(lx, ly, cx, cy, pad, isHead) {
+    var dx = lx - cx, dy = ly - cy;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d >= ball.r + pad) return;
+    if (d < 1e-6) { dx = 1; dy = 0; d = 1; }
+    var nlx = dx / d, nly = dy / d;
+    var c = Math.cos(hammer.th), s = Math.sin(hammer.th);
+    var nx = c * nlx + s * nly, ny = -s * nlx + c * nly;
+    var cwx = c * cx + s * cy, cwy = -s * cx + c * cy;
+    ball.x = px + cwx + nx * (ball.r + pad);
+    ball.y = py + cwy + ny * (ball.r + pad);
+    var vhx = hammer.om * cwy, vhy = -hammer.om * cwx;
+    var rvx = ball.vx - vhx, rvy = ball.vy - vhy;
+    var vn = rvx * nx + rvy * ny;
+    if (vn >= 0) return;
+    var sp = Math.sqrt(vhx * vhx + vhy * vhy);
+    if (isHead && cooldown <= 0 && -vn > 60 && sp > 120 && !hammer.drag) {
+      var tx = vhx / sp, ty = vhy / sp;
+      var ox = tx * 0.8 + nx * 0.35;
+      var oy = ty * 0.8 + ny * 0.35 - 0.3;
+      var ol = Math.sqrt(ox * ox + oy * oy) || 1;
+      var speed = Math.min(VMAX, IMPULSE / mass());
+      ball.vx = ox / ol * speed;
+      ball.vy = oy / ol * speed;
+      hammer.om *= 0.35;
+      cooldown = 0.2;
+      ball.ready = false;
+      launchOut.textContent = fmt(speed) + ' px/s';
+      effects(ball.x - nx * ball.r, ball.y - ny * ball.r, ox / ol, oy / ol);
+    } else {
+      ball.vx -= (1 + REST_HAMMER) * vn * nx;
+      ball.vy -= (1 + REST_HAMMER) * vn * ny;
+      ball.ready = false;
+    }
+  }
+
+  function collide() {
+    var c = Math.cos(hammer.th), s = Math.sin(hammer.th);
+    var rx = ball.x - px, ry = ball.y - py;
+    var lx = c * rx - s * ry, ly = s * rx + c * ry;
+    test(lx, ly, clamp(lx, -HX, HX), L + clamp(ly - L, -HY, HY), 0, true);
+    // re-read after a possible push-out
+    rx = ball.x - px; ry = ball.y - py;
+    lx = c * rx - s * ry; ly = s * rx + c * ry;
+    test(lx, ly, 0, clamp(ly, 0, L - HY), 6, false);
+  }
+
+  function step(dt) {
+    if (hammer.drag) {
+      hammer.om = 0;
+    } else {
+      var a = -(G / L) * Math.sin(hammer.th) - DAMP_H * hammer.om;
+      hammer.om += a * dt;
+      hammer.th += hammer.om * dt;
+    }
+    collide();
+    if (ball.ready) return;
+    var k = Math.max(0, 1 - DAMP_B * dt);
+    ball.vx *= k; ball.vy *= k;
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+    ball.rot += (ball.vx / ball.r) * dt * 0.6;
+    var minX = M + ball.r, maxX = W - M - ball.r, minY = M + ball.r, maxY = H - M - ball.r;
+    if (ball.x < minX) { ball.x = minX; ball.vx = Math.abs(ball.vx) * REST_WALL; }
+    if (ball.x > maxX) { ball.x = maxX; ball.vx = -Math.abs(ball.vx) * REST_WALL; }
+    if (ball.y < minY) { ball.y = minY; ball.vy = Math.abs(ball.vy) * REST_WALL; }
+    if (ball.y > maxY) { ball.y = maxY; ball.vy = -Math.abs(ball.vy) * REST_WALL; }
+  }
+
+  // ---------- input ----------
+  function pos(e) {
+    var r = cv.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+  function overHammer(p) {
+    var c = Math.cos(hammer.th), s = Math.sin(hammer.th);
+    var rx = p.x - px, ry = p.y - py;
+    var lx = c * rx - s * ry, ly = s * rx + c * ry;
+    var onHead = Math.abs(lx) <= HX + 14 && Math.abs(ly - L) <= HY + 14;
+    var onHandle = Math.abs(lx) <= 18 && ly >= 0 && ly <= L;
+    return onHead || onHandle;
+  }
+  function aim(p) {
+    var raw = Math.atan2(p.x - px, p.y - py);
+    if (raw > 0) raw = raw > Math.PI / 2 ? -Math.PI : -0.05;
+    hammer.th = clamp(raw, -Math.PI + 0.03, -0.05);
+    hammer.om = 0;
+  }
+  cv.addEventListener('pointerdown', function (e) {
+    var p = pos(e);
+    if (!overHammer(p)) return;
+    hammer.drag = true;
+    hintEl.hidden = true;
+    cv.setPointerCapture(e.pointerId);
+    cv.style.cursor = 'grabbing';
+    aim(p);
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (e) {
+    var p = pos(e);
+    if (hammer.drag) aim(p);
+    else cv.style.cursor = overHammer(p) ? 'grab' : 'default';
+  });
+  function release() {
+    if (!hammer.drag) return;
+    hammer.drag = false;
+    cv.style.cursor = 'grab';
+  }
+  cv.addEventListener('pointerup', release);
+  cv.addEventListener('pointercancel', release);
+
+  sizeEl.addEventListener('input', function () {
+    ball.r = +sizeEl.value;
+    updateMass();
+    if (ball.ready) placeBall(); else clampBall();
+  });
+  resetBtn.addEventListener('click', function () {
+    hammer.th = 0; hammer.om = 0; hammer.drag = false;
+    ball.ready = true;
+    sparks = []; rings = []; cooldown = 0;
+    placeBall();
+    launchOut.textContent = 'none yet';
+  });
+
+  // ---------- drawing ----------
+  var cs = getComputedStyle(root);
+  function tok(n) { return cs.getPropertyValue(n).trim(); }
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+    else ctx.rect(x, y, w, h);
+  }
+
+  function draw() {
+    var ink = tok('--ink'), line = tok('--line'), steel = tok('--steel'), steelHi = tok('--steel-hi');
+    var wood = tok('--wood'), woodDk = tok('--wood-dk'), bc = tok('--ball'), bh = tok('--ball-hi');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // arena walls
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(M, M, W - 2 * M, H - 2 * M);
+
+    // mounting post
+    ctx.fillStyle = steel;
+    ctx.fillRect(px - 7, M, 14, Math.max(0, py - M));
+
+    // tee
+    if (ball.ready) {
+      var top = ball.y + ball.r - 2;
+      ctx.fillStyle = steel;
+      ctx.fillRect(ball.x - 4, top, 8, H - M - top);
+      ctx.fillRect(ball.x - 20, H - M - 5, 40, 5);
+    }
+
+    // trail
+    var n = ball.trail.length;
+    ctx.fillStyle = bc;
+    for (var i = 0; i < n; i++) {
+      var f = (i + 1) / n;
+      ctx.globalAlpha = f * 0.28;
+      ctx.beginPath();
+      ctx.arc(ball.trail[i].x, ball.trail[i].y, ball.r * (0.35 + 0.65 * f), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // hammer
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(-hammer.th);
+    var hg = ctx.createLinearGradient(-6, 0, 6, 0);
+    hg.addColorStop(0, wood);
+    hg.addColorStop(1, woodDk);
+    ctx.fillStyle = hg;
+    rr(-6, 0, 12, L, 3);
+    ctx.fill();
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    var sg = ctx.createLinearGradient(0, L - HY, 0, L + HY);
+    sg.addColorStop(0, steelHi);
+    sg.addColorStop(1, steel);
+    ctx.fillStyle = sg;
+    rr(-HX, L - HY, 2 * HX, 2 * HY, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = steel;
+    ctx.fillRect(HX - 10, L - HY + 1, 9, 2 * HY - 2);
+    ctx.fillRect(-HX + 1, L - HY + 1, 9, 2 * HY - 2);
+    ctx.restore();
+
+    // pivot bolt
+    ctx.fillStyle = steelHi;
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(px, py, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = ink;
+    ctx.beginPath();
+    ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ball
+    var bg = ctx.createRadialGradient(ball.x - ball.r * 0.35, ball.y - ball.r * 0.35, ball.r * 0.1, ball.x, ball.y, ball.r * 1.15);
+    bg.addColorStop(0, bh);
+    bg.addColorStop(1, bc);
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(ball.x, ball.y);
+    ctx.rotate(ball.rot);
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = Math.max(2, ball.r * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(-ball.r * 0.85, 0);
+    ctx.lineTo(ball.r * 0.85, 0);
+    ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // impact effects
+    for (var j = 0; j < rings.length; j++) {
+      var rg = rings[j];
+      ctx.globalAlpha = Math.max(0, 1 - rg.t / 0.35);
+      ctx.strokeStyle = bh;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(rg.x, rg.y, 6 + rg.t * 220, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = bc;
+    ctx.lineWidth = 2.5;
+    for (var k = 0; k < sparks.length; k++) {
+      var sp = sparks[k];
+      ctx.globalAlpha = Math.max(0, 1 - sp.age / sp.life);
+      ctx.beginPath();
+      ctx.moveTo(sp.x, sp.y);
+      ctx.lineTo(sp.x - sp.vx * 0.03, sp.y - sp.vy * 0.03);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---------- loop ----------
+  var last = performance.now(), acc = 0, H_STEP = 1 / 240;
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    acc += dt;
+    while (acc >= H_STEP) {
+      cooldown -= H_STEP;
+      step(H_STEP);
+      acc -= H_STEP;
+    }
+    if (!ball.ready && Math.abs(ball.vx) + Math.abs(ball.vy) > 40) {
+      ball.trail.push({ x: ball.x, y: ball.y });
+      if (ball.trail.length > 26) ball.trail.shift();
+    } else if (ball.trail.length) {
+      ball.trail.shift();
+    }
+    for (var i = sparks.length - 1; i >= 0; i--) {
+      var s = sparks[i];
+      s.age += dt;
+      s.x += s.vx * dt; s.y += s.vy * dt;
+      s.vx *= 0.94; s.vy *= 0.94;
+      if (s.age > s.life) sparks.splice(i, 1);
+    }
+    for (var j = rings.length - 1; j >= 0; j--) {
+      rings[j].t += dt;
+      if (rings[j].t > 0.35) rings.splice(j, 1);
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  updateMass();
+  layout();
+  if (window.ResizeObserver) new ResizeObserver(layout).observe(stage);
+  else window.addEventListener('resize', layout);
+  requestAnimationFrame(frame);
+})();
+</script>
