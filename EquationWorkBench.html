@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Equation Workbench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: question card with the work area directly below on the left, the keypad builder on the right; one column on phones. */
+  --bg:#EAF0F8;
+  --grid:#D8E0ED;
+  --surface:#FFFFFF;
+  --surface-2:#F3F6FB;
+  --ink:#16213A;
+  --muted:#58647F;
+  --line:#C9D2E4;
+  --chip:#DCE8FF;
+  --chip-ink:#0E3A8A;
+  --chip-line:#9DB9F2;
+  --accent:#1D4ED8;
+  --accent-ink:#FFFFFF;
+  --drop:#FFF1C9;
+  --drop-line:#D99A06;
+  --good:#0F7B4B;
+  --good-bg:#DDF4E8;
+  --bad:#B42318;
+  --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --font-math:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1424;--grid:#19223A;--surface:#151D31;--surface-2:#1B2540;--ink:#E7ECF8;--muted:#9AA7C4;--line:#2C3855;
+    --chip:#1F3566;--chip-ink:#D3E3FF;--chip-line:#3E62B0;--accent:#7BA6FF;--accent-ink:#0B1530;
+    --drop:#3A3010;--drop-line:#E5B02F;--good:#5BD99B;--good-bg:#123826;--bad:#FF8A7A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1424;--grid:#19223A;--surface:#151D31;--surface-2:#1B2540;--ink:#E7ECF8;--muted:#9AA7C4;--line:#2C3855;
+  --chip:#1F3566;--chip-ink:#D3E3FF;--chip-line:#3E62B0;--accent:#7BA6FF;--accent-ink:#0B1530;
+  --drop:#3A3010;--drop-line:#E5B02F;--good:#5BD99B;--good-bg:#123826;--bad:#FF8A7A;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.45;
+}
+button{font:inherit;color:inherit}
+h1,h2{font-family:var(--font-display);margin:0;text-wrap:balance}
+
+.page{
+  max-width:1080px;margin:0 auto;
+  padding-block:1.25rem 2.5rem;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem 1.5rem;margin-bottom:1.1rem}
+.top h1{font-size:clamp(1.4rem,4.5vw,1.9rem);font-weight:700;letter-spacing:-.01em}
+.nav{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.prog{display:flex;flex-direction:column;align-items:center;gap:.3rem;min-width:7.5rem}
+.prog-text{font-size:.82rem;font-weight:600;color:var(--muted)}
+.dots{display:flex;gap:.3rem;flex-wrap:wrap;justify-content:center;max-width:15rem}
+.dot{width:.7rem;height:.7rem;border-radius:50%;border:2px solid var(--line);background:var(--surface);padding:0;cursor:pointer}
+.dot.done{background:var(--good);border-color:var(--good)}
+.dot.cur{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.35rem;
+  min-height:2.4rem;padding:.35rem .9rem;border-radius:10px;
+  border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;font-size:.92rem;
+}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent;font-weight:500}
+.btn svg{width:1em;height:1em}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:1.25rem;align-items:start}
+.left{display:flex;flex-direction:column;gap:1.25rem;min-width:0}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1.1rem 1.25rem}
+.card.q{box-shadow:0 6px 24px -12px color-mix(in srgb,var(--ink) 40%,transparent);position:relative;overflow:hidden}
+.qh{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.4rem}
+.qh h2{font-size:1.15rem}
+.qh h2 i{font-family:var(--font-math);font-style:normal;color:var(--accent)}
+.qtools{display:flex;gap:.4rem}
+
+/* equation */
+.eq{font-family:var(--font-math);font-weight:600;font-size:clamp(1.4rem,5vw,2.5rem);padding-block:.5em .2em;overflow-x:auto}
+.eqgrid{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:.3em}
+.side{
+  display:flex;flex-wrap:wrap;align-items:center;gap:.2em .3em;
+  min-height:2.1em;padding:.2em .45em;border:2px dashed transparent;border-radius:.6em;
+  transition:background .12s,border-color .12s;
+}
+.side[data-zone="L"]{justify-content:flex-end}
+.side[data-zone="R"]{justify-content:flex-start}
+.eq.dragging .side.ready{border-color:var(--drop-line);background:color-mix(in srgb,var(--drop) 55%,transparent)}
+.eq.dragging .side.hot{background:var(--drop);border-style:solid}
+.eqsign{padding-inline:.15em;color:var(--muted)}
+.cap{font-family:var(--font-body);font-weight:500;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:.2rem}
+.cap.l{text-align:right;padding-right:.9rem}
+.cap.r{text-align:left;padding-left:.9rem}
+.term{display:inline-flex;flex-flow:row nowrap;align-items:center;gap:.15em;white-space:nowrap;flex:none}
+.bk{white-space:nowrap}
+.zero{padding:0 .3em;color:var(--muted)}
+.sg{margin-right:.3em}
+.par{font-weight:500;color:var(--muted);padding-inline:.04em}
+.grp{display:inline-flex;flex-flow:row nowrap;align-items:center;white-space:nowrap;padding:.05em .3em;border:2px solid var(--line);border-radius:.55em;background:var(--surface-2);transition:background .12s,border-color .12s}
+.eq.dragging .grp.ready{border-color:var(--drop-line);border-style:dashed}
+.eq.dragging .grp.hot{background:var(--drop);border-style:solid}
+.chip{
+  display:inline-flex;align-items:center;white-space:nowrap;
+  padding:.08em .34em;border-radius:.35em;border:2px solid var(--chip-line);
+  background:var(--chip);color:var(--chip-ink);font-family:var(--font-math);font-weight:600;font-size:1em;line-height:1.35;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  transition:transform .1s,box-shadow .1s;
+}
+.chip:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 5px 12px -6px color-mix(in srgb,var(--ink) 55%,transparent)}
+.chip:disabled{cursor:default;opacity:.85}
+.chip.lifted{opacity:.3}
+.chip.ghost{position:fixed;left:0;top:0;z-index:1000;pointer-events:none;box-shadow:0 12px 24px -8px rgba(0,0,0,.45);opacity:1;cursor:grabbing}
+.eq.dragging .chip.ready{outline:2px dashed var(--drop-line);outline-offset:3px}
+.eq.dragging .chip.hot{background:var(--drop);border-color:var(--drop-line);color:var(--ink);outline-style:solid}
+.chip.ghost.flip{background:var(--drop);border-color:var(--drop-line);color:var(--ink)}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1;font-size:.62em;margin-inline:.12em}
+.frac>span:first-child{border-bottom:2px solid currentColor;padding:0 .18em .1em}
+.frac>span:last-child{padding-top:.1em}
+.tip{margin:.7rem 0 0;font-size:.88rem;color:var(--muted);max-width:60ch}
+.tip.pulse{color:var(--ink);font-weight:600}
+
+/* solved banner */
+.solved{
+  position:relative;overflow:hidden;margin-top:.9rem;padding:.8rem 1rem;border-radius:12px;
+  background:var(--good-bg);color:var(--good);border:1.5px solid var(--good);
+  display:flex;align-items:center;justify-content:space-between;gap:.8rem 1rem;flex-wrap:wrap;
+}
+.solved strong{font-family:var(--font-display);font-size:1.15rem;display:block}
+.solved .chk{font-size:.85rem;display:block;color:var(--ink)}
+.solved .frac{font-size:.7em}
+@media (prefers-reduced-motion:reduce){.chip,.side,.grp{transition:none}}
+
+/* work area */
+.work h2{font-size:1.05rem;margin-bottom:.6rem}
+.steps{display:flex;flex-direction:column;gap:.7rem;max-height:min(46vh,430px);overflow:auto;padding-right:.2rem}
+.empty{margin:0;padding:1rem;border:1.5px dashed var(--line);border-radius:12px;color:var(--muted);font-size:.92rem}
+.step{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:.65rem .9rem .75rem}
+.step-h{font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.35rem}
+.step-h b{color:var(--accent);font-weight:700}
+.sgrid{display:grid;grid-template-columns:minmax(0,1fr) 1.8em minmax(0,1fr);font-family:var(--font-math);font-weight:500;font-size:clamp(1.05rem,3.8vw,1.45rem);row-gap:.2em}
+.sgrid>div{min-width:0}
+.sgrid .l{text-align:right}
+.sgrid .r{text-align:left}
+.sgrid .m{text-align:center;color:var(--muted)}
+.sgrid .opl,.sgrid .opr{color:var(--accent);font-weight:600;border-bottom:2px solid var(--ink);padding-bottom:.18em;margin-bottom:.1em}
+.sgrid .res{font-weight:600}
+.osym{display:inline-block;margin-right:.15em}
+
+/* builder */
+.builder{position:sticky;top:1rem}
+.builder h2{font-size:1.05rem;margin-bottom:.8rem}
+.expr{display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem}
+.slot{
+  display:flex;align-items:center;justify-content:center;height:3.2rem;border-radius:12px;
+  border:2px solid var(--line);background:var(--surface-2);font-family:var(--font-math);font-weight:600;font-size:1.6rem;
+}
+#exOp{width:3.4rem}
+#exVal{flex:1;min-width:0;letter-spacing:.04em}
+.slot.ph{color:var(--muted);font-size:.9rem;font-weight:500;font-family:var(--font-body)}
+.slot.on{border-color:var(--accent)}
+.back{width:3.2rem;height:3.2rem;padding:0;border-radius:12px}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.key{
+  height:3.2rem;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);
+  font-family:var(--font-math);font-weight:600;font-size:1.4rem;cursor:pointer;
+  transition:transform .08s,background .12s;
+}
+.key:hover{border-color:var(--accent)}
+.key:active{transform:scale(.95)}
+.key[data-k="neg"]{font-size:1.1rem}
+.key.xk{background:var(--chip);border-color:var(--chip-line);color:var(--chip-ink)}
+.key.opk{background:var(--surface-2);color:var(--accent)}
+.key.opk[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.apply{width:100%;margin-top:.8rem;min-height:3.1rem;font-size:1rem}
+.apply[data-ready="false"]{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+.msg{min-height:1.4rem;margin:.6rem 0 0;font-size:.88rem;color:var(--muted)}
+.msg.err{color:var(--bad);font-weight:600}
+.msg.ok{color:var(--good);font-weight:600}
+.small{font-size:.84rem;color:var(--muted);margin:.5rem 0 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body{margin:0}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <h1>Equation Workbench</h1>
+    <nav class="nav" aria-label="Problems">
+      <button id="prev" class="btn" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>Prev</button>
+      <div class="prog"><span id="progText" class="prog-text"></span><div id="dots" class="dots"></div></div>
+      <button id="next" class="btn" type="button">Next<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></button>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <div class="left">
+      <section class="card q" aria-label="Question">
+        <div class="qh">
+          <h2>Solve for <i>x</i></h2>
+          <div class="qtools">
+            <button id="undo" class="btn ghost" type="button">Undo</button>
+            <button id="restart" class="btn ghost" type="button">Restart</button>
+          </div>
+        </div>
+        <div id="eq" class="eq" role="group" aria-label="Equation"></div>
+        <p id="tip" class="tip">Drag a term across the = sign to move it to the other side. Drag a term onto a like term on the same side to add or subtract them. Drag the number in front of a bracket into the bracket to expand it.</p>
+        <div id="solved" class="solved" role="status" hidden></div>
+      </section>
+
+      <section class="card work" aria-label="Work area">
+        <h2>Work</h2>
+        <div id="steps" class="steps"></div>
+      </section>
+    </div>
+
+    <aside class="card builder" aria-label="Build an operation">
+      <h2>Do the same thing to both sides</h2>
+      <div class="expr">
+        <span id="exOp" class="slot ph">op</span>
+        <span id="exVal" class="slot ph">value</span>
+        <button id="back" class="btn back" type="button" aria-label="Delete last entry">&#9003;</button>
+      </div>
+      <div class="pad" role="group" aria-label="Keypad">
+        <button class="key" type="button" data-k="7">7</button>
+        <button class="key" type="button" data-k="8">8</button>
+        <button class="key" type="button" data-k="9">9</button>
+        <button class="key opk" type="button" data-op="/" aria-pressed="false" aria-label="divide">&divide;</button>
+        <button class="key" type="button" data-k="4">4</button>
+        <button class="key" type="button" data-k="5">5</button>
+        <button class="key" type="button" data-k="6">6</button>
+        <button class="key opk" type="button" data-op="*" aria-pressed="false" aria-label="multiply">&times;</button>
+        <button class="key" type="button" data-k="1">1</button>
+        <button class="key" type="button" data-k="2">2</button>
+        <button class="key" type="button" data-k="3">3</button>
+        <button class="key opk" type="button" data-op="-" aria-pressed="false" aria-label="subtract">&minus;</button>
+        <button class="key" type="button" data-k="0">0</button>
+        <button class="key xk" type="button" data-k="x">x</button>
+        <button class="key xk" type="button" data-k="neg" aria-label="negative sign">(&minus;)</button>
+        <button class="key opk" type="button" data-op="+" aria-pressed="false" aria-label="add">+</button>
+      </div>
+      <button id="apply" class="btn primary apply" type="button" data-ready="false">Apply to equation</button>
+      <p id="msg" class="msg" role="status"></p>
+      <p class="small">Pick an operation, type a number or x, then apply. Use (&minus;) for a negative value. Multiply and divide take plain numbers.</p>
+    </aside>
+  </main>
+  <div id="live" class="sr" aria-live="polite"></div>
+</div>
+
+<script>
+/*LOGIC-START*/
+/* ---------- fractions ---------- */
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a||1;};
+const F=(n,d=1)=>{if(d<0){n=-n;d=-d;}const g=gcd(n,d);return {n:n/g,d:d/g};};
+const fadd=(a,b)=>F(a.n*b.d+b.n*a.d,a.d*b.d);
+const fmul=(a,b)=>F(a.n*b.n,a.d*b.d);
+const fabs=a=>F(Math.abs(a.n),a.d);
+const fone=a=>a.n===1&&a.d===1;
+const fz=a=>a.n===0;
+const feq=(a,b)=>a.n===b.n&&a.d===b.d;
+
+/* ---------- terms: x-term, number, or bracket (multiplier k times inner terms) ---------- */
+const tx=(n,d=1)=>({t:'x',c:F(n,d)});
+const tn=(n,d=1)=>({t:'n',c:F(n,d)});
+const tg=(k,inner)=>({t:'g',k:typeof k==='number'?F(k):k,inner});
+const coefOf=t=>t.t==='g'?t.k:t.c;
+const isNeg=t=>coefOf(t).n<0;
+const scale=(t,s)=>t.t==='g'?tg(fmul(t.k,s),t.inner):{t:t.t,c:fmul(t.c,s)};
+const sameInner=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+
+/* Tidy a side without adding anything together: drop zero terms and unwrap a bracket whose multiplier is 1 or -1.
+   Like terms stay separate until the student combines them. */
+function normalize(side){
+  const out=[];
+  for(const t of side){
+    if(t.t!=='g'){ if(!fz(t.c)) out.push(t); continue; }
+    const inner=normalize(t.inner);
+    if(!inner.length||fz(t.k)) continue;
+    if(fone(fabs(t.k))){ for(const it of inner) out.push(scale(it,t.k)); continue; }
+    out.push(tg(t.k,inner));
+  }
+  return out;
+}
+const simplify=normalize;
+
+/* ---------- equation operations ---------- */
+const opAdd=(eq,term)=>({L:simplify([...eq.L,term]),R:simplify([...eq.R,term])});
+const opScale=(eq,s)=>({L:simplify(eq.L.map(t=>scale(t,s))),R:simplify(eq.R.map(t=>scale(t,s)))});
+/* Moving a term removes it from its own side (the inverse cancels it) and puts the opposite on the other side, uncombined. */
+function opMove(eq,side,idx){
+  const neg=scale(eq[side][idx],F(-1));
+  const other=side==='L'?'R':'L';
+  const mine=eq[side].filter((_,i)=>i!==idx);
+  const theirs=normalize([...eq[other],neg]);
+  return side==='L'?{L:mine,R:theirs}:{L:theirs,R:mine};
+}
+function opExpand(eq,side,idx){
+  const g=eq[side][idx];
+  const parts=g.inner.map(t=>scale(t,g.k));
+  const ns=simplify([...eq[side].slice(0,idx),...parts,...eq[side].slice(idx+1)]);
+  return side==='L'?{L:ns,R:eq.R}:{L:eq.L,R:ns};
+}
+
+/* ---------- solved check ---------- */
+function isSolved(eq){
+  const only=s=>s.length===1&&s[0].t==='x'&&fone(s[0].c);
+  const nums=s=>s.length<=1&&s.every(t=>t.t==='n');
+  return (only(eq.L)&&nums(eq.R))||(only(eq.R)&&nums(eq.L));
+}
+function solvedValue(eq){
+  const s=eq.L.length===1&&eq.L[0].t==='x'?eq.R:eq.L;
+  return s.length?s[0].c:F(0);
+}
+function evalSide(side,xv){
+  return side.reduce((s,t)=>fadd(s,t.t==='x'?fmul(t.c,xv):t.t==='n'?t.c:fmul(t.k,evalSide(t.inner,xv))),F(0));
+}
+
+/* ---------- text and html ---------- */
+const fracText=a=>a.d===1?String(a.n):a.n+'/'+a.d;
+function magText(t){
+  if(t.t==='g') return fracText(fabs(t.k))+'('+sideText(t.inner)+')';
+  const a=fabs(t.c);
+  return t.t==='x'?(fone(a)?'x':fracText(a)+'x'):fracText(a);
+}
+function sideText(side){
+  if(!side.length) return '0';
+  return side.map((t,i)=>i===0?(isNeg(t)?'−':'')+magText(t):' '+(isNeg(t)?'−':'+')+' '+magText(t)).join('');
+}
+const signedText=t=>(isNeg(t)?'−':'+')+magText(t);
+function fracHTML(a){
+  return a.d===1?String(a.n):'<span class="frac"><span>'+a.n+'</span><span>'+a.d+'</span></span>';
+}
+function magHTML(t){
+  if(t.t==='g') return '<span class="bk">'+fracHTML(fabs(t.k))+'<span class="par">(</span>'+sideHTML(t.inner)+'<span class="par">)</span></span>';
+  const a=fabs(t.c);
+  return t.t==='x'?(fone(a)?'x':fracHTML(a)+'x'):fracHTML(a);
+}
+function sideHTML(side){
+  if(!side.length) return '0';
+  return side.map((t,i)=>i===0?(isNeg(t)?'−':'')+magHTML(t):(isNeg(t)?'−':'+')+' '+magHTML(t)).join(' ');
+}
+const valHTML=v=>(v.n<0?'−':'')+fracHTML(fabs(v));
+const opHTML=(sym,mag)=>'<span class="osym">'+sym+'</span>'+mag;
+
+/* ---------- step builders (pure) ---------- */
+function stepMove(eq,side,idx){
+  const t=eq[side][idx];
+  const verb=isNeg(t)?'Add':'Subtract';
+  const prep=isNeg(t)?'to':'from';
+  return {kind:'move',before:eq,after:opMove(eq,side,idx),
+    note:'Move '+signedText(t)+' across = : '+verb.toLowerCase()+' '+magText(t)+' '+prep+' both sides',
+    op:opHTML(isNeg(t)?'+':'−',magHTML(t))};
+}
+function stepExpand(eq,side,idx){
+  const g=eq[side][idx];
+  return {kind:'expand',before:eq,after:opExpand(eq,side,idx),
+    note:'Distribute '+(isNeg(g)?'−':'')+fracText(fabs(g.k))+' into ('+sideText(g.inner)+')',op:null};
+}
+const canCombine=(a,b)=>a.t!=='g'&&b.t!=='g'&&a.t===b.t;
+/* Drag term `from` onto like term `to` on the same side: add them, keeping the result where `to` was. */
+function stepCombine(eq,side,from,to){
+  const s=eq[side], A=s[from], B=s[to];
+  const c=fadd(A.c,B.c);
+  const sum={t:B.t,c};
+  const ns=[];
+  s.forEach((t,i)=>{ if(i===from) return; if(i===to){ if(!fz(c)) ns.push(sum); } else ns.push(t); });
+  const lo=s[Math.min(from,to)], hi=s[Math.max(from,to)];
+  const after=side==='L'?{L:ns,R:eq.R}:{L:eq.L,R:ns};
+  return {kind:'combine',before:eq,after,note:'Combine '+sideText([lo,hi])+' = '+(fz(c)?'0':sideText([sum])),op:null};
+}
+/* returns {step} or {error} */
+function stepFromBuilder(eq,op,val){
+  const neg=val.startsWith('-');
+  const body=neg?val.slice(1):val;
+  if(body==='') return {error:'Type a number or x after the negative sign.'};
+  const hasX=body.endsWith('x');
+  const digits=body.replace('x','');
+  const mag=digits===''?1:parseInt(digits,10);
+  const coef=neg?-mag:mag;
+  const absTerm=hasX?tx(mag):tn(mag);
+  const label=(neg?'−':'')+magText(absTerm);
+  const shown=neg?'(−'+magHTML(absTerm)+')':magHTML(absTerm);
+  if(op==='+'||op==='-'){
+    if(mag===0) return {error:(op==='+'?'Adding':'Subtracting')+' 0 changes nothing.'};
+    const term=hasX?tx(coef):tn(coef);
+    const signed=op==='+'?term:scale(term,F(-1));
+    return {step:{kind:'op',before:eq,after:opAdd(eq,signed),
+      note:op==='+'?'Add '+label+' to both sides':'Subtract '+label+' from both sides',
+      op:opHTML(op==='+'?'+':'−',shown)}};
+  }
+  if(hasX) return {error:'Multiply and divide need a plain number, not x.'};
+  if(mag===0) return {error:op==='*'?'Multiplying by 0 would wipe out the equation.':'You can’t divide by 0.'};
+  const s=op==='*'?F(coef):F(1,coef);
+  return {step:{kind:'op',before:eq,after:opScale(eq,s),
+    note:op==='*'?'Multiply both sides by '+label:'Divide both sides by '+label,
+    op:opHTML(op==='*'?'×':'÷',shown)}};
+}
+
+/* ---------- problems ---------- */
+/* Ordered easiest to hardest: one step, two steps, negatives and fractions, brackets, x on both sides, brackets on both sides. */
+const PROBLEMS=[
+  /* 1-5 */   {L:[tx(1),tn(7)],R:[tn(15)]},                                   /* x = 8 */
+              {L:[tx(1),tn(-4)],R:[tn(9)]},                                   /* x = 13 */
+              {L:[tx(3)],R:[tn(21)]},                                         /* x = 7 */
+              {L:[tx(2),tn(5)],R:[tn(17)]},                                   /* x = 6 */
+              {L:[tx(5),tn(-3)],R:[tn(22)]},                                  /* x = 5 */
+  /* 6-8 */   {L:[tx(4),tn(9)],R:[tn(1)]},                                    /* x = -2 */
+              {L:[tn(9),tx(-1)],R:[tn(4)]},                                   /* x = 5 */
+              {L:[tx(2),tn(1)],R:[tn(6)]},                                    /* x = 5/2 */
+  /* 9-11 */  {L:[tg(2,[tx(1),tn(3)])],R:[tn(14)]},                           /* x = 4 */
+              {L:[tg(3,[tx(1),tn(-2)])],R:[tn(12)]},                          /* x = 6 */
+              {L:[tg(5,[tx(1),tn(-1)])],R:[tn(20)]},                          /* x = 5 */
+  /* 12-14 */ {L:[tx(5),tn(2)],R:[tx(2),tn(14)]},                             /* x = 4 */
+              {L:[tx(7),tn(-3)],R:[tx(4),tn(12)]},                            /* x = 5 */
+              {L:[tx(3),tn(10)],R:[tx(5),tn(2)]},                             /* x = 4 */
+  /* 15-18 */ {L:[tg(3,[tx(1),tn(2)])],R:[tx(2),tn(11)]},                     /* x = 5 */
+              {L:[tg(4,[tx(1),tn(-1)])],R:[tx(2),tn(6)]},                     /* x = 5 */
+              {L:[tg(2,[tx(1),tn(5)])],R:[tx(5),tn(-8)]},                     /* x = 6 */
+              {L:[tg(5,[tx(1),tn(-2)])],R:[tg(3,[tx(1),tn(2)])]},             /* x = 8 */
+  /* 19-20 */ {L:[tg(-2,[tx(1),tn(3)])],R:[tn(4)]},                           /* x = -5 */
+              {L:[tg(4,[tx(2),tn(-3)])],R:[tg(3,[tx(1),tn(6)])]}              /* x = 6 */
+];
+/*LOGIC-END*/
+
+/* ---------- state ---------- */
+const state={i:0,probs:PROBLEMS.map(eq=>({eq0:eq,eq,steps:[],pending:false}))};
+const cur=()=>state.probs[state.i];
+
+const $=id=>document.getElementById(id);
+const eqEl=$('eq'), stepsEl=$('steps'), solvedEl=$('solved'), tipEl=$('tip'), msgEl=$('msg'), liveEl=$('live');
+
+/* ---------- builder state ---------- */
+let bOp=null, bVal='';
+const SYM={'+':'+','-':'−','*':'×','/':'÷'};
+function say(text,cls){ msgEl.textContent=text||''; msgEl.className='msg'+(cls?' '+cls:''); }
+function renderBuilder(){
+  const o=$('exOp'), v=$('exVal');
+  o.textContent=bOp?SYM[bOp]:'op'; o.className='slot'+(bOp?' on':' ph');
+  v.textContent=bVal?bVal.replace('-','−'):'value'; v.className='slot'+(bVal?' on':' ph');
+  document.querySelectorAll('.opk').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.op===bOp)));
+  $('apply').dataset.ready=String(!!(bOp&&bVal&&bVal!=='-'));
+}
+function pressKey(k){
+  say('');
+  if(k==='neg'){ bVal=bVal.startsWith('-')?bVal.slice(1):'-'+bVal; }
+  else if(k==='x'){ if(bVal.includes('x')) return; bVal+='x'; }
+  else{
+    if(bVal.includes('x')){ say('Put the number before the x, like 3x.'); return; }
+    if(bVal==='0') bVal='';
+    if(bVal==='-0') bVal='-';
+    if(bVal.replace('-','').length>=3) return;
+    bVal+=k;
+  }
+  renderBuilder();
+}
+function pressOp(o){ say(''); bOp=o; renderBuilder(); }
+function backspace(){ say(''); if(bVal) bVal=bVal.slice(0,-1); else bOp=null; renderBuilder(); }
+function resetBuilder(){ bOp=null; bVal=''; renderBuilder(); }
+
+/* ---------- committing steps ---------- */
+function commit(step){
+  const p=cur();
+  p.steps.push(step);
+  p.eq=step.after;
+  liveEl.textContent=step.note+'. Now '+sideText(step.after.L)+' equals '+sideText(step.after.R)+'.';
+  render();
+  stepsEl.scrollTop=stepsEl.scrollHeight;
+}
+const locked=()=>isSolved(cur().eq);
+
+function applyBuilder(){
+  if(locked()){ say('This one is solved. Press Next problem, or Undo to keep working.','err'); return; }
+  if(!bOp){ say('Pick +, −, × or ÷ first.','err'); return; }
+  if(!bVal){ say('Type a number or x to go with it.','err'); return; }
+  const r=stepFromBuilder(cur().eq,bOp,bVal);
+  if(r.error){ say(r.error,'err'); return; }
+  resetBuilder();
+  say('Applied to both sides.','ok');
+  commit(r.step);
+}
+function doMove(side,idx){ if(locked()) return; say(''); commit(stepMove(cur().eq,side,idx)); }
+function doExpand(side,idx){ if(locked()) return; say(''); commit(stepExpand(cur().eq,side,idx)); }
+function doCombine(side,from,to){ if(locked()) return; say(''); commit(stepCombine(cur().eq,side,from,to)); }
+let flashT=null;
+const TIP_DEFAULT=tipEl.textContent;
+function flash(text){
+  tipEl.textContent=text; tipEl.classList.add('pulse');
+  clearTimeout(flashT);
+  flashT=setTimeout(()=>{ tipEl.textContent=TIP_DEFAULT; tipEl.classList.remove('pulse'); },3500);
+}
+function undo(){
+  const p=cur(); if(!p.steps.length) return;
+  const s=p.steps.pop(); p.eq=s.before;
+  say(''); render();
+}
+function restart(){
+  const p=cur();
+  p.eq=p.eq0; p.steps=[]; say(''); resetBuilder(); render();
+}
+function go(n){
+  state.i=Math.max(0,Math.min(state.probs.length-1,n));
+  resetBuilder(); say(''); render();
+  stepsEl.scrollTop=stepsEl.scrollHeight;
+}
+
+/* ---------- rendering ---------- */
+function eqSideHTML(side,name,canDrag){
+  if(!side.length) return '<span class="zero">0</span>';
+  return side.map((t,i)=>{
+    const neg=isNeg(t);
+    const body=t.t==='g'?fracHTML(fabs(t.k)):magHTML(t);
+    const inner=(i===0?(neg?'−':''):'<span class="sg">'+(neg?'−':'+')+'</span>')+body;
+    const where=name==='L'?'left':'right';
+    const label=t.t==='g'
+      ?'Multiplier '+signedText(scale(t,F(1))).replace(/\(.*$/,'')+' of the bracket ('+sideText(t.inner)+') on the '+where+'. Drag it into the bracket to expand, or press Enter to expand.'
+      :signedText(t)+' on the '+where+'. Drag it across the equals sign, or onto a like term on the same side to combine them. Press Enter to move it across.';
+    const chip='<button type="button" class="chip" data-side="'+name+'" data-idx="'+i+'" data-kind="'+(t.t==='g'?'group':'term')+'" data-t="'+t.t+'" aria-label="'+label+'"'+(canDrag?'':' disabled')+'>'+inner+'</button>';
+    if(t.t==='g'){
+      return '<span class="term">'+chip+'<span class="grp" data-side="'+name+'" data-idx="'+i+'"><span class="par">(</span><span class="in">'+sideHTML(t.inner)+'</span><span class="par">)</span></span></span>';
+    }
+    return '<span class="term">'+chip+'</span>';
+  }).join('');
+}
+function renderEquation(){
+  const p=cur(), can=!isSolved(p.eq);
+  eqEl.innerHTML=
+    '<div class="eqgrid">'+
+      '<div class="side" data-zone="L">'+eqSideHTML(p.eq.L,'L',can)+'</div>'+
+      '<div class="eqsign" aria-hidden="true">=</div>'+
+      '<div class="side" data-zone="R">'+eqSideHTML(p.eq.R,'R',can)+'</div>'+
+      '<div class="cap l">left side</div><div></div><div class="cap r">right side</div>'+
+    '</div>';
+}
+function eqRow(eq,cls){ return '<div class="l '+(cls||'')+'">'+sideHTML(eq.L)+'</div><div class="m">=</div><div class="r '+(cls||'')+'">'+sideHTML(eq.R)+'</div>'; }
+function renderSteps(){
+  const p=cur();
+  if(!p.steps.length){
+    stepsEl.innerHTML='<p class="empty">Your steps will show up here. Move a term across the = sign, or build an operation with the keypad.</p>';
+    return;
+  }
+  stepsEl.innerHTML=p.steps.map((s,i)=>{
+    let grid;
+    if(s.op){
+      grid='<div class="sgrid">'+eqRow(s.before)+
+        '<div class="l opl">'+s.op+'</div><div class="m"></div><div class="r opr">'+s.op+'</div>'+
+        eqRow(s.after,'res')+'</div>';
+    }else{
+      grid='<div class="sgrid">'+eqRow(s.before)+eqRow(s.after,'res')+'</div>';
+    }
+    return '<div class="step"><div class="step-h"><b>Step '+(i+1)+'</b> &middot; '+s.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'+grid+'</div>';
+  }).join('');
+}
+function renderSolved(){
+  const p=cur(), done=isSolved(p.eq);
+  solvedEl.hidden=!done;
+  if(!done){ solvedEl.innerHTML=''; return; }
+  const v=solvedValue(p.eq);
+  const l=evalSide(p.eq0.L,v), r=evalSide(p.eq0.R,v);
+  const last=state.i===state.probs.length-1;
+  solvedEl.innerHTML=
+    '<div><strong>'+(last?'All done! x = ':'Solved! x = ')+valHTML(v)+'</strong>'+
+    '<span class="chk">Check: putting x = '+fracText(v)+' back into the starting equation gives '+fracText(l)+' on the left and '+fracText(r)+' on the right.</span>'+
+    '<span class="chk">'+(last?'That was the last problem. Look over your steps, then go back to the start if you like.':'Look over your steps below, then press Next problem when you are ready.')+'</span></div>'+
+    '<button type="button" id="goNext" class="btn primary">'+(last?'Back to problem 1':'Next problem')+'</button>';
+}
+function renderNav(){
+  const n=state.probs.length;
+  $('progText').textContent='Problem '+(state.i+1)+' of '+n;
+  $('prev').disabled=state.i===0;
+  $('next').disabled=state.i===n-1;
+  $('dots').innerHTML=state.probs.map((p,i)=>
+    '<button type="button" class="dot'+(isSolved(p.eq)?' done':'')+(i===state.i?' cur':'')+'" data-go="'+i+'" aria-label="Go to problem '+(i+1)+(isSolved(p.eq)?' (solved)':'')+'"></button>').join('');
+  $('undo').disabled=!cur().steps.length;
+  $('restart').disabled=!cur().steps.length;
+}
+function render(){ renderEquation(); renderSteps(); renderSolved(); renderNav(); renderBuilder(); }
+
+/* ---------- drag and drop ---------- */
+let drag=null;
+function startDrag(){
+  drag.on=true;
+  const g=drag.chip.cloneNode(true);
+  g.classList.add('ghost'); g.removeAttribute('disabled'); g.removeAttribute('aria-label');
+  g.style.fontSize=getComputedStyle(eqEl).fontSize;
+  document.body.appendChild(g);
+  drag.ghost=g;
+  const t=cur().eq[drag.side][drag.idx];
+  drag.origHTML=g.innerHTML;
+  drag.flipHTML='<span class="sg">'+(isNeg(t)?'+':'−')+'</span>'+(t.t==='g'?fracHTML(fabs(t.k)):magHTML(t));
+  drag.flipped=false;
+  drag.chip.classList.add('lifted');
+  eqEl.classList.add('dragging');
+  eqEl.querySelectorAll('.side').forEach(s=>{ if(s.dataset.zone!==drag.side) s.classList.add('ready'); });
+  if(drag.kind==='group'){
+    eqEl.querySelectorAll('.grp').forEach(s=>{ if(s.dataset.side===drag.side&&+s.dataset.idx===drag.idx) s.classList.add('ready'); });
+  }
+  if(drag.kind==='term'){
+    eqEl.querySelectorAll('.chip').forEach(c=>{
+      if(c!==drag.chip&&c.dataset.side===drag.side&&c.dataset.kind==='term'&&c.dataset.t===drag.t) c.classList.add('ready');
+    });
+  }
+}
+function resolveDrop(x,y){
+  if(drag.kind==='group'){
+    const el=document.elementFromPoint(x,y);
+    const gp=el&&el.closest('.grp');
+    if(gp&&gp.dataset.side===drag.side&&+gp.dataset.idx===drag.idx) return {type:'expand'};
+  }
+  if(drag.kind==='term'){
+    const el=document.elementFromPoint(x,y);
+    const c=el&&el.closest('.chip');
+    if(c&&c!==drag.chip&&c.dataset.side===drag.side){
+      if(c.dataset.kind==='term'&&c.dataset.t===drag.t) return {type:'combine',to:+c.dataset.idx,chip:c};
+      return {type:'unlike'};
+    }
+  }
+  const row=eqEl.querySelector('.eqgrid').getBoundingClientRect();
+  if(y<row.top-70||y>row.bottom+70||x<row.left-40||x>row.right+40) return null;
+  const sg=eqEl.querySelector('.eqsign').getBoundingClientRect();
+  const zone=x<sg.left+sg.width/2?'L':'R';
+  return zone!==drag.side?{type:'move',zone}:null;
+}
+function markHot(r){
+  const want=!!(r&&r.type==='move');
+  if(drag.ghost&&drag.flipped!==want){
+    drag.ghost.innerHTML=want?drag.flipHTML:drag.origHTML;
+    drag.ghost.classList.toggle('flip',want);
+    drag.flipped=want;
+  }
+  eqEl.querySelectorAll('.hot').forEach(n=>n.classList.remove('hot'));
+  if(!r) return;
+  if(r.type==='move'){ const z=eqEl.querySelector('.side[data-zone="'+r.zone+'"]'); if(z) z.classList.add('hot'); }
+  if(r.type==='combine') r.chip.classList.add('hot');
+  if(r.type==='expand'){ const z=eqEl.querySelector('.grp[data-side="'+drag.side+'"][data-idx="'+drag.idx+'"]'); if(z) z.classList.add('hot'); }
+}
+function endDrag(e,cancelled){
+  if(!drag||e.pointerId!==drag.id) return;
+  const d=drag; drag=null;
+  try{ d.chip.releasePointerCapture(d.id); }catch(_){}
+  if(d.ghost) d.ghost.remove();
+  d.chip.classList.remove('lifted');
+  eqEl.classList.remove('dragging');
+  eqEl.querySelectorAll('.ready,.hot').forEach(n=>n.classList.remove('ready','hot'));
+  if(cancelled) return;
+  if(!d.on){
+    tipEl.classList.add('pulse'); setTimeout(()=>tipEl.classList.remove('pulse'),1400);
+    return;
+  }
+  drag=d; const r=resolveDrop(e.clientX,e.clientY); drag=null;
+  if(!r) return;
+  if(r.type==='move') doMove(d.side,d.idx);
+  else if(r.type==='expand') doExpand(d.side,d.idx);
+  else if(r.type==='combine') doCombine(d.side,d.idx,r.to);
+  else if(r.type==='unlike') flash('Only like terms can be added or subtracted: x-terms with x-terms, and numbers with numbers.');
+}
+eqEl.addEventListener('pointerdown',e=>{
+  const chip=e.target.closest('.chip');
+  if(!chip||chip.disabled) return;
+  if(e.pointerType==='mouse'&&e.button!==0) return;
+  drag={chip,side:chip.dataset.side,idx:+chip.dataset.idx,kind:chip.dataset.kind,t:chip.dataset.t,x:e.clientX,y:e.clientY,on:false,ghost:null,id:e.pointerId};
+  try{ chip.setPointerCapture(e.pointerId); }catch(_){}
+});
+eqEl.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id) return;
+  if(!drag.on){
+    if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6) return;
+    startDrag();
+  }
+  drag.ghost.style.transform='translate('+e.clientX+'px,'+e.clientY+'px) translate(-50%,-50%) scale(1.08)';
+  markHot(resolveDrop(e.clientX,e.clientY));
+});
+eqEl.addEventListener('pointerup',e=>endDrag(e,false));
+eqEl.addEventListener('pointercancel',e=>endDrag(e,true));
+/* keyboard activation of a chip (Enter or Space produces a click with detail 0) */
+eqEl.addEventListener('click',e=>{
+  const chip=e.target.closest('.chip');
+  if(!chip||chip.disabled||e.detail!==0) return;
+  const side=chip.dataset.side, idx=+chip.dataset.idx;
+  if(chip.dataset.kind==='group') doExpand(side,idx); else doMove(side,idx);
+});
+eqEl.addEventListener('dragstart',e=>e.preventDefault());
+
+/* ---------- wiring ---------- */
+document.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>pressKey(b.dataset.k)));
+document.querySelectorAll('[data-op]').forEach(b=>b.addEventListener('click',()=>pressOp(b.dataset.op)));
+$('back').addEventListener('click',backspace);
+$('apply').addEventListener('click',applyBuilder);
+$('undo').addEventListener('click',undo);
+$('restart').addEventListener('click',restart);
+$('prev').addEventListener('click',()=>go(state.i-1));
+$('next').addEventListener('click',()=>go(state.i+1));
+$('dots').addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if(b) go(+b.dataset.go); });
+solvedEl.addEventListener('click',e=>{
+  if(!e.target.closest('#goNext')) return;
+  go(state.i===state.probs.length-1?0:state.i+1);
+});
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  const k=e.key;
+  if(/^[0-9]$/.test(k)||k==='x'||k==='X'){ pressKey(k.toLowerCase()); return; }
+  if(k==='+'||k==='-'||k==='*'||k==='/'){ e.preventDefault(); pressOp(k); return; }
+  if(k==='Backspace'&&!(e.target.closest&&e.target.closest('input,textarea'))){ backspace(); return; }
+  if(k==='Enter'&&!(e.target.tagName==='BUTTON')){ applyBuilder(); }
+});
+
+render();
+</script>
+</body>
+</html>
